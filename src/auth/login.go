@@ -7,43 +7,107 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
+)
+
+// Types definition
+const (
+	Google   = "GOOGLE"
+	LinkedIn = "LINKEDIN"
+	Email    = "Email"
 )
 
 // jwtCustomClaims are custom claims extending default ones.
 type jwtCustomClaims struct {
-	Name  string `json:"name"`
+	Email string `json:"email"`
 	Admin bool   `json:"admin"`
 	jwt.StandardClaims
 }
 
-// Login is used to login an user
-func Login(c echo.Context) error {
-	username := c.FormValue("username")
-	password := c.FormValue("password")
-
-	// Throws unauthorized error
-	if username != "jon" || password != "shhh!" {
-		return echo.ErrUnauthorized
+type (
+	// LoginPayload is the struct used to hold payload from /login
+	LoginPayload struct {
+		Email    string `json:"email" validate:"email"`
+		Token    string `json:"token"`
+		Password string `json:"password" validate:"gte=10,required_with=email"`
+		Type     string `json:"type" validate:"required,oneof= GOOGLE LINKEDIN EMAIL"`
 	}
+)
 
-	// Set custom claims
+func loginEmail(c echo.Context) (string, error) {
+	email := "arun.ranga@hotmail.ca"
+
 	claims := &jwtCustomClaims{
-		username,
+		email,
 		true,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},
 	}
 
-	t, err := generateToken(claims)
+	return generateToken(claims)
+}
 
-	if err != nil {
-		panic(fmt.Sprintf("%v", err))
+func loginGoogle(c echo.Context) (string, error) {
+	email := "arun.ranga@hotmail.ca"
+
+	claims := &jwtCustomClaims{
+		email,
+		true,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		},
+	}
+
+	return generateToken(claims)
+}
+
+func loginLinkedIn(c echo.Context) (string, error) {
+	email := "arun.ranga@hotmail.ca"
+
+	claims := &jwtCustomClaims{
+		email,
+		true,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		},
+	}
+
+	return generateToken(claims)
+}
+
+// Login is used to login an user
+func Login(c echo.Context) error {
+	payload := new(LoginPayload)
+
+	if err := c.Bind(payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := validator.Validate(payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	var token string
+	var error error
+
+	switch payload.Type {
+	case Google:
+		token, error = loginGoogle(c)
+	case LinkedIn:
+		token, error = loginLinkedIn(c)
+	case Email:
+		token, error = loginEmail(c)
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
+	}
+
+	if error != nil {
+		panic(fmt.Sprintf("%v", error))
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"token": t,
+		"token": token,
 	})
 }
 
