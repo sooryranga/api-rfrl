@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-playground/validator"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -25,6 +26,16 @@ type Config struct {
 	}
 }
 
+// Validator for echo
+type Validator struct {
+	validator *validator.Validate
+}
+
+// Validate do validation for request value.
+func (v *Validator) Validate(i interface{}) error {
+	return v.validator.Struct(i)
+}
+
 func readEnv(cfg *Config) {
 	err := envconfig.Process("", cfg)
 	if err != nil {
@@ -38,6 +49,11 @@ func main() {
 	readEnv(&cfg)
 	fmt.Printf("%+v", cfg)
 
+	// Validator
+	validate := validator.New()
+
+	validate.RegisterStructValidation(auth.LoginPayloadValidation, auth.LoginPayload{})
+
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -48,6 +64,8 @@ func main() {
 
 	// Body Limit Middleware
 	e.Use(middleware.BodyLimit("10M"))
+
+	e.Validator = &Validator{validator: validate}
 
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
@@ -62,5 +80,5 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	e.Logger.Fatal(e.StartServer(s))
+	e.Logger.Debug(e.StartServer(s))
 }
