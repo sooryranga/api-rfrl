@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -61,7 +60,7 @@ func LoginPayloadValidation(sl validator.StructLevel) {
 	// plus can do more, even with different tag than "fnameorlname"
 }
 
-func loginEmail(c echo.Context) (string, error) {
+func loginEmail(payload LoginPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -72,10 +71,10 @@ func loginEmail(c echo.Context) (string, error) {
 		},
 	}
 
-	return generateToken(claims)
+	return GenerateToken(claims)
 }
 
-func loginGoogle(c echo.Context) (string, error) {
+func loginGoogle(payload LoginPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -86,10 +85,10 @@ func loginGoogle(c echo.Context) (string, error) {
 		},
 	}
 
-	return generateToken(claims)
+	return GenerateToken(claims)
 }
 
-func loginLinkedIn(c echo.Context) (string, error) {
+func loginLinkedIn(payload LoginPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -100,7 +99,7 @@ func loginLinkedIn(c echo.Context) (string, error) {
 		},
 	}
 
-	return generateToken(claims)
+	return GenerateToken(claims)
 }
 
 // Login is used to login an user
@@ -119,11 +118,11 @@ func Login(c echo.Context) error {
 
 	switch payload.Type {
 	case GOOGLE:
-		token, error = loginGoogle(c)
+		token, error = loginGoogle(payload)
 	case LINKEDIN:
-		token, error = loginLinkedIn(c)
+		token, error = loginLinkedIn(payload)
 	case EMAIL:
-		token, error = loginEmail(c)
+		token, error = loginEmail(payload)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}
@@ -135,31 +134,4 @@ func Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"token": token,
 	})
-}
-
-// GenerateToken creates token
-func generateToken(claims *jwtCustomClaims) (string, error) {
-	// TODO:read id_rsa once
-	keyData, err := ioutil.ReadFile("./id_rsa")
-
-	if err != nil {
-		return "", err
-	}
-
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyData)
-
-	if err != nil {
-		return "", err
-	}
-
-	// Create token with claims
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-
-	// Generate encoded token and send it as response.
-	t, err := token.SignedString(key)
-	if err != nil {
-		return "", err
-	}
-
-	return t, nil
 }
