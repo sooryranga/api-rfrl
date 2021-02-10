@@ -22,7 +22,7 @@ type (
 	}
 )
 
-func signupGoogle(payload SignUpPayload) (string, error) {
+func (h *Handler) signupGoogle(payload SignUpPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -36,7 +36,7 @@ func signupGoogle(payload SignUpPayload) (string, error) {
 	return GenerateToken(claims)
 }
 
-func signupLinkedIn(payload SignUpPayload) (string, error) {
+func (h *Handler) signupLinkedIn(payload SignUpPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -50,7 +50,7 @@ func signupLinkedIn(payload SignUpPayload) (string, error) {
 	return GenerateToken(claims)
 }
 
-func signupEmail(payload SignUpPayload) (string, error) {
+func (h *Handler) signupEmail(payload SignUpPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -65,7 +65,7 @@ func signupEmail(payload SignUpPayload) (string, error) {
 }
 
 // SignUpPayloadValidation validates user inputs
-func SignUpPayloadValidation(sl validator.StructLevel) {
+func (h *Handler) SignUpPayloadValidation(sl validator.StructLevel) {
 
 	payload := sl.Current().Interface().(SignUpPayload)
 
@@ -91,7 +91,7 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 }
 
 // Signup endpoint
-func Signup(c echo.Context) error {
+func (h *Handler) Signup(c echo.Context) error {
 	payload := SignUpPayload{}
 
 	if err := c.Bind(&payload); err != nil {
@@ -106,11 +106,11 @@ func Signup(c echo.Context) error {
 
 	switch payload.Type {
 	case GOOGLE:
-		token, error = signupGoogle(payload)
+		token, error = h.signupGoogle(payload)
 	case LINKEDIN:
-		token, error = signupLinkedIn(payload)
+		token, error = h.signupLinkedIn(payload)
 	case EMAIL:
-		token, error = signupEmail(payload)
+		token, error = h.signupEmail(payload)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}

@@ -10,20 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// Types definition
-const (
-	GOOGLE   = "google"
-	LINKEDIN = "linkedin"
-	EMAIL    = "email"
-)
-
-// jwtCustomClaims are custom claims extending default ones.
-type jwtCustomClaims struct {
-	Email string `json:"email"`
-	Admin bool   `json:"admin"`
-	jwt.StandardClaims
-}
-
 type (
 	// LoginPayload is the struct used to hold payload from /login
 	LoginPayload struct {
@@ -60,7 +46,7 @@ func LoginPayloadValidation(sl validator.StructLevel) {
 	// plus can do more, even with different tag than "fnameorlname"
 }
 
-func loginEmail(payload LoginPayload) (string, error) {
+func (h *Handler) loginEmail(payload LoginPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -74,7 +60,7 @@ func loginEmail(payload LoginPayload) (string, error) {
 	return GenerateToken(claims)
 }
 
-func loginGoogle(payload LoginPayload) (string, error) {
+func (h *Handler) loginGoogle(payload LoginPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -88,7 +74,7 @@ func loginGoogle(payload LoginPayload) (string, error) {
 	return GenerateToken(claims)
 }
 
-func loginLinkedIn(payload LoginPayload) (string, error) {
+func (h *Handler) loginLinkedIn(payload LoginPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
 
 	claims := &jwtCustomClaims{
@@ -103,7 +89,7 @@ func loginLinkedIn(payload LoginPayload) (string, error) {
 }
 
 // Login is used to login an user
-func Login(c echo.Context) error {
+func (h *Handler) Login(c echo.Context) error {
 	payload := LoginPayload{}
 
 	if err := c.Bind(&payload); err != nil {
@@ -118,11 +104,11 @@ func Login(c echo.Context) error {
 
 	switch payload.Type {
 	case GOOGLE:
-		token, error = loginGoogle(payload)
+		token, error = h.loginGoogle(payload)
 	case LINKEDIN:
-		token, error = loginLinkedIn(payload)
+		token, error = h.loginLinkedIn(payload)
 	case EMAIL:
-		token, error = loginEmail(payload)
+		token, error = h.loginEmail(payload)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}
