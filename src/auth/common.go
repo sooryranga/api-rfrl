@@ -6,6 +6,30 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
+type Handler struct {
+	authStore Store
+}
+
+func NewHandler(au Store) *Handler {
+	return &Handler{
+		authStore: au,
+	}
+}
+
+// Types definition
+const (
+	GOOGLE   = "google"
+	LINKEDIN = "linkedin"
+	EMAIL    = "email"
+)
+
+// jwtCustomClaims are custom claims extending default ones.
+type jwtCustomClaims struct {
+	Email string `json:"email"`
+	Admin bool   `json:"admin"`
+	jwt.StandardClaims
+}
+
 // GenerateToken creates token
 func GenerateToken(claims *jwtCustomClaims) (string, error) {
 	// TODO:read id_rsa once

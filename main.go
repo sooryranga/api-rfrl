@@ -1,12 +1,12 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/go-playground/validator"
+	"github.com/jmoiron/sqlx"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -45,12 +45,6 @@ func readEnv(cfg *Config) {
 }
 
 func main() {
-	port := flag.String("port", ":8010", "Server listener port")
-	serverName := flag.String("name", "Server1", "Server Name")
-	flag.Parse()
-
-	fmt.Printf("my port: \"%v\"\n", string(*port))
-
 	//Config
 	var cfg Config
 	readEnv(&cfg)
@@ -61,6 +55,8 @@ func main() {
 
 	validate.RegisterStructValidation(auth.LoginPayloadValidation, auth.LoginPayload{})
 	validate.RegisterStructValidation(auth.SignUpPayloadValidation, auth.SignUpPayload{})
+
+	db := sqlx.MustConnect("pgx", "postgres://pgx_md5:secret@localhost:5432/pgx_test")
 
 	e := echo.New()
 
@@ -75,15 +71,18 @@ func main() {
 
 	e.Validator = &Validator{validator: validate}
 
+	au := auth.NewStore(db)
+	authHandler := auth.NewHandler(*au)
+	authHandler.Register(e)
+
 	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, fmt.Sprintf("Hello from %v", string(*serverName)))
+		return c.String(http.StatusOK, "Hello World!")
 	})
 
-	e.POST("/login", auth.Login)
 	e.Logger.SetLevel(log.DEBUG)
 
 	s := &http.Server{
-		Addr:         string(*port),
+		Addr:         string(":8010"),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
