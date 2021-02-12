@@ -1,27 +1,48 @@
 version: "3.9"
 services:
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     secrets:
       - db-password
     depends_on:
-      - db
+      database:
+        condition: service_healthy
+    expose:
+      - 8010
     ports:
       - 8010:8010
+    links:
+      - database
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+      - POSTGRES_URI=postgres://tutorme:__PASSWORD__@database:5432/tutorme?sslmode=disable
+    volumes:
+      - ./:/app
 
-  db:
+  database:
     image: postgres
     restart: always
+    ports:
+      - 5432:5432
     secrets:
       - db-password
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - database_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tutorme"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
+      - POSTGRES_USER=tutorme
       - POSTGRES_DB=tutorme
       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
 
 volumes:
-  db-data:
+  database_data:
+    driver: local
 secrets:
   db-password:
     file: db/password.txt
