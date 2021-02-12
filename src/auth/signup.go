@@ -2,12 +2,14 @@ package auth
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type (
@@ -21,6 +23,23 @@ type (
 		Type            string `json:"type" validate:"required,oneof= GOOGLE LINKEDIN EMAIL"`
 	}
 )
+
+func hashAndSalt(pwd []byte) ([]byte, error) {
+
+	// Use GenerateFromPassword to hash & salt pwd.
+	// MinCost is just an integer constant provided by the bcrypt
+	// package along with DefaultCost & MaxCost.
+	// The cost can be any value you want provided it isn't lower
+	// than the MinCost (4)
+	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.DefaultCost)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	// GenerateFromPassword returns a byte slice so we need to
+	// convert the bytes to a string and return it
+	return hash, nil
+}
 
 func (h *Handler) signupGoogle(payload SignUpPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
@@ -52,6 +71,12 @@ func (h *Handler) signupLinkedIn(payload SignUpPayload) (string, error) {
 
 func (h *Handler) signupEmail(payload SignUpPayload) (string, error) {
 	email := "arun.ranga@hotmail.ca"
+
+	hash, err := hashAndSalt([]byte(payload.Password))
+
+	if err != nil {
+		return "", err
+	}
 
 	claims := &jwtCustomClaims{
 		email,

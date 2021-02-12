@@ -13,7 +13,10 @@ build-static:
 	CGO_ENABLED=0 go build -race -v -o $(APP) -a -installsuffix cgo -ldflags $(LDFLAGS) .
 
 run:
-	go run -race .
+	docker-compose up -d
+
+clean:
+	docker-compose down
 
 ############################################################
 # Test
