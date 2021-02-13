@@ -28,12 +28,12 @@ WHERE auth.email =$1 AND auth.type =$2
 LIMIT 1
 	`
 	insertEmailAuth string = `
-INSERT INTO auth (email, password, salt, auth_type)
+INSERT INTO auth (email, password, auth_type)
 VALUES ($1, $2, $3)
 RETURNING id
 	`
 	insertToken string = `
-INSERT INTO auth (token, type) 
+INSERT INTO auth (token, auth_type) 
 VALUES ($1, $2) 
 RETURNING id
 	`
@@ -60,21 +60,23 @@ func (au *Store) GetByEmail(email string) (*Auth, error) {
 }
 
 // CreateWithEmail creates auth row with email in db
-func (au *Store) CreateWithEmail(email string, password string, salt string) (int, error) {
-	result, err := au.db.Exec(insertEmailAuth, email, password, salt)
-	if err != nil {
+func (au *Store) CreateWithEmail(email string, password []byte) (int, error) {
+	row := au.db.QueryRow(insertEmailAuth, email, password, EMAIL)
+	var id int
+
+	if err := row.Scan(&id); err != nil {
 		return -1, err
 	}
-	id, err := result.LastInsertId()
-	return int(id), err
+	return id, nil
 }
 
 // CreateWithToken creates auth row with token in db
 func (au *Store) CreateWithToken(token string, authType string) (int, error) {
-	result, err := au.db.Exec(insertToken, token, authType)
-	if err != nil {
+	row := au.db.QueryRow(insertToken, token, authType)
+	var id int
+
+	if err := row.Scan(&id); err != nil {
 		return -1, err
 	}
-	id, err := result.LastInsertId()
-	return int(id), err
+	return id, nil
 }

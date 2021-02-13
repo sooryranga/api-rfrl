@@ -15,12 +15,12 @@ import (
 type (
 	// SignUpPayload is the struct used to hold payload from /signup
 	SignUpPayload struct {
-		Email           string `json:"email" validate:"email"`
+		Email           string `json:"email" validate:"omitempty,email"`
 		Name            string `json:"name"`
 		Token           string `json:"token"`
 		ProfileImageURL string `json:"profileImageURL"`
-		Password        string `json:"password" validate:"gte=10,required_with=email"`
-		Type            string `json:"type" validate:"required,oneof= GOOGLE LINKEDIN EMAIL"`
+		Password        string `json:"password" validate:"omitempty,gte=10"`
+		Type            string `json:"type" validate:"required,oneof= google linkedin email"`
 	}
 )
 
@@ -42,10 +42,14 @@ func hashAndSalt(pwd []byte) ([]byte, error) {
 }
 
 func (h *Handler) signupGoogle(payload SignUpPayload) (string, error) {
-	email := "arun.ranga@hotmail.ca"
+	_, err := h.authStore.CreateWithToken(payload.Token, GOOGLE)
+
+	if err != nil {
+		return "", err
+	}
 
 	claims := &jwtCustomClaims{
-		email,
+		payload.Email,
 		true,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
@@ -56,10 +60,14 @@ func (h *Handler) signupGoogle(payload SignUpPayload) (string, error) {
 }
 
 func (h *Handler) signupLinkedIn(payload SignUpPayload) (string, error) {
-	email := "arun.ranga@hotmail.ca"
+	_, err := h.authStore.CreateWithToken(payload.Token, LINKEDIN)
+
+	if err != nil {
+		return "", err
+	}
 
 	claims := &jwtCustomClaims{
-		email,
+		"",
 		true,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
@@ -70,9 +78,15 @@ func (h *Handler) signupLinkedIn(payload SignUpPayload) (string, error) {
 }
 
 func (h *Handler) signupEmail(payload SignUpPayload) (string, error) {
-	email := "arun.ranga@hotmail.ca"
+	email := payload.Email
 
 	hash, err := hashAndSalt([]byte(payload.Password))
+
+	if err != nil {
+		return "", err
+	}
+
+	_, err = h.authStore.CreateWithEmail(email, hash)
 
 	if err != nil {
 		return "", err
