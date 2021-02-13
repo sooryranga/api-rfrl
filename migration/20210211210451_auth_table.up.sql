@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS auth (
   token TEXT,
   auth_type VARCHAR(20),
   email VARCHAR(40) UNIQUE,
-  password_hash BYTEA
+  password_hash BYTEA,
+  UNIQUE (auth_type, token)
 );
 
 COMMIT;
