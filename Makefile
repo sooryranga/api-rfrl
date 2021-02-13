@@ -15,11 +15,14 @@ build-static:
 start:
 	docker-compose up -d
 
-clean:
+stop:
 	docker-compose down
 
-watch:
+logs:
 	docker-compose logs -f
+
+docker-build:
+	docker build .
 
 ############################################################
 # Test
