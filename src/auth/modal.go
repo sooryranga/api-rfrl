@@ -7,11 +7,11 @@ import (
 
 // Auth model
 type Auth struct {
-	ID           int
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	Token        sql.NullString
-	AuthType     string
-	Email        sql.NullString
-	PasswordHash sql.RawBytes
+	ID           int            `db:"id"`
+	CreatedAt    time.Time      `db:"created_at"`
+	UpdatedAt    time.Time      `db:"updated_at"`
+	Token        sql.NullString `db:"token"`
+	AuthType     string         `db:"auth_type"`
+	Email        sql.NullString `db:"email"`
+	PasswordHash []byte         `db:"password_hash"`
 }

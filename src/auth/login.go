@@ -7,7 +7,10 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator"
+	"github.com/jackc/pgconn"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type (
@@ -47,10 +50,23 @@ func LoginPayloadValidation(sl validator.StructLevel) {
 }
 
 func (h *Handler) loginEmail(payload LoginPayload) (string, error) {
-	email := "arun.ranga@hotmail.ca"
+	auth, err := h.authStore.GetByEmail(payload.Email)
+
+	if err != nil {
+		return "", err
+	}
+
+	err = bcrypt.CompareHashAndPassword(
+		auth.PasswordHash,
+		[]byte(payload.Password),
+	)
+
+	if err != nil {
+		return "", err
+	}
 
 	claims := &jwtCustomClaims{
-		email,
+		payload.Email,
 		true,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
@@ -61,10 +77,14 @@ func (h *Handler) loginEmail(payload LoginPayload) (string, error) {
 }
 
 func (h *Handler) loginGoogle(payload LoginPayload) (string, error) {
-	email := "arun.ranga@hotmail.ca"
+	_, err := h.authStore.GetByToken(payload.Token, GOOGLE)
+
+	if err != nil {
+		return "", err
+	}
 
 	claims := &jwtCustomClaims{
-		email,
+		"",
 		true,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
@@ -75,10 +95,14 @@ func (h *Handler) loginGoogle(payload LoginPayload) (string, error) {
 }
 
 func (h *Handler) loginLinkedIn(payload LoginPayload) (string, error) {
-	email := "arun.ranga@hotmail.ca"
+	_, err := h.authStore.GetByToken(payload.Token, LINKEDIN)
+
+	if err != nil {
+		return "", err
+	}
 
 	claims := &jwtCustomClaims{
-		email,
+		"",
 		true,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
@@ -100,21 +124,28 @@ func (h *Handler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	var token string
-	var error error
+	var err error
 
 	switch payload.Type {
 	case GOOGLE:
-		token, error = h.loginGoogle(payload)
+		token, err = h.loginGoogle(payload)
 	case LINKEDIN:
-		token, error = h.loginLinkedIn(payload)
+		token, err = h.loginLinkedIn(payload)
 	case EMAIL:
-		token, error = h.loginEmail(payload)
+		token, err = h.loginEmail(payload)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}
 
-	if error != nil {
-		panic(fmt.Sprintf("%v", error))
+	if err != nil {
+		c.Logger().Error(err)
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
+		}
+
+		return echo.NewHTTPError(http.StatusInternalServerError, "User or password is not correct")
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{

@@ -17,12 +17,12 @@ func NewStore(db *sqlx.DB) *Store {
 const (
 	getByToken string = `
 SELECT * FROM auth 
-WHERE auth.token =$1 AND auth.type =$2 
+WHERE auth.token =$1 AND auth.auth_type =$2 
 LIMIT 1
 	`
 	getByEmail string = `
 SELECT * FROM auth 
-WHERE auth.email =$1 AND auth.type =$2 
+WHERE auth.email =$1 AND auth.auth_type =$2 
 LIMIT 1
 	`
 	insertEmailAuth string = `
