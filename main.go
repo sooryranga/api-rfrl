@@ -41,6 +41,18 @@ func getPostgresURI() string {
 }
 
 func main() {
+	signingKey, err := auth.GetSigningKey()
+
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+
+	_, err = auth.GetVerifyingKey()
+
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+
 	// Validator
 	validate := validator.New()
 
@@ -67,7 +79,7 @@ func main() {
 	e.Validator = &Validator{validator: validate}
 
 	au := auth.NewStore(db)
-	authHandler := auth.NewHandler(*au)
+	authHandler := auth.NewHandler(*au, signingKey)
 	authHandler.Register(e)
 
 	e.GET("/", func(c echo.Context) error {
