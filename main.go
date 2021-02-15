@@ -56,9 +56,6 @@ func main() {
 	// Validator
 	validate := validator.New()
 
-	validate.RegisterStructValidation(auth.LoginPayloadValidation, auth.LoginPayload{})
-	validate.RegisterStructValidation(auth.SignUpPayloadValidation, auth.SignUpPayload{})
-
 	db, err := sqlx.Connect("pgx", getPostgresURI())
 
 	if err != nil {
@@ -76,12 +73,11 @@ func main() {
 	// Body Limit Middleware
 	e.Use(middleware.BodyLimit("10M"))
 
-	e.Validator = &Validator{validator: validate}
-
 	au := auth.NewStore(db)
 	authHandler := auth.NewHandler(*au, signingKey)
-	authHandler.Register(e)
+	authHandler.Register(e, validate)
 
+	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello World!")
 	})
