@@ -1,6 +1,8 @@
 package auth
 
-import "github.com/jmoiron/sqlx"
+import (
+	"github.com/jmoiron/sqlx"
+)
 
 // Store stores db instance
 type Store struct {
@@ -58,23 +60,20 @@ func (au *Store) GetByEmail(email string) (*Auth, error) {
 }
 
 // CreateWithEmail creates auth row with email in db
-func (au *Store) CreateWithEmail(email string, passwordHash []byte) (int, error) {
-	row := au.db.QueryRow(insertEmailAuth, email, passwordHash, EMAIL)
-	var id int
+func (au *Store) CreateWithEmail(auth *Auth) (int, error) {
+	row := au.db.QueryRow(insertEmailAuth, auth.Email, auth.PasswordHash, EMAIL)
+	var id int = -1
 
-	if err := row.Scan(&id); err != nil {
-		return -1, err
-	}
-	return id, nil
+	err := row.Scan(&id)
+
+	return id, err
 }
 
 // CreateWithToken creates auth row with token in db
-func (au *Store) CreateWithToken(token string, authType string) (int, error) {
-	row := au.db.QueryRow(insertToken, token, authType)
-	var id int
+func (au *Store) CreateWithToken(auth *Auth) (int, error) {
+	row := au.db.QueryRow(insertToken, auth.Token, auth.AuthType)
+	var id int = -1
+	err := row.Scan(&id)
 
-	if err := row.Scan(&id); err != nil {
-		return -1, err
-	}
-	return id, nil
+	return id, err
 }

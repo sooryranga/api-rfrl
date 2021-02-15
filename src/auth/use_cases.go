@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"database/sql"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -8,7 +9,11 @@ import (
 )
 
 func (h *Handler) signupGoogle(token string) (string, error) {
-	_, err := h.authStore.CreateWithToken(token, GOOGLE)
+	auth := Auth{
+		AuthType: GOOGLE,
+		Token:    sql.NullString{String: token, Valid: true},
+	}
+	_, err := h.authStore.CreateWithToken(&auth)
 
 	if err != nil {
 		return "", err
@@ -26,7 +31,11 @@ func (h *Handler) signupGoogle(token string) (string, error) {
 }
 
 func (h *Handler) signupLinkedIn(token string) (string, error) {
-	_, err := h.authStore.CreateWithToken(token, LINKEDIN)
+	auth := Auth{
+		AuthType: LINKEDIN,
+		Token:    sql.NullString{String: token, Valid: true},
+	}
+	_, err := h.authStore.CreateWithToken(&auth)
 
 	if err != nil {
 		return "", err
@@ -50,7 +59,11 @@ func (h *Handler) signupEmail(email string, password string) (string, error) {
 		return "", err
 	}
 
-	_, err = h.authStore.CreateWithEmail(email, hash)
+	auth := Auth{
+		Email:        sql.NullString{String: email, Valid: true},
+		PasswordHash: hash,
+	}
+	_, err = h.authStore.CreateWithEmail(&auth)
 
 	if err != nil {
 		return "", err

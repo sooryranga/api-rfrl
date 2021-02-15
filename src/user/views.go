@@ -1,10 +1,17 @@
 package user
 
-import "github.com/go-playground/validator"
+import (
+	"net/http"
+
+	"github.com/go-playground/validator"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+)
 
 type (
 	// UserPayload is the struct used to hold payload from /user
 	UserPayload struct {
+		ID        string `path:"id"`
 		Email     string `json:"email" validate:"omitempty,email"`
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
@@ -23,28 +30,33 @@ type (
 	}
 )
 
-// SignUpPayloadValidation validates user inputs
-func SignUpPayloadValidation(sl validator.StructLevel) {
+// UserPayloadValidation validates user inputs
+func UserPayloadValidation(sl validator.StructLevel) {
 
-	payload := sl.Current().Interface().(SignUpPayload)
+	payload := sl.Current().Interface().(UserPayload)
 
-	switch payload.Type {
-	case GOOGLE:
-		if len(payload.Token) == 0 {
-			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
-		}
-	case LINKEDIN:
-		if len(payload.Token) == 0 {
-			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
-		}
-	case EMAIL:
-		if len(payload.Email) == 0 {
-			sl.ReportError(payload.Email, "email", "Email", "validEmail", "")
-		}
-		if len(payload.Password) < 10 {
-			sl.ReportError(payload.Email, "password", "Password", "validPassworrd", "")
+	if payload.ID != "" {
+		_, err := uuid.Parse(payload.ID)
+		if err != nil {
+			sl.ReportError(payload.Email, "id", "Id", "validUUID", "")
 		}
 	}
 
 	// plus can do more, even with different tag than "fnameorlname"
+}
+
+func (h *Handler) CreateUser(c echo.Context) error {
+	payload := UserPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+}
+
+func (h *Handler) UpdateUser(c echo.Context) error {
+	payload := UserPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 }

@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile.dev
     secrets:
       - db-password
+      - rsa
+      - public-rsa
     depends_on:
       database:
         condition: service_healthy
@@ -18,6 +20,8 @@ services:
     environment:
       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
       - POSTGRES_URI=postgres://tutorme:__PASSWORD__@database:5432/tutorme?sslmode=disable
+      - RSA_FILE=/run/secrets/rsa
+      - PUBLIC_RSA_FILE=/run/secrets/public-rsa
     volumes:
       - ./:/app
 
@@ -50,3 +54,5 @@ secrets:
     file: db/password.txt
   rsa:
     file: id_rsa
+  public-rsa:
+    file: id_rsa.pub.pkcs8
