@@ -5,19 +5,20 @@ import (
 	"io/ioutil"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/jmoiron/sqlx"
 )
 
 // Handler handles all request within auth
 type Handler struct {
-	userStore Store
-	key       *rsa.PublicKey
+	db  *sqlx.DB
+	key *rsa.PublicKey
 }
 
 // NewHandler creates a handler
-func NewHandler(us Store, key *rsa.PublicKey) *Handler {
+func NewHandler(db *sqlx.DB, key *rsa.PublicKey) *Handler {
 	return &Handler{
-		userStore: us,
-		key:       key,
+		db:  db,
+		key: key,
 	}
 }
 

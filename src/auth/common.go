@@ -7,19 +7,20 @@ import (
 	"os"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // Handler handles all request within auth
 type Handler struct {
-	authStore  Store
+	db         *sqlx.DB
 	signingKey *rsa.PrivateKey
 }
 
 // NewHandler creates a handler
-func NewHandler(au Store, key *rsa.PrivateKey) *Handler {
+func NewHandler(db *sqlx.DB, key *rsa.PrivateKey) *Handler {
 	return &Handler{
-		authStore:  au,
+		db:         db,
 		signingKey: key,
 	}
 }

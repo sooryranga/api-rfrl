@@ -1,20 +1,10 @@
 package auth
 
 import (
-	"github.com/jmoiron/sqlx"
+	"os/user"
+
+	"github.com/Arun4rangan/api-tutorme/src/db"
 )
-
-// Store stores db instance
-type Store struct {
-	db *sqlx.DB
-}
-
-// NewStore creates auth store for querying
-func NewStore(db *sqlx.DB) *Store {
-	return &Store{
-		db: db,
-	}
-}
 
 const (
 	getByToken string = `
@@ -40,9 +30,9 @@ RETURNING id
 )
 
 // GetByToken queries the database for token auth from providers
-func (au *Store) GetByToken(token string, authType string) (*Auth, error) {
+func GetByToken(db db.DB, token string, authType string) (*Auth, error) {
 	var m Auth
-	err := au.db.QueryRowx(getByToken, token, authType).StructScan(&m)
+	err := db.QueryRowx(getByToken, token, authType).StructScan(&m)
 	if err != nil {
 		return nil, err
 	}
@@ -50,9 +40,9 @@ func (au *Store) GetByToken(token string, authType string) (*Auth, error) {
 }
 
 // GetByEmail queries the database for email auth
-func (au *Store) GetByEmail(email string) (*Auth, error) {
+func GetByEmail(db db.DB, email string) (*Auth, error) {
 	var m Auth
-	err := au.db.QueryRowx(getByEmail, email, EMAIL).StructScan(&m)
+	err := db.QueryRowx(getByEmail, email, EMAIL).StructScan(&m)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +50,8 @@ func (au *Store) GetByEmail(email string) (*Auth, error) {
 }
 
 // CreateWithEmail creates auth row with email in db
-func (au *Store) CreateWithEmail(auth *Auth) (int, error) {
-	row := au.db.QueryRow(insertEmailAuth, auth.Email, auth.PasswordHash, EMAIL)
+func CreateWithEmail(db db.DB, auth *Auth) (int, error) {
+	row := db.QueryRowx(insertEmailAuth, auth.Email, auth.PasswordHash, EMAIL)
 	var id int = -1
 
 	err := row.Scan(&id)
@@ -70,8 +60,8 @@ func (au *Store) CreateWithEmail(auth *Auth) (int, error) {
 }
 
 // CreateWithToken creates auth row with token in db
-func (au *Store) CreateWithToken(auth *Auth) (int, error) {
-	row := au.db.QueryRow(insertToken, auth.Token, auth.AuthType)
+func CreateWithToken(db db.DB, auth *Auth, user *user.User) (int, error) {
+	row := db.QueryRowx(insertToken, auth.Token, auth.AuthType)
 	var id int = -1
 	err := row.Scan(&id)
 
