@@ -3,9 +3,11 @@ module github.com/Arun4rangan/api-tutorme
 go 1.15
 
 require (
+	github.com/Masterminds/squirrel v1.5.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible
+	github.com/google/uuid v1.2.0
 	github.com/jackc/pgconn v1.8.0
 	github.com/jackc/pgerrcode v0.0.0-20201024163028-a0d42d470451
 	github.com/jackc/pgx/v4 v4.10.1

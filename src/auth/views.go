@@ -14,12 +14,14 @@ import (
 type (
 	// SignUpPayload is the struct used to hold payload from /signup
 	SignUpPayload struct {
-		Email           string `json:"email" validate:"omitempty,email"`
-		Name            string `json:"name"`
-		Token           string `json:"token"`
-		ProfileImageURL string `json:"profileImageURL"`
-		Password        string `json:"password" validate:"omitempty,gte=10"`
-		Type            string `json:"type" validate:"required,oneof= google linkedin email"`
+		Email     string `json:"email" validate:"omitempty,email"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Token     string `json:"token"`
+		Photo     string `json:"profileImageURL"`
+		About     string `json:"about"`
+		Password  string `json:"password" validate:"omitempty,gte=10"`
+		Type      string `json:"type" validate:"required,oneof= google linkedin email"`
 	}
 )
 
