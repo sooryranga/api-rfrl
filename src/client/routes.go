@@ -1,4 +1,4 @@
-package user
+package client
 
 import (
 	"github.com/go-playground/validator"
@@ -8,11 +8,11 @@ import (
 
 // Register auth routes
 func (h *Handler) Register(e *echo.Echo, validate *validator.Validate) {
-	r := e.Group("/user")
+	r := e.Group("/client")
 	r.Use(middleware.JWT(h.key))
 
-	validate.RegisterStructValidation(userPayloadValidation, UserPayload{})
-	r.POST("/user", h.CreateUserEndpoint)
-	r.PUT("/user/:id", h.UpdateUserEndpoint)
-	r.GET("/user/:id", h.GetUserEndpoint)
+	validate.RegisterStructValidation(clientPayloadValidation, ClientPayload{})
+	r.POST("/client", h.CreateClientEndpoint)
+	r.PUT("/client/:id", h.UpdateClientEndpoint)
+	r.GET("/client/:id", h.GetClientEndpoint)
 }

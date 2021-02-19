@@ -27,7 +27,8 @@ func NewHandler(db *sqlx.DB, key *rsa.PrivateKey) *Handler {
 
 // JWTClaims are custom claims extending default ones.
 type JWTClaims struct {
-	ID    string `json:"email"`
+	id    string `json:"id"`
+	email string `json:"email"`
 	Admin bool   `json:"admin"`
 	jwt.StandardClaims
 }

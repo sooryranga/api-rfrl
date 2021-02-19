@@ -1,13 +1,13 @@
-package user
+package client
 
 import (
 	"database/sql"
 	"time"
 )
 
-// User model
-type User struct {
-	ID        int            `db:"id" json:"id"`
+// Client model
+type Client struct {
+	ID        string         `db:"id" json:"id"`
 	CreatedAt time.Time      `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at" json:"updated_at"`
 	FirstName sql.NullString `db:"first_name" json:"first_name"`
@@ -17,30 +17,31 @@ type User struct {
 	Photo     sql.NullString `db:"photo" json:"photo"`
 }
 
-func newUser(
+// NewClient creates new client model struct
+func NewClient(
 	firstName string,
 	lastName string,
 	about string,
 	email string,
 	photo string,
-) *User {
-	user := User{}
+) *Client {
+	client := Client{}
 	if firstName != "" {
-		user.FirstName = sql.NullString{String: firstName, Valid: true}
+		client.FirstName = sql.NullString{String: firstName, Valid: true}
 	}
 	if lastName != "" {
-		user.LastName = sql.NullString{String: lastName, Valid: true}
+		client.LastName = sql.NullString{String: lastName, Valid: true}
 	}
 	if about != "" {
-		user.About = sql.NullString{String: about, Valid: true}
+		client.About = sql.NullString{String: about, Valid: true}
 	}
 	if email != "" {
-		user.Email = sql.NullString{String: email, Valid: true}
+		client.Email = sql.NullString{String: email, Valid: true}
 	}
 	if photo != "" {
-		user.Photo = sql.NullString{String: photo, Valid: true}
+		client.Photo = sql.NullString{String: photo, Valid: true}
 	}
-	return &user
+	return &client
 }
 
 // Education model
