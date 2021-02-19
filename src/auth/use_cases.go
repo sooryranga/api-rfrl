@@ -4,10 +4,47 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/Arun4rangan/api-tutorme/src/user"
+	"github.com/Arun4rangan/api-tutorme/src/client"
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func (h *Handler) signupWithToken(newClient *client.Client, auth *Auth) (*client.Client, error) {
+	tx, err := h.db.Beginx()
+
+	if err != nil {
+		return nil, err
+	}
+
+	newClient, err = client.CreateClient(tx, newClient)
+
+	if err != nil {
+		if rb := tx.Rollback(); rb != nil {
+			return nil, errors.Wrap(rb, err.Error())
+		}
+		return nil, err
+	}
+
+	_, err = CreateWithToken(h.db, auth, newClient.ID)
+
+	if err != nil {
+		if rb := tx.Rollback(); rb != nil {
+			return nil, errors.Wrap(rb, err.Error())
+		}
+		return nil, err
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		if rb := tx.Rollback(); rb != nil {
+			return nil, errors.Wrap(rb, err.Error())
+		}
+		return nil, err
+	}
+	return newClient, nil
+}
 
 func (h *Handler) signupGoogle(
 	token string,
@@ -16,89 +53,91 @@ func (h *Handler) signupGoogle(
 	lastName string,
 	photo string,
 	about string,
-) (string, error) {
+) (*client.Client, error) {
 
-	tx, err := h.db.Begin()
-
-	if err != nil {
-		return "", err
-	}
-	users := user.User{
-		firstName: sql.NullString{String: firstName},
-		LastName:  lastName,
-	}
+	newClient := client.NewClient(firstName, lastName, about, email, photo)
 	auth := Auth{
 		AuthType: GOOGLE,
-		Token:    token,
-	}
-	_, err := CreateWithToken(h.db, &auth, nil)
-
-	if err != nil {
-		return "", err
+		Token:    sql.NullString{String: token, Valid: true},
 	}
 
-	claims := &JWTClaims{
-		"",
-		true,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
-		},
-	}
-
-	return h.GenerateToken(claims)
+	return h.signupWithToken(newClient, &auth)
 }
 
-func (h *Handler) signupLinkedIn(token string) (string, error) {
+func (h *Handler) signupLinkedIn(
+	token string,
+	email string,
+	firstName string,
+	lastName string,
+	photo string,
+	about string,
+) (*client.Client, error) {
+
+	newClient := client.NewClient(firstName, lastName, about, email, photo)
+
 	auth := Auth{
 		AuthType: LINKEDIN,
 		Token:    sql.NullString{String: token, Valid: true},
 	}
-	_, err := CreateWithToken(h.db, &auth)
 
-	if err != nil {
-		return "", err
-	}
-
-	claims := &JWTClaims{
-		"",
-		true,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
-		},
-	}
-
-	return h.GenerateToken(claims)
+	return h.signupWithToken(newClient, &auth)
 }
 
-func (h *Handler) signupEmail(email string, password string) (string, error) {
+func (h *Handler) signupEmail(
+	password string,
+	token string,
+	email string,
+	firstName string,
+	lastName string,
+	photo string,
+	about string,
+) (*client.Client, error) {
 	hash, err := hashAndSalt([]byte(password))
 
 	if err != nil {
 		return "", err
 	}
 
+	newClient := client.NewClient(firstName, lastName, about, email, photo)
 	auth := Auth{
 		Email:        sql.NullString{String: email, Valid: true},
 		PasswordHash: hash,
 	}
-	_, err = CreateWithEmail(h.db, &auth)
+
+	tx, err := h.db.Beginx()
+	if err != nil {
+		return nil, err
+	}
+
+	newClient, err = client.CreateClient(tx, newClient)
+	if err != nil {
+		if rb := tx.Rollback(); rb != nil {
+			return nil, errors.Wrap(rb, err.Error())
+		}
+		return nil, err
+	}
+
+	_, err = CreateWithEmail(tx, &auth, newClient.ID)
 
 	if err != nil {
-		return "", err
+		if rb := tx.Rollback(); rb != nil {
+			return nil, errors.Wrap(rb, err.Error())
+		}
+		return nil, err
 	}
 
-	claims := &JWTClaims{
-		email,
-		true,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
-		},
-	}
+	err = tx.Commit()
 
-	return h.GenerateToken(claims)
+	if err != nil {
+		if rb := tx.Rollback(); rb != nil {
+			return nil, errors.Wrap(rb, err.Error())
+		}
+		return nil, err
+	}
+	return newClient, nil
 }
 
-func (h *Handler) loginEmail(email string, password string) (string, error) {
+func (h *Handler) loginEmail(email string, password string) (*client.Client, error) {
 	auth, err := GetByEmail(h.db, email)
 
 	if err != nil {
@@ -114,33 +153,17 @@ func (h *Handler) loginEmail(email string, password string) (string, error) {
 		return "", err
 	}
 
-	claims := &JWTClaims{
-		email,
-		true,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
-		},
-	}
-
-	return h.GenerateToken(claims)
+	return client.GetClientFromID(h.db, auth.ClientID)
 }
 
 func (h *Handler) loginGoogle(token string) (string, error) {
-	_, err := GetByToken(h.db, token, GOOGLE)
+	auth, err := GetByToken(h.db, token, GOOGLE)
 
 	if err != nil {
 		return "", err
 	}
 
-	claims := &JWTClaims{
-		"",
-		true,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
-		},
-	}
-
-	return h.GenerateToken(claims)
+	return "", err
 }
 
 func (h *Handler) loginLinkedIn(token string) (string, error) {

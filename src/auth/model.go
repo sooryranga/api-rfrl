@@ -7,11 +7,12 @@ import (
 
 // Auth model
 type Auth struct {
-	ID           int            `db:"id"`
+	ID           string         `db:"id"`
 	CreatedAt    time.Time      `db:"created_at"`
 	UpdatedAt    time.Time      `db:"updated_at"`
 	Token        sql.NullString `db:"token"`
 	AuthType     string         `db:"auth_type"`
 	Email        sql.NullString `db:"email"`
 	PasswordHash []byte         `db:"password_hash"`
+	ClientID     string         `db:"client_id"`
 }

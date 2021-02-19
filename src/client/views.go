@@ -1,4 +1,4 @@
-package user
+package client
 
 import (
 	"net/http"
@@ -9,8 +9,8 @@ import (
 )
 
 type (
-	// UserPayload is the struct used to hold payload from /user
-	UserPayload struct {
+	// ClientPayload is the struct used to hold payload from /client
+	ClientPayload struct {
 		ID        string `path:"id"`
 		Email     string `json:"email" validate:"omitempty,email"`
 		FirstName string `json:"first_name"`
@@ -30,10 +30,10 @@ type (
 	}
 )
 
-// UserPayloadValidation validates user inputs
-func userPayloadValidation(sl validator.StructLevel) {
+// ClientPayloadValidation validates client inputs
+func clientPayloadValidation(sl validator.StructLevel) {
 
-	payload := sl.Current().Interface().(UserPayload)
+	payload := sl.Current().Interface().(ClientPayload)
 
 	if payload.ID != "" {
 		_, err := uuid.Parse(payload.ID)
@@ -45,15 +45,15 @@ func userPayloadValidation(sl validator.StructLevel) {
 	// plus can do more, even with different tag than "fnameorlname"
 }
 
-// CreateUserEndpoint view is an endpoint used to create user
-func (h *Handler) CreateUserEndpoint(c echo.Context) error {
-	payload := UserPayload{}
+// CreateClientEndpoint view is an endpoint used to create client
+func (h *Handler) CreateClientEndpoint(c echo.Context) error {
+	payload := ClientPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	user, err := h.createUser(
+	client, err := h.createClient(
 		payload.FirstName,
 		payload.LastName,
 		payload.About,
@@ -65,18 +65,18 @@ func (h *Handler) CreateUserEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, user)
+	return c.JSON(http.StatusCreated, client)
 }
 
-// UpdateUserEndpoint view is an endpoint uused to create user
-func (h *Handler) UpdateUserEndpoint(c echo.Context) error {
-	payload := UserPayload{}
+// UpdateClientEndpoint view is an endpoint uused to create client
+func (h *Handler) UpdateClientEndpoint(c echo.Context) error {
+	payload := ClientPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	user, err := h.updateUser(
+	client, err := h.updateClient(
 		payload.ID,
 		payload.FirstName,
 		payload.LastName,
@@ -89,18 +89,18 @@ func (h *Handler) UpdateUserEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, user)
+	return c.JSON(http.StatusOK, client)
 }
 
-// GetUserEndpoint view is an endpoint uused to create user
-func (h *Handler) GetUserEndpoint(c echo.Context) error {
+// GetClientEndpoint view is an endpoint uused to create client
+func (h *Handler) GetClientEndpoint(c echo.Context) error {
 	id := c.Param("id")
 
-	user, err := h.getUser(id)
+	client, err := h.getClient(id)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	return c.JSON(http.StatusOK, user)
+	return c.JSON(http.StatusOK, client)
 
 }

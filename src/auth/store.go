@@ -1,19 +1,19 @@
 package auth
 
 import (
-	"os/user"
-
 	"github.com/Arun4rangan/api-tutorme/src/db"
 )
 
 const (
 	getByToken string = `
-SELECT * FROM auth 
+SELECT client.*, password FROM auth 
+JOIN client ON auth.id == client.id
 WHERE auth.token =$1 AND auth.auth_type =$2 
 LIMIT 1
 	`
 	getByEmail string = `
 SELECT * FROM auth 
+JOIN client ON auth.id == client.id
 WHERE auth.email =$1 AND auth.auth_type =$2 
 LIMIT 1
 	`
@@ -50,7 +50,7 @@ func GetByEmail(db db.DB, email string) (*Auth, error) {
 }
 
 // CreateWithEmail creates auth row with email in db
-func CreateWithEmail(db db.DB, auth *Auth) (int, error) {
+func CreateWithEmail(db db.DB, auth *Auth, clientID string) (int, error) {
 	row := db.QueryRowx(insertEmailAuth, auth.Email, auth.PasswordHash, EMAIL)
 	var id int = -1
 
@@ -60,7 +60,7 @@ func CreateWithEmail(db db.DB, auth *Auth) (int, error) {
 }
 
 // CreateWithToken creates auth row with token in db
-func CreateWithToken(db db.DB, auth *Auth, user *user.User) (int, error) {
+func CreateWithToken(db db.DB, auth *Auth, clientID string) (int, error) {
 	row := db.QueryRowx(insertToken, auth.Token, auth.AuthType)
 	var id int = -1
 	err := row.Scan(&id)
