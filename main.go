@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/gommon/log"
 
 	"github.com/Arun4rangan/api-tutorme/src/auth"
+	"github.com/Arun4rangan/api-tutorme/src/client"
 )
 
 // Validator for echo
@@ -47,7 +48,9 @@ func main() {
 		panic(fmt.Sprintf("%v", err))
 	}
 
-	_, err = auth.GetVerifyingKey()
+	publicKey, err := auth.GetVerifyingKey()
+
+	fmt.Println(fmt.Sprintf("%v", publicKey))
 
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
@@ -75,6 +78,9 @@ func main() {
 
 	authHandler := auth.NewHandler(db, signingKey)
 	authHandler.Register(e, validate)
+
+	clientHandler := client.NewHandler(db, publicKey)
+	clientHandler.Register(e, validate)
 
 	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {
