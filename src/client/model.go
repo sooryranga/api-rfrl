@@ -3,6 +3,8 @@ package client
 import (
 	"database/sql"
 	"time"
+
+	"github.com/labstack/gommon/log"
 )
 
 // Client model
@@ -41,6 +43,7 @@ func NewClient(
 	if photo != "" {
 		client.Photo = sql.NullString{String: photo, Valid: true}
 	}
+	log.Errorf("%v", client)
 	return &client
 }
 

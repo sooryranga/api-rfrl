@@ -95,5 +95,5 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	e.Logger.Debug(e.StartServer(s))
+	e.Logger.Fatal(e.StartServer(s))
 }
