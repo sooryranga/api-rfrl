@@ -12,14 +12,10 @@ CREATE TABLE IF NOT EXISTS client (
   email VARCHAR(40),
   photo VARCHAR(120),
   CONSTRAINT id_tbl PRIMARY KEY ( id )
-)
+);
 
-ALTER TABLE auth 
-  ADD COLUMN client_id UUID
-  NOT NULL DEFAULT gen_random_uuid()
-  IF NOT EXISTS client_id;
-
-ALTER TABLE auth ALTER COLUMN client_id DROP DEFAULT;
+ALTER TABLE IF EXISTS auth 
+  ADD COLUMN client_id UUID;
 
 ALTER TABLE IF EXISTS auth 
   DROP CONSTRAINT IF EXISTS fk_client_id;
