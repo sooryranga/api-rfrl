@@ -1,4 +1,4 @@
-package client
+package document
 
 import (
 	"crypto/rsa"

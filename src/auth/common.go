@@ -8,6 +8,7 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/jmoiron/sqlx"
+	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,9 +28,9 @@ func NewHandler(db *sqlx.DB, key *rsa.PrivateKey) *Handler {
 
 // JWTClaims are custom claims extending default ones.
 type JWTClaims struct {
-	id    string `json:"id"`
-	email string `json:"email"`
-	Admin bool   `json:"admin"`
+	UserID string `json:"id"`
+	Email  string `json:"email"`
+	Admin  bool   `json:"admin"`
 	jwt.StandardClaims
 }
 
@@ -79,6 +80,11 @@ func GetSigningKey() (*rsa.PrivateKey, error) {
 	}
 
 	return jwt.ParseRSAPrivateKeyFromPEM(keyData)
+}
+
+func GetClaims(c echo.Context) JWTClaims {
+	user := c.Get("user").(*jwt.Token)
+	return user.Claims.(JWTClaims)
 }
 
 // GenerateToken creates token
