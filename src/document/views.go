@@ -19,7 +19,7 @@ type (
 	// EducationPaylod is the struct used to create education
 	DocumentOrderPayload struct {
 		RefType     string `json:"ref_type" validate:"required,oneof= user session"`
-		RedIf       string `json:"ref_id" validate:"gte=0,base64"`
+		RefID       string `json:"ref_id" validate:"gte=0,base64"`
 		DocumentIDs []int  `json:"document_ids" validate:"required,gt=0,dive,required,numeric"`
 	}
 )
@@ -35,10 +35,10 @@ func (h *Handler) CreateDocumentEndpoint(c echo.Context) error {
 	claims := auth.GetClaims(c)
 
 	client, err := h.createDocument(
+		claims.UserID,
 		payload.Src,
 		payload.Name,
 		payload.description,
-		claims.UserID,
 	)
 
 	if err != nil {
@@ -48,7 +48,7 @@ func (h *Handler) CreateDocumentEndpoint(c echo.Context) error {
 	return c.JSON(http.StatusCreated, client)
 }
 
-// UpdateDocumentEndpoint view is an endpoint uused to create client
+// UpdateDocumentEndpoint view is an endpoint used to update document
 func (h *Handler) UpdateDocumentEndpoint(c echo.Context) error {
 	payload := DocumentPayload{}
 
@@ -56,7 +56,10 @@ func (h *Handler) UpdateDocumentEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	claims := auth.GetClaims(c)
+
 	client, err := h.updateDocument(
+		claims.UserID,
 		payload.ID,
 		payload.Src,
 		payload.Name,
@@ -70,12 +73,12 @@ func (h *Handler) UpdateDocumentEndpoint(c echo.Context) error {
 	return c.JSON(http.StatusOK, client)
 }
 
-// DeleteDocumentEndpoint view is an endpoint uused to create client
+// DeleteDocumentEndpoint view is an endpoint to delete document
 func (h *Handler) DeleteDocumentEndpoint(c echo.Context) error {
 	id := c.Param("id")
 	claims := auth.GetClaims(c)
 
-	client, err := h.deleteDocument(id, claims.UserID)
+	err := h.deleteDocument(id, claims.UserID)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -84,7 +87,7 @@ func (h *Handler) DeleteDocumentEndpoint(c echo.Context) error {
 	return c.JSON(http.StatusOK, client)
 }
 
-// GetDocumentEndpoint view is an endpoint uused to create client
+// GetDocumentEndpoint view is an endpoint used to get document
 func (h *Handler) GetDocumentEndpoint(c echo.Context) error {
 	id := c.Param("id")
 
@@ -96,5 +99,76 @@ func (h *Handler) GetDocumentEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusOK, client)
+}
 
+// CreateDocumentOrderEndpoint view is an endpoint used to create document order
+func (h *Handler) CreateDocumentOrderEndpoint(c echo.Context) error {
+	payload := DocumentOrderPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	claims := auth.GetClaims(c)
+
+	order, err := h.createDocumentOrder(
+		claims.UserID,
+		payload.DocumentIDs,
+		payload.RefID,
+		payload.DocumentIDs,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, order)
+}
+
+// UpdateDocumentOrderEndpoint is used to update document order
+func (h *Handler) UpdateDocumentOrderEndpoint(c echo.Context) error {
+	payload := DocumentOrderPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	claims := auth.GetClaims(c)
+
+	listOfDocuments, err := h.createDocumentOrder(
+		claims.UserID,
+		payload.DocumentIDs,
+		payload.RefID,
+		payload.DocumentIDs,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, listOfDocuments)
+}
+
+// GetDocumentOrderEndpoint is used to get documents in order
+func (h *Handler) GetDocumentOrderEndpoint(c echo.Context) error {
+	payload := DocumentOrderPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	claims := auth.GetClaims(c)
+
+	listOfDocuments, err := h.getDocumentOrder(
+		claims.UserID,
+		payload.DocumentIDs,
+		payload.RefID,
+		payload.DocumentIDs,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, listOfDocuments)
 }
