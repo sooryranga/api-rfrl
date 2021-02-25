@@ -1,0 +1,23 @@
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS document (
+  id SERIAL PRIMARY KEY, 
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  src VARCHAR(120) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  description TEXT,
+  client_id UUID REFERENCES client ( id )
+);
+
+CREATE TABLE IF NOT EXISTS document_order (
+  id SERIAL PRIMARY KEY, 
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ref_type VARCHAR(120) NOT NULL,
+  ref_id VARCHAR(60) NOT NULL,
+  page INT,
+  document_id INT REFERENCES document ( id ),
+  UNIQUE (ref_type, ref_id, page)
+);
+
+COMMIT;

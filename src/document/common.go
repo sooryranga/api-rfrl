@@ -19,3 +19,8 @@ func NewHandler(db *sqlx.DB, key *rsa.PublicKey) *Handler {
 		key: key,
 	}
 }
+
+const (
+	ClientRef  string = "client"
+	SessionRef string = "session"
+)

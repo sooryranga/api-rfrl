@@ -13,25 +13,26 @@ type Document struct {
 	Src         string         `db:"src" json:"src" mapstructure:"src"`
 	Name        string         `db:"name" json:"name" mapstructure:"name"`
 	Description sql.NullString `db:"description" json:"description" mapstructure:"description"`
-	UserID      string         `db:"user_id"`
+	ClientID    string         `db:"client_id"`
 }
 
 type DocumentOrder struct {
-	ID         int    `db:"id" json:"id"`
-	RefType    string `db:"ref_type" json:"ref_type"`
-	RefID      string `db:"ref_id" json:"ref_id"`
-	DocumentID int    `db:"document_id" json:"document_id"`
-	Order      int    `db:"order" json"order"`
+	ID         int       `db:"id" json:"id"`
+	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+	RefType    string    `db:"ref_type" json:"ref_type"`
+	RefID      string    `db:"ref_id" json:"ref_id"`
+	DocumentID int       `db:"document_id" json:"document_id"`
+	Page       int       `db:"page" json"page"`
 }
 
 // NewDocument creates new client model struct
 func NewDocument(
-	userID string,
+	clientID string,
 	src string,
 	name string,
 	description string,
 ) *Document {
-	document := Document{Name: name, Src: src, UserID: userID}
+	document := Document{Name: name, Src: src, ClientID: clientID}
 	if description != "" {
 		document.Description = sql.NullString{String: description, Valid: true}
 	}
@@ -42,12 +43,12 @@ func NewDocumentOrder(
 	refType string,
 	refID string,
 	documentID int,
-	order int,
+	page int,
 ) *DocumentOrder {
 	return &DocumentOrder{
 		RefType:    refType,
 		RefID:      refID,
 		DocumentID: documentID,
-		Order:      order,
+		Page:       page,
 	}
 }

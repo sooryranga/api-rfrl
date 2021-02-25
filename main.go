@@ -17,6 +17,7 @@ import (
 
 	"github.com/Arun4rangan/api-tutorme/src/auth"
 	"github.com/Arun4rangan/api-tutorme/src/client"
+	"github.com/Arun4rangan/api-tutorme/src/document"
 )
 
 // Validator for echo
@@ -81,6 +82,9 @@ func main() {
 
 	clientHandler := client.NewHandler(db, publicKey)
 	clientHandler.Register(e, validate)
+
+	documentHandler := document.NewHandler(db, publicKey)
+	documentHandler.Register(e)
 
 	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {
