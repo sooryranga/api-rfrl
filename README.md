@@ -16,3 +16,6 @@ Logging :
   "args": args,
  })
 ```
+
+To create migration:
+`migrate create -ext sql  -dir ./migration <file_name>`

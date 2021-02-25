@@ -1,82 +1,187 @@
 package document
 
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+)
+
 func (h *Handler) createDocument(
-	userID string,
+	clientID string,
 	src string,
 	name string,
 	description string,
 ) (*Document, error) {
-	document := NewDocument(userID, src, name, description)
+	document := NewDocument(clientID, src, name, description)
 	return CreateDocument(h.db, document)
 }
 
 func (h *Handler) updateDocument(
-	userID string,
+	clientID string,
 	ID int,
 	src string,
 	name string,
 	description string,
 ) (*Document, error) {
-	document := NewDocument(userID, src, name, description)
-	return UpdateDocument(h.db, document)
+	document := NewDocument(clientID, src, name, description)
+	return UpdateDocument(h.db, ID, document)
 }
 
 func (h *Handler) deleteDocument(
-	userID string,
+	clientID string,
 	ID int,
 ) error {
-	return DeleteDocument(h.db, ID, userID)
+	tx, err := h.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	err = RemoveAndRenumberDocumentsOrder(tx, ID, clientID)
+
+	if err != nil {
+		if rb := tx.Rollback(); rb != nil {
+			return errors.Wrap(rb, err.Error())
+		}
+		return err
+	}
+
+	err = DeleteDocument(tx, ID, clientID)
+
+	if err != nil {
+		if rb := tx.Rollback(); rb != nil {
+			return errors.Wrap(rb, err.Error())
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (h *Handler) getDocument(
 	id int,
-	userID string,
+	clientID string,
 ) (*Document, error) {
-	return getDocument(h.db, ID, userID)
+	return GetDocument(h.db, id, clientID)
 }
 
 func (h *Handler) createDocumentOrder(
-	userId string,
+	clientID string,
 	documentIds []int,
 	refID string,
 	refType string,
 ) ([]Document, error) {
-	if err := h.checkUserIsInRef(userId, refType, refID); err != nil {
-		return err
+	check, err := h.checkclientIsInRef(clientID, refType, refID)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := h.checkDocumentsAreForRef(documentIds, refType, refID); err != nil {
+	if !check {
+		return nil, errors.Errorf("Unauthorized to create document-order")
+	}
+
+	check, err = h.checkDocumentsAreForRef(documentIds, refType, refID)
+
+	if err != nil {
 		return nil, err
+	}
+
+	if !check {
+		return nil, errors.Errorf(
+			"Documents are not related to client: Document - %v",
+			documentIds,
+		)
 	}
 
 	return CreateDocumentOrder(h.db, documentIds, refType, refID)
 }
 
 func (h *Handler) updateDocumentOrder(
-	userId string,
+	clientID string,
 	documentIds []int,
 	refID string,
 	refType string,
 ) ([]Document, error) {
-	if err := h.checkUserIsInRef(userId, refType, refID); err != nil {
-		return err
+	check, err := h.checkclientIsInRef(clientID, refType, refID)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := checkDocumentsAreForRef(documentIds, refType, refID); err != nil {
+	if !check {
+		return nil, errors.Errorf("Unauthorized to update document-order")
+	}
+
+	check, err = h.checkDocumentsAreForRef(documentIds, refType, refID)
+
+	if err != nil {
 		return nil, err
+	}
+
+	if !check {
+		return nil, errors.Errorf(
+			"Documents are not related to client: Document - %v",
+			documentIds,
+		)
 	}
 
 	return UpdateDocumentOrder(h.db, documentIds, refType, refID)
 }
 
 func (h *Handler) getDocumentOrder(
-	userID string,
+	clientID string,
 	refID string,
 	refType string,
 ) ([]Document, error) {
-	if err := h.checkUserIsInRef(userId, refType, refID); err != nil {
-		return err
+	check, err := h.checkclientIsInRef(clientID, refType, refID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !check {
+		return nil, errors.New(
+			fmt.Sprintf("Client is not part of the ref_type (%s, %s)", refType, refID),
+		)
 	}
 
 	return GetDocumentOrder(h.db, refType, refID)
+}
+
+func (h *Handler) checkDocumentsAreForRef(
+	documentIds []int,
+	refType string,
+	refID string,
+) (bool, error) {
+	var clientIDs []string
+	if refType == ClientRef {
+		clientIDs = []string{refID}
+	} else if refType == SessionRef {
+		// clientIDs = session.GetClientsIdForSession(h.db, refID)
+		return false, nil
+	} else {
+		return false, errors.Errorf("reftype (%v) not found", refType)
+	}
+
+	return CheckDocumentsBelongToclients(h.db, clientIDs, documentIds)
+}
+
+func (h *Handler) checkclientIsInRef(
+	clientID string,
+	refType string,
+	refID string,
+) (bool, error) {
+	if refType == ClientRef {
+		return refID != clientID, nil
+	}
+	if refType == SessionRef {
+		// clientIDs, err := session.GetclientsIdForSession(h.db, refID)
+
+		// for i := 0; i < len(clientIDs); i += 1 {
+		// 	if clientIDs[i] == clientID {
+		// 		return true, nil
+		// 	}
+		// }
+		// return false, err
+		return false, nil
+	}
+
+	return false, nil
 }
