@@ -1,10 +1,10 @@
-package document
+package views
 
 import (
 	"net/http"
 	"strconv"
 
-	"github.com/Arun4rangan/api-tutorme/src/auth"
+	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 )
@@ -26,17 +26,21 @@ type (
 	}
 )
 
+type DocumentView struct {
+	DocumentUseCase tutorme.DocumentUseCase
+}
+
 // CreateDocumentEndpoint view is an endpoint used to create document
-func (h *Handler) CreateDocumentEndpoint(c echo.Context) error {
+func (dv *DocumentView) CreateDocumentEndpoint(c echo.Context) error {
 	payload := DocumentPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims := auth.GetClaims(c)
+	claims := tutorme.GetClaims(c)
 
-	document, err := h.createDocument(
+	document, err := dv.DocumentUseCase.CreateDocument(
 		claims.ClientID,
 		payload.Src,
 		payload.Name,
@@ -51,16 +55,16 @@ func (h *Handler) CreateDocumentEndpoint(c echo.Context) error {
 }
 
 // UpdateDocumentEndpoint view is an endpoint used to update document
-func (h *Handler) UpdateDocumentEndpoint(c echo.Context) error {
+func (dv *DocumentView) UpdateDocumentEndpoint(c echo.Context) error {
 	payload := DocumentPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims := auth.GetClaims(c)
+	claims := tutorme.GetClaims(c)
 
-	client, err := h.updateDocument(
+	client, err := dv.DocumentUseCase.UpdateDocument(
 		claims.ClientID,
 		payload.ID,
 		payload.Src,
@@ -76,14 +80,14 @@ func (h *Handler) UpdateDocumentEndpoint(c echo.Context) error {
 }
 
 // DeleteDocumentEndpoint view is an endpoint to delete document
-func (h *Handler) DeleteDocumentEndpoint(c echo.Context) error {
+func (dv *DocumentView) DeleteDocumentEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed is not valid integer"))
 	}
-	claims := auth.GetClaims(c)
+	claims := tutorme.GetClaims(c)
 
-	err = h.deleteDocument(claims.ClientID, ID)
+	err = dv.DocumentUseCase.DeleteDocument(claims.ClientID, ID)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -93,14 +97,14 @@ func (h *Handler) DeleteDocumentEndpoint(c echo.Context) error {
 }
 
 // GetDocumentEndpoint view is an endpoint used to get document
-func (h *Handler) GetDocumentEndpoint(c echo.Context) error {
+func (dv *DocumentView) GetDocumentEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed is not valid integer"))
 	}
-	claims := auth.GetClaims(c)
+	claims := tutorme.GetClaims(c)
 
-	client, err := h.getDocument(ID, claims.ClientID)
+	client, err := dv.DocumentUseCase.GetDocument(ID, claims.ClientID)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -109,14 +113,14 @@ func (h *Handler) GetDocumentEndpoint(c echo.Context) error {
 }
 
 // CreateDocumentOrderEndpoint view is an endpoint used to create document order
-func (h *Handler) CreateDocumentOrderEndpoint(c echo.Context) error {
+func (dv *DocumentView) CreateDocumentOrderEndpoint(c echo.Context) error {
 	payload := DocumentOrderPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims := auth.GetClaims(c)
+	claims := tutorme.GetClaims(c)
 
 	if payload.RefType == "user" && claims.ClientID != payload.RefID {
 		return echo.NewHTTPError(
@@ -125,7 +129,7 @@ func (h *Handler) CreateDocumentOrderEndpoint(c echo.Context) error {
 		)
 	}
 
-	listOfDocuments, err := h.createDocumentOrder(
+	listOfDocuments, err := dv.DocumentUseCase.CreateDocumentOrder(
 		claims.ClientID,
 		payload.DocumentIDs,
 		payload.RefType,
@@ -140,16 +144,16 @@ func (h *Handler) CreateDocumentOrderEndpoint(c echo.Context) error {
 }
 
 // UpdateDocumentOrderEndpoint is used to update document order
-func (h *Handler) UpdateDocumentOrderEndpoint(c echo.Context) error {
+func (dv *DocumentView) UpdateDocumentOrderEndpoint(c echo.Context) error {
 	payload := DocumentOrderPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims := auth.GetClaims(c)
+	claims := tutorme.GetClaims(c)
 
-	listOfDocuments, err := h.updateDocumentOrder(
+	listOfDocuments, err := dv.DocumentUseCase.UpdateDocumentOrder(
 		claims.ClientID,
 		payload.DocumentIDs,
 		payload.RefID,
@@ -164,16 +168,16 @@ func (h *Handler) UpdateDocumentOrderEndpoint(c echo.Context) error {
 }
 
 // GetDocumentOrderEndpoint is used to get documents in order
-func (h *Handler) GetDocumentOrderEndpoint(c echo.Context) error {
+func (dv *DocumentView) GetDocumentOrderEndpoint(c echo.Context) error {
 	payload := DocumentOrderPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims := auth.GetClaims(c)
+	claims := tutorme.GetClaims(c)
 
-	listOfDocuments, err := h.getDocumentOrder(
+	listOfDocuments, err := dv.DocumentUseCase.GetDocumentOrder(
 		claims.ClientID,
 		payload.RefType,
 		payload.RefID,
