@@ -1,4 +1,4 @@
-package client
+package tutorme
 
 import (
 	"database/sql"
@@ -56,4 +56,16 @@ type Education struct {
 	Start           time.Time `db:"start"`
 	end             time.Time `db:"end"`
 	InstitutionLogo string    `db:"institution_logo"`
+}
+
+type ClientStore interface {
+	GetClientFromID(db DB, id string) (*Client, error)
+	CreateClient(db DB, client *Client) (*Client, error)
+	UpdateClient(db DB, ID string, client *Client) (*Client, error)
+}
+
+type ClientUseCase interface {
+	CreateClient(firstName string, lastName string, about string, email string, photo string) (*Client, error)
+	UpdateClient(id string, firstName string, lastName string, about string, email string, photo string) (*Client, error)
+	GetClient(id string) (*Client, error)
 }
