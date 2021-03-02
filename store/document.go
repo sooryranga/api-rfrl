@@ -1,8 +1,6 @@
 package store
 
 import (
-	"sort"
-
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -29,7 +27,7 @@ RETURNING *
 	`
 	checkDocumentsBelongToclients string = `
 	SELECT COUNT(*) FROM document 
-WHERE id in ($2) AND client_id in ($1) 
+WHERE id in (?) AND client_id in (?) 
 `
 	deleteDocument string = `
 DELETE FROM document WHERE id = $1 AND client_id = $2
@@ -46,7 +44,7 @@ WHERE ref_type = $1 AND ref_id = $2
 `
 
 	getDocumentOrderQuery string = `
-SELCT document.* FROM document_order
+SELECT document.* FROM document_order
 JOIN document ON document.id = document_order.document_id
 WHERE document_order.ref_type = $1 AND document_order.ref_id = $2
 ORDER BY document_order.page
@@ -130,7 +128,7 @@ func (dc *DocumentStore) CheckDocumentsBelongToclients(
 	var count int
 	err = row.Scan(&count)
 
-	return count != len(documentIds), err
+	return count == len(documentIds), err
 }
 
 func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db tutorme.DB, ID int, clientID string) error {
@@ -188,8 +186,8 @@ func createDocumentOrder(
 	query := sq.Insert("document_order").
 		Columns("ref_type", "ref_id", "document_id", "page")
 
-	for i := 0; i < len(documentIds); i += 1 {
-		query.Values(refType, refID, documentIds[i], i)
+	for i := 0; i < len(documentIds); i++ {
+		query = query.Values(refType, refID, documentIds[i], i)
 	}
 
 	sql, args, err := query.
@@ -223,8 +221,6 @@ func (dc *DocumentStore) UpdateDocumentOrder(
 	refType string,
 	refID string,
 ) ([]tutorme.Document, error) {
-	sort.Ints(documentIds)
-
 	_, err := db.Queryx(removeDocumentOrder, refType, refID)
 	if err != nil {
 		return nil, err
