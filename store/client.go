@@ -1,10 +1,18 @@
-package client
+package store
 
 import (
-	"github.com/Arun4rangan/api-tutorme/src/db"
+	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
 )
+
+// ClientStore holds all store related functions for client
+type ClientStore struct{}
+
+// NewClientStore creates new clientStore
+func NewClientStore() *ClientStore {
+	return &ClientStore{}
+}
 
 const (
 	getClientByID string = `
@@ -19,8 +27,8 @@ RETURNING *
 )
 
 // GetClientFromID queries the database for client with id
-func GetClientFromID(db db.DB, id string) (*Client, error) {
-	var m Client
+func (cl *ClientStore) GetClientFromID(db tutorme.DB, id string) (*tutorme.Client, error) {
+	var m tutorme.Client
 	err := db.QueryRowx(getClientByID, id).StructScan(&m)
 	if err != nil {
 		return nil, err
@@ -29,7 +37,7 @@ func GetClientFromID(db db.DB, id string) (*Client, error) {
 }
 
 // CreateClient creates a new row for a client in the database
-func CreateClient(db db.DB, client *Client) (*Client, error) {
+func (cl *ClientStore) CreateClient(db tutorme.DB, client *tutorme.Client) (*tutorme.Client, error) {
 	row := db.QueryRowx(
 		insertClient,
 		client.FirstName,
@@ -39,14 +47,14 @@ func CreateClient(db db.DB, client *Client) (*Client, error) {
 		client.Photo,
 	)
 
-	var m Client
+	var m tutorme.Client
 
 	err := row.StructScan(&m)
 	return &m, errors.Wrap(err, "CreateClient")
 }
 
 // UpdateClient updates a client in the database
-func UpdateClient(db db.DB, ID string, client *Client) (*Client, error) {
+func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Client) (*tutorme.Client, error) {
 	query := sq.Update("client")
 	if client.FirstName.Valid {
 		query = query.Set("first_name", client.FirstName)
@@ -79,7 +87,7 @@ func UpdateClient(db db.DB, ID string, client *Client) (*Client, error) {
 		args...,
 	)
 
-	var m Client
+	var m tutorme.Client
 
 	err = row.StructScan(&m)
 	return &m, err
