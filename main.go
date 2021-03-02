@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Arun4rangan/api-tutorme/routes"
+	"github.com/Arun4rangan/api-tutorme/store"
+	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-tutorme/usecases"
 	"github.com/go-playground/validator"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-
-	"github.com/Arun4rangan/api-tutorme/src/auth"
-	"github.com/Arun4rangan/api-tutorme/src/client"
-	"github.com/Arun4rangan/api-tutorme/src/document"
 )
 
 // Validator for echo
@@ -43,13 +43,13 @@ func getPostgresURI() string {
 }
 
 func main() {
-	signingKey, err := auth.GetSigningKey()
+	signingKey, err := tutorme.GetSigningKey()
 
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
 	}
 
-	publicKey, err := auth.GetVerifyingKey()
+	publicKey, err := tutorme.GetVerifyingKey()
 
 	fmt.Println(fmt.Sprintf("%v", publicKey))
 
@@ -61,6 +61,7 @@ func main() {
 	validate := validator.New()
 
 	db, err := sqlx.Connect("pgx", getPostgresURI())
+	defer db.Close()
 
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
@@ -77,14 +78,19 @@ func main() {
 	// Body Limit Middleware
 	e.Use(middleware.BodyLimit("10M"))
 
-	authHandler := auth.NewHandler(db, signingKey)
-	authHandler.Register(e, validate)
+	// Stores
+	authStore := store.NewAuthStore()
+	clientStore := store.NewClientStore()
+	documentStore := store.NewDocumentStore()
 
-	clientHandler := client.NewHandler(db, publicKey)
-	clientHandler.Register(e, validate)
+	// Usecases
+	authUseCase := usecases.NewAuthUseCase(*db, authStore, clientStore)
+	clientUseCase := usecases.NewClientUseCase(*db, clientStore)
+	documentUseCase := usecases.NewDocumentUseCase(*db, documentStore)
 
-	documentHandler := document.NewHandler(db, publicKey)
-	documentHandler.Register(e)
+	routes.RegisterAuthRoutes(e, validate, signingKey, authUseCase)
+	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
+	routes.RegisterDocumentRoutes(e, validate, publicKey, documentUseCase)
 
 	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {

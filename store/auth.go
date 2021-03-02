@@ -1,9 +1,16 @@
-package auth
+package store
 
 import (
-	"github.com/Arun4rangan/api-tutorme/src/client"
-	"github.com/Arun4rangan/api-tutorme/src/db"
+	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 )
+
+// AuthStore holds all store related functions for client
+type AuthStore struct{}
+
+// NewAuthStore creates new authstore
+func NewAuthStore() *AuthStore {
+	return &AuthStore{}
+}
 
 const (
 	getByToken string = `
@@ -31,8 +38,8 @@ RETURNING id
 )
 
 // GetByToken queries the database for token auth from providers
-func GetByToken(db db.DB, token string, authType string) (*client.Client, error) {
-	var c client.Client
+func (au *AuthStore) GetByToken(db tutorme.DB, token string, authType string) (*tutorme.Client, error) {
+	var c tutorme.Client
 	err := db.QueryRowx(getByToken, token, authType).StructScan(&c)
 	if err != nil {
 		return nil, err
@@ -41,15 +48,15 @@ func GetByToken(db db.DB, token string, authType string) (*client.Client, error)
 }
 
 // GetByEmail queries the database for email auth
-func GetByEmail(db db.DB, email string) (*client.Client, []byte, error) {
+func (au *AuthStore) GetByEmail(db tutorme.DB, email string) (*tutorme.Client, []byte, error) {
 
 	type getByEmailStruct struct {
-		client.Client
+		tutorme.Client
 		PasswordHash []byte `db:"password_hash"`
 	}
 	var result getByEmailStruct
 
-	row := db.QueryRowx(getByEmail, email, EMAIL)
+	row := db.QueryRowx(getByEmail, email, tutorme.EMAIL)
 
 	err := row.StructScan(&result)
 
@@ -57,8 +64,8 @@ func GetByEmail(db db.DB, email string) (*client.Client, []byte, error) {
 }
 
 // CreateWithEmail creates auth row with email in db
-func CreateWithEmail(db db.DB, auth *Auth, clientID string) (int, error) {
-	row := db.QueryRowx(insertEmailAuth, auth.Email, auth.PasswordHash, EMAIL, clientID)
+func (au *AuthStore) CreateWithEmail(db tutorme.DB, auth *tutorme.Auth, clientID string) (int, error) {
+	row := db.QueryRowx(insertEmailAuth, auth.Email, auth.PasswordHash, tutorme.EMAIL, clientID)
 	var id int = -1
 
 	err := row.Scan(&id)
@@ -67,7 +74,7 @@ func CreateWithEmail(db db.DB, auth *Auth, clientID string) (int, error) {
 }
 
 // CreateWithToken creates auth row with token in db
-func CreateWithToken(db db.DB, auth *Auth, clientID string) (int, error) {
+func (au *AuthStore) CreateWithToken(db tutorme.DB, auth *tutorme.Auth, clientID string) (int, error) {
 	row := db.QueryRowx(insertToken, auth.Token, auth.AuthType, clientID)
 	var id int = -1
 	err := row.Scan(&id)

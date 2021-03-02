@@ -1,11 +1,12 @@
-package auth
+package views
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/Arun4rangan/api-tutorme/src/client"
+	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator"
 	"github.com/jackc/pgconn"
@@ -34,15 +35,15 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 	payload := sl.Current().Interface().(SignUpPayload)
 
 	switch payload.Type {
-	case GOOGLE:
+	case tutorme.GOOGLE:
 		if len(payload.Token) == 0 {
 			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
 		}
-	case LINKEDIN:
+	case tutorme.LINKEDIN:
 		if len(payload.Token) == 0 {
 			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
 		}
-	case EMAIL:
+	case tutorme.EMAIL:
 		if len(payload.Email) == 0 {
 			sl.ReportError(payload.Email, "email", "Email", "validEmail", "")
 		}
@@ -54,8 +55,49 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 	// plus can do more, even with different tag than "fnameorlname"
 }
 
+type (
+	// LoginPayload is the struct used to hold payload from /login
+	LoginPayload struct {
+		Email    string `json:"email" validate:"omitempty,email"`
+		Token    string `json:"token"`
+		Password string `json:"password" validate:"omitempty,gte=10"`
+		Type     string `json:"type" validate:"required,oneof= google linkedin email"`
+	}
+)
+
+// LoginPayloadValidation validates client inputs
+func LoginPayloadValidation(sl validator.StructLevel) {
+
+	payload := sl.Current().Interface().(LoginPayload)
+
+	switch payload.Type {
+	case tutorme.GOOGLE:
+		if len(payload.Token) == 0 {
+			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
+		}
+	case tutorme.LINKEDIN:
+		if len(payload.Token) == 0 {
+			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
+		}
+	case tutorme.EMAIL:
+		if len(payload.Email) == 0 {
+			sl.ReportError(payload.Email, "email", "Email", "validEmail", "")
+		}
+		if len(payload.Password) < 10 {
+			sl.ReportError(payload.Email, "password", "Password", "validPassworrd", "")
+		}
+	}
+
+	// plus can do more, even with different tag than "fnameorlname"
+}
+
+type AuthView struct {
+	AuthUseCases tutorme.AuthUseCase
+	Key          rsa.PrivateKey
+}
+
 // Signup endpoint
-func (h *Handler) Signup(c echo.Context) error {
+func (av *AuthView) Signup(c echo.Context) error {
 	payload := SignUpPayload{}
 
 	if err := c.Bind(&payload); err != nil {
@@ -65,12 +107,12 @@ func (h *Handler) Signup(c echo.Context) error {
 	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	var newClient *client.Client
+	var newClient *tutorme.Client
 	var err error
 
 	switch payload.Type {
-	case GOOGLE:
-		newClient, err = h.signupGoogle(
+	case tutorme.GOOGLE:
+		newClient, err = av.AuthUseCases.SignupGoogle(
 			payload.Token,
 			payload.Email,
 			payload.FirstName,
@@ -78,8 +120,8 @@ func (h *Handler) Signup(c echo.Context) error {
 			payload.Photo,
 			payload.About,
 		)
-	case LINKEDIN:
-		newClient, err = h.signupLinkedIn(
+	case tutorme.LINKEDIN:
+		newClient, err = av.AuthUseCases.SignupLinkedIn(
 			payload.Token,
 			payload.Email,
 			payload.FirstName,
@@ -87,8 +129,8 @@ func (h *Handler) Signup(c echo.Context) error {
 			payload.Photo,
 			payload.About,
 		)
-	case EMAIL:
-		newClient, err = h.signupEmail(
+	case tutorme.EMAIL:
+		newClient, err = av.AuthUseCases.SignupEmail(
 			payload.Password,
 			payload.Token,
 			payload.Email,
@@ -118,7 +160,7 @@ func (h *Handler) Signup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong")
 	}
 
-	claims := &JWTClaims{
+	claims := &tutorme.JWTClaims{
 		newClient.ID,
 		newClient.Email.String,
 		true,
@@ -127,7 +169,7 @@ func (h *Handler) Signup(c echo.Context) error {
 		},
 	}
 
-	token, err := h.GenerateToken(claims)
+	token, err := av.AuthUseCases.GenerateToken(claims, &av.Key)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong")
@@ -139,44 +181,8 @@ func (h *Handler) Signup(c echo.Context) error {
 	})
 }
 
-type (
-	// LoginPayload is the struct used to hold payload from /login
-	LoginPayload struct {
-		Email    string `json:"email" validate:"omitempty,email"`
-		Token    string `json:"token"`
-		Password string `json:"password" validate:"omitempty,gte=10"`
-		Type     string `json:"type" validate:"required,oneof= google linkedin email"`
-	}
-)
-
-// LoginPayloadValidation validates client inputs
-func LoginPayloadValidation(sl validator.StructLevel) {
-
-	payload := sl.Current().Interface().(LoginPayload)
-
-	switch payload.Type {
-	case GOOGLE:
-		if len(payload.Token) == 0 {
-			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
-		}
-	case LINKEDIN:
-		if len(payload.Token) == 0 {
-			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
-		}
-	case EMAIL:
-		if len(payload.Email) == 0 {
-			sl.ReportError(payload.Email, "email", "Email", "validEmail", "")
-		}
-		if len(payload.Password) < 10 {
-			sl.ReportError(payload.Email, "password", "Password", "validPassworrd", "")
-		}
-	}
-
-	// plus can do more, even with different tag than "fnameorlname"
-}
-
 // Login is used to login an client
-func (h *Handler) Login(c echo.Context) error {
+func (av *AuthView) Login(c echo.Context) error {
 	payload := LoginPayload{}
 
 	if err := c.Bind(&payload); err != nil {
@@ -186,16 +192,16 @@ func (h *Handler) Login(c echo.Context) error {
 	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	var existingClient *client.Client
+	var existingClient *tutorme.Client
 	var err error
 
 	switch payload.Type {
-	case GOOGLE:
-		existingClient, err = h.loginGoogle(payload.Token)
-	case LINKEDIN:
-		existingClient, err = h.loginLinkedIn(payload.Token)
-	case EMAIL:
-		existingClient, err = h.loginEmail(payload.Email, payload.Password)
+	case tutorme.GOOGLE:
+		existingClient, err = av.AuthUseCases.LoginGoogle(payload.Token)
+	case tutorme.LINKEDIN:
+		existingClient, err = av.AuthUseCases.LoginLinkedIn(payload.Token)
+	case tutorme.EMAIL:
+		existingClient, err = av.AuthUseCases.LoginEmail(payload.Email, payload.Password)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}
@@ -211,7 +217,7 @@ func (h *Handler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Client or password is not correct")
 	}
 
-	claims := &JWTClaims{
+	claims := &tutorme.JWTClaims{
 		existingClient.ID,
 		existingClient.Email.String,
 		true,
@@ -220,7 +226,7 @@ func (h *Handler) Login(c echo.Context) error {
 		},
 	}
 
-	token, err := h.GenerateToken(claims)
+	token, err := av.AuthUseCases.GenerateToken(claims, &av.Key)
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"token":  token,
