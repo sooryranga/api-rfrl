@@ -116,7 +116,7 @@ func (dc *DocumentUseCase) CreateDocumentOrder(
 // UpdateDocumentOrder updates existing document order (ie reshuffling)
 func (dc *DocumentUseCase) UpdateDocumentOrder(
 	clientID string,
-	documentIds []int,
+	documentIDs []int,
 	refID string,
 	refType string,
 ) ([]tutorme.Document, error) {
@@ -129,7 +129,7 @@ func (dc *DocumentUseCase) UpdateDocumentOrder(
 		return nil, errors.Errorf("Unauthorized to update document-order")
 	}
 
-	check, err = dc.checkDocumentsAreForRef(documentIds, refType, refID)
+	check, err = dc.checkDocumentsAreForRef(documentIDs, refType, refID)
 
 	if err != nil {
 		return nil, err
@@ -138,11 +138,11 @@ func (dc *DocumentUseCase) UpdateDocumentOrder(
 	if !check {
 		return nil, errors.Errorf(
 			"Documents are not related to client: Document - %v",
-			documentIds,
+			documentIDs,
 		)
 	}
 
-	return dc.documentStore.UpdateDocumentOrder(dc.db, documentIds, refType, refID)
+	return dc.documentStore.UpdateDocumentOrder(dc.db, documentIDs, refType, refID)
 }
 
 // GetDocumentOrder grabs document in order
@@ -189,7 +189,7 @@ func (dc *DocumentUseCase) checkclientIsInRef(
 	refID string,
 ) (bool, error) {
 	if refType == tutorme.ClientRef {
-		return refID != clientID, nil
+		return refID == clientID, nil
 	}
 	if refType == tutorme.SessionRef {
 		// clientIDs, err := session.GetclientsIdForSession(h.db, refID)

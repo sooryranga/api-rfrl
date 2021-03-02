@@ -18,7 +18,7 @@ func RegisterDocumentRoutes(e *echo.Echo, validate *validator.Validate, key *rsa
 	r.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
 		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        tutorme.JWTClaims{},
+		Claims:        &tutorme.JWTClaims{},
 	}))
 
 	r.POST("/", documentViews.CreateDocumentEndpoint)
@@ -27,6 +27,11 @@ func RegisterDocumentRoutes(e *echo.Echo, validate *validator.Validate, key *rsa
 	r.GET("/:id", documentViews.GetDocumentEndpoint)
 
 	r2 := e.Group("/document-order")
+	r2.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    key,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
 	r2.POST("/", documentViews.CreateDocumentOrderEndpoint)
 	r2.PUT("/", documentViews.UpdateDocumentOrderEndpoint)
 	r2.GET("/", documentViews.GetDocumentOrderEndpoint)

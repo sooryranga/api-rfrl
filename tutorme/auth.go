@@ -9,6 +9,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 )
 
 // JWTClaims are custom claims extending default ones.
@@ -26,11 +27,18 @@ const (
 	EMAIL    = "email"
 )
 
-const AlgorithmRS256 string = "rsa"
+const AlgorithmRS256 string = "RS256"
 
-func GetClaims(c echo.Context) *JWTClaims {
-	user := c.Get("user").(*jwt.Token)
-	return user.Claims.(*JWTClaims)
+func GetClaims(c echo.Context) (*JWTClaims, error) {
+	token, ok := c.Get("user").(*jwt.Token)
+	if !ok || !token.Valid {
+		return nil, errors.New("Token is not valid")
+	}
+
+	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, errors.New("Claims is not valid")
 }
 
 // GetVerifyingKey generate public key from id_rsa.pub
