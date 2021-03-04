@@ -26,7 +26,7 @@ VALUES ($1, $2, $3, $4)
 RETURNING *
 	`
 	checkDocumentsBelongToclients string = `
-	SELECT COUNT(*) FROM document 
+SELECT COUNT(*) FROM document 
 WHERE id in (?) AND client_id in (?) 
 `
 	deleteDocument string = `
