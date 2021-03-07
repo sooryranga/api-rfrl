@@ -1,6 +1,8 @@
 package store
 
 import (
+	"database/sql"
+
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -34,6 +36,12 @@ SELECT * FROM session
 WHERE id = $1
 FOR UPDATE OF session
 	`
+	getCountForEventInEventClient string = `
+SELECT count(*) as 'count', event_id FROM event_client
+WHERE event_id IN ? AND session_id = ?
+GROUP BY event_id 
+ORDER BY event_id desc;
+	`
 	checkSessionsIsForClient string = `
 SELECT COUNT(*) from session_client
 WHERE session_id in (?) and client_id = ?
@@ -47,7 +55,11 @@ RETURNING *
 DELETE FROM session
 WHERE id = $1
 	`
-	getSessionCients string = `
+	deleteEventClient string = `
+DELETE FROM event_client
+FROM event_id IN ? AND session_id = ? AND client_id = ?
+	`
+	getSessionClients string = `
 SELECT client.*, session_client.session_id FROM session_client
 JOIN client ON session_client.client_id = client.id
 WHERE session_client.session_id in (?)
@@ -64,11 +76,11 @@ WHERE session_client.client_id in (?) AND session.state = ?
 	`
 	deleteSessionEvents string = `
 DELETE FROM session_event
-WHERE id in (?)
+WHERE id in (?) AND session_id = ?
 	`
 )
 
-type getSessionCientsResult struct {
+type getSessionClientsResult struct {
 	tutorme.Client
 	SessionId int
 }
@@ -91,7 +103,7 @@ func getSessionWithClientsById(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Sessi
 		i++
 	}
 
-	query, args, err := sqlx.In(getSessionCients, sessionIds)
+	query, args, err := sqlx.In(getSessionClients, sessionIds)
 
 	if err != nil {
 		return nil, err
@@ -102,7 +114,7 @@ func getSessionWithClientsById(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Sessi
 	var clients *[]tutorme.Client
 
 	for rows.Next() {
-		var result getSessionCientsResult
+		var result getSessionClientsResult
 
 		err = rows.StructScan(&result)
 		if err != nil {
@@ -220,6 +232,78 @@ func (ss SessionStore) CreateSessionClients(
 	return getClientFromIDs(db, clientIDs)
 }
 
+func (ss SessionStore) CreateEventClient(
+	db tutorme.DB,
+	sessionID int,
+	clientID string,
+	eventIDs []int,
+) ([]tutorme.CreateEventClientStoreResult, error) {
+	query := sq.Insert("event_client").Columns("client_id", "session_id", "event_id")
+
+	for i := 0; i < len(eventIDs); i++ {
+		query.Values(clientID, sessionID, eventIDs[i])
+	}
+	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = db.Queryx(
+		sql,
+		args...,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	sql, args, err = sqlx.In(getCountForEventInEventClient, eventIDs, sessionID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	sql = db.Rebind(sql)
+
+	rows, err := db.Queryx(sql, args...)
+
+	var m []tutorme.CreateEventClientStoreResult
+
+	for rows.Next() {
+		var c tutorme.CreateEventClientStoreResult
+		err := rows.StructScan(&c)
+		if err != nil {
+			return nil, err
+		}
+		m = append(m, c)
+	}
+
+	return m, err
+}
+
+func (ss SessionStore) DeleteEventClient(
+	db tutorme.DB,
+	sessionID int,
+	clientID string,
+	eventIDs []int,
+) error {
+	sql, args, err := sqlx.In(deleteEventClient, eventIDs, sessionID, clientID)
+
+	if err != nil {
+		return err
+	}
+
+	sql = db.Rebind(sql)
+
+	_, err = db.Queryx(
+		sql,
+		args...,
+	)
+
+	return err
+}
+
 func (ss SessionStore) GetSessionByIDForUpdate(db tutorme.DB, id int) (tutorme.Session, error) {
 	row := db.QueryRowx(getSessionByIDForUpdate, id)
 
@@ -234,10 +318,15 @@ func (ss SessionStore) UpdateSession(
 	id int,
 	by string,
 	state string,
+	targetEventID sql.NullInt64,
 ) (*tutorme.Session, error) {
 	query := sq.Update("session").
 		Set("by", by).
 		Set("state", state)
+
+	if targetEventID.Valid {
+		query = query.Set("target_event_id", targetEventID)
+	}
 
 	sql, args, err := query.
 		Where(sq.Eq{"id": id}).
@@ -355,8 +444,8 @@ func (ss SessionStore) GetSessionEventFromClientIDs(
 	return events, nil
 }
 
-func (ss SessionStore) DeleteSessionEvents(db tutorme.DB, IDs []int) error {
-	query, args, err := sqlx.In(deleteSessionEvents, IDs)
+func (ss SessionStore) DeleteSessionEvents(db tutorme.DB, eventIDs []int, sessionId int) error {
+	query, args, err := sqlx.In(deleteSessionEvents, eventIDs, sessionId)
 
 	if err != nil {
 		return err
