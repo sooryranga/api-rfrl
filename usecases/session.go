@@ -20,11 +20,11 @@ func NewSessionUseCase(db sqlx.DB, sessionStore tutorme.SessionStore) *SessionUs
 
 func (su *SessionUseCase) CreateSession(
 	tutorID string,
-	by string,
+	updatedBy string,
 	roomID string,
 	clients []string,
 ) (*tutorme.Session, error) {
-	session := tutorme.NewSession(tutorID, by, roomID)
+	session := tutorme.NewSession(tutorID, updatedBy, roomID)
 
 	tx, err := su.DB.Beginx()
 
