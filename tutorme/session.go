@@ -10,7 +10,7 @@ type Session struct {
 	CreatedAt       time.Time     `db:"created_at" json:"created_at"`
 	UpdatedAt       time.Time     `db:"updated_at" json:"updated_at"`
 	TutorID         string        `db:"tutor_id" json:"tutor_id"`
-	By              string        `db:"by" json:"by"`
+	UpdatedBy       string        `db:"updated_by" json:"updated_by"`
 	RoomID          string        `db:"room_id" json:"room_id"`
 	Clients         []Client      `json:"clients"`
 	State           string        `db:"state" json:"state"`
@@ -22,9 +22,9 @@ type Event struct {
 	CreatedAt time.Time      `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at" json:"updated_at"`
 	Start     time.Time      `db:"start" json:"start"`
-	End       time.Time      `db:"end" json:"json"`
+	End       time.Time      `db:"end" json:"end"`
 	Title     sql.NullString `db:"title" json:"title"`
-	SessionId int            `db:"session`
+	SessionId int            `db:"session_id" json:"session_id"`
 }
 
 const (
@@ -34,13 +34,13 @@ const (
 // NewSession creates new Session
 func NewSession(
 	tutorID string,
-	by string,
+	updatedBy string,
 	roomID string,
 ) *Session {
 	return &Session{
-		TutorID: tutorID,
-		By:      by,
-		RoomID:  roomID,
+		TutorID:   tutorID,
+		UpdatedBy: by,
+		RoomID:    roomID,
 	}
 }
 
