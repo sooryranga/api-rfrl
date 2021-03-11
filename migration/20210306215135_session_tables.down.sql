@@ -6,6 +6,6 @@ DROP TABLE IF EXISTS session_client;
 
 DROP TABLE IF EXISTS tutor_session;
 
-DROP TABLE IF EXISTS session_event;
+DROP TABLE IF EXISTS scheduled_event;
 
 COMMIT;
