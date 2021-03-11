@@ -91,11 +91,24 @@ WHERE room_id = $1 AND state = $2
 	`
 
 func (ss *SessionStore) GetSessionByRoomID(db tutorme.DB, roomID string, state string) (*[]tutorme.Session, error) {
-	rows, err := db.Queryx(getSessionByRoomID, roomID, state)
+	query := sq.Select("*").From("tutor_session").Where(sq.Eq{"room_id": roomID})
+
+	if state != "" {
+		query = query.Where(sq.Eq{"state": state})
+	}
+
+	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
 		return nil, err
 	}
+
+	rows, err := db.Queryx(sql, args)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return getSessionWithClients(db, rows)
 }
 
@@ -339,20 +352,11 @@ func (ss SessionStore) GetSessionEventFromSessionID(
 	return &event, err
 }
 
-const (
-	getSessionEventFromClientIDs string = `
-SELECT scheduled_event.* FROM tutor_session
-JOIN session_client.session_id = tutor_session.id
-JOIN scheduled_event ON tutor_session.event_id = scheduled_event.id
-WHERE session_client.client_id IN (?) AND tutor_session.state = ?
-	`
-
-	getScheduledEventfromClientIDs string = `
+const getScheduledEventfromClientIDs string = `
 SELECT scheduled_event.* FROM scheduled_event
 JOIN client_event ON client_event.event_id = scheduled_event.id
 WHERE client_event.client_id IN (?)
 	`
-)
 
 func (ss SessionStore) GetScheduledEventsFromClientIDs(
 	db tutorme.DB,
@@ -360,15 +364,22 @@ func (ss SessionStore) GetScheduledEventsFromClientIDs(
 	state string,
 ) (*[]tutorme.Event, error) {
 	// Events related to session that is scheduled
-	query, args, err := sqlx.In(getSessionEventFromClientIDs, clientIds, state)
+	sessionQuery := sq.Select("scheduled_event.*").
+		From("tutor_session").
+		Join("session_client ON session_client.session_id = tutor_session.id").
+		Join("scheduled_event ON tutor_session.event_id = scheduled_event.id").
+		Where(sq.Eq{"session_client.client_id": clientIds})
+
+	if state != "" {
+		sessionQuery = sessionQuery.Where(sq.Eq{"tutor_session.state": state})
+	}
+	sql, args, err := sessionQuery.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
 		return nil, err
 	}
 
-	query = db.Rebind(query)
-
-	rows, err := db.Queryx(query, args...)
+	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
 		return nil, err
@@ -387,7 +398,15 @@ func (ss SessionStore) GetScheduledEventsFromClientIDs(
 	}
 
 	// Events related to user created event
-	query, args, err = sqlx.In(getScheduledEventfromClientIDs, clientIds)
+	clientQuery, args, err := sqlx.In(getScheduledEventfromClientIDs, clientIds)
+
+	if err != nil {
+		return nil, err
+	}
+
+	clientQuery = db.Rebind(clientQuery)
+
+	rows, err = db.Queryx(clientQuery, args...)
 
 	if err != nil {
 		return nil, err
@@ -402,8 +421,6 @@ func (ss SessionStore) GetScheduledEventsFromClientIDs(
 		}
 		*events = append(*events, e)
 	}
-
-	rows, err = db.Queryx(query, args...)
 
 	return events, nil
 }
