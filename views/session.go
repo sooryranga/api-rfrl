@@ -7,6 +7,7 @@ import (
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 )
 
@@ -21,13 +22,13 @@ type (
 		TargetedEventID int      `json:"targeted_event_id" validate:"omitempty"`
 	}
 
-	// SessionEventPayload is the struct used to hold payload from /session/:session-id/event/:id
+	// SessionEventPayload is the struct used to hold payload from /session/:sessionId/event/:id
 	SessionEventPayload struct {
-		ID        int       `path:"id"`
-		SessionID int       `path:"session-id"`
-		Start     time.Time `json:"start" validate:"required,datetime"`
-		End       time.Time `json:"end" validate:"required,datetime"`
-		Title     string    `json:"title" validate:"required, gte=0, lte=20"`
+		ID        int    `path:"id"`
+		SessionID int    `path:"sessionId"`
+		Start     string `json:"start" validate:"required, datetime"`
+		End       string `json:"end" validate:"required, datetime, gtfield=Start"`
+		Title     string `json:"title" validate:"required, gte=0, lte=20"`
 	}
 )
 
@@ -63,7 +64,7 @@ func (sv *SessionView) CreateSessionEndpoint(c echo.Context) error {
 }
 
 func (sv *SessionView) UpdateSessionEndpoint(c echo.Context) error {
-	payload := &SessionPayload{}
+	payload := SessionPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -88,7 +89,7 @@ func (sv *SessionView) DeleteSessionEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not valid"))
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not valid").Error())
 	}
 	claims, err := tutorme.GetClaims(c)
 
@@ -109,7 +110,7 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not a valid"))
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not a valid").Error())
 	}
 
 	claims, err := tutorme.GetClaims(c)
@@ -128,7 +129,7 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 }
 
 func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
-	payload := &SessionEventPayload{}
+	payload := SessionEventPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -140,28 +141,42 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	event := tutorme.NewEvent(payload.Start, payload.End, payload.Title)
+	start, err := time.Parse(time.RFC3339, payload.Start)
 
-	events, err := sv.SessionUseCase.CreateSessionEvents(claims.ClientID, payload.SessionID, &[]tutorme.Event{*event})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	end, err := time.Parse(time.RFC3339, payload.End)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	event := tutorme.NewEvent(start, end, payload.Title)
+
+	log.Errorj(log.JSON{"sessionID": payload.SessionID})
+
+	event, err = sv.SessionUseCase.CreateSessionEvent(claims.ClientID, payload.SessionID, *event)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, (*events)[0])
+	return c.JSON(http.StatusOK, *event)
 }
 
 func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not a valid"))
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not a valid").Error())
 	}
 
-	sessionID, err := strconv.Atoi(c.Param("session-id"))
+	sessionID, err := strconv.Atoi(c.Param("sessionId"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Session ID passed in is not a valid"))
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Session ID passed in is not a valid").Error())
 	}
 
 	claims, err := tutorme.GetClaims(c)
@@ -179,21 +194,23 @@ func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {
 	return c.JSON(http.StatusOK, event)
 }
 
-func (sv *SessionView) GetSessionsFromRoomEndpoint(c echo.Context) error {
-	roomID := c.Param("id")
+func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
+	roomID := c.QueryParam("room_id")
 	state := c.QueryParam("state")
 
-	if roomID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.New("ID is not passed in"))
-	}
-
+	log.Errorj(log.JSON{"roomID": roomID, "state": state})
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	sessions, err := sv.SessionUseCase.GetSessionByRoomId(claims.ClientID, roomID, state)
+	var sessions *[]tutorme.Session
+	if roomID != "" {
+		sessions, err = sv.SessionUseCase.GetSessionByRoomId(claims.ClientID, roomID, state)
+	} else {
+		sessions, err = sv.SessionUseCase.GetSessionByClientID(claims.ClientID, state)
+	}
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
