@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 //DB An interface to use for both sqlx.DB and sqlx.Tx (to use a transaction or not)
@@ -29,4 +30,18 @@ type DB interface {
 	Rebind(query string) string
 	Select(dest interface{}, query string, args ...interface{}) error
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+}
+
+func HandleTransactions(tx *sqlx.Tx, err *error) {
+	if p := recover(); p != nil {
+		tx.Rollback()
+		panic(p)
+	} else if *err != nil {
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			*err = errors.Wrap(*err, rollbackErr.Error())
+		}
+	} else {
+		*err = tx.Commit()
+	}
 }

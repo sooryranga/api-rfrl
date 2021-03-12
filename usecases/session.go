@@ -25,61 +25,61 @@ func (su *SessionUseCase) CreateSession(
 	clients []string,
 ) (*tutorme.Session, error) {
 	session := tutorme.NewSession(tutorID, updatedBy, roomID)
+	var err = new(error)
+	var tx *sqlx.Tx
 
-	tx, err := su.DB.Beginx()
+	tx, *err = su.DB.Beginx()
 
-	if err != nil {
-		return nil, err
+	defer tutorme.HandleTransactions(tx, err)
+
+	if *err != nil {
+		return nil, *err
 	}
 
-	session, err = su.SessionStore.CreateSession(tx, session)
+	session, *err = su.SessionStore.CreateSession(tx, session)
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, err
+	if *err != nil {
+		return nil, *err
 	}
 
-	cl, err := su.SessionStore.CreateSessionClients(tx, session.ID, clients)
+	var cl *[]tutorme.Client
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, err
+	cl, *err = su.SessionStore.CreateSessionClients(tx, session.ID, clients)
+
+	if *err != nil {
+		return nil, *err
 	}
 
 	session.Clients = *cl
 
-	return session, nil
+	return session, *err
 }
 
 func (su SessionUseCase) UpdateSession(
-	id int,
-	by string,
+	ID int,
+	updatedBy string,
 	state string,
 ) (*tutorme.Session, error) {
-	tx, err := su.DB.Beginx()
+	var err = new(error)
+	var tx *sqlx.Tx
 
-	session, err := su.SessionStore.GetSessionByIDForUpdate(su.DB, id)
+	tx, *err = su.DB.Beginx()
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, err
+	defer tutorme.HandleTransactions(tx, err)
+
+	var session, updatedSession *tutorme.Session
+
+	session, *err = su.SessionStore.GetSessionByIDForUpdate(tx, ID)
+
+	if *err != nil {
+		return nil, *err
 	}
 
 	//TODO: Add logic on what should be updated
+	updatedSession, *err = su.SessionStore.UpdateSession(tx, ID, updatedBy, state, sql.NullInt64{Valid: false})
 
-	updatedSession, err := su.SessionStore.UpdateSession(su.DB, id, by, state, sql.NullInt64{Valid: false})
-
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return session, errors.Wrap(rb, err.Error())
-		}
-		return session, err
+	if *err != nil {
+		return session, *err
 	}
 
 	return updatedSession, nil
@@ -101,6 +101,7 @@ func (su SessionUseCase) GetSessionByID(clientID string, ID int) (*tutorme.Sessi
 	if !forClient {
 		return nil, errors.New("Session does not belong to client")
 	}
+
 	return session, nil
 }
 
@@ -140,38 +141,85 @@ func (su SessionUseCase) DeleteSession(clientID string, ID int) error {
 		return err
 	}
 
-	if session.TutorID == clientID {
+	if session.TutorID != clientID {
 		return errors.Errorf("Client %s cannot delete session", clientID)
+	}
+
+	if session.State == tutorme.SCHEDULED {
+		return errors.Errorf("Cannot delete a scheduled session")
 	}
 
 	return su.SessionStore.DeleteSession(su.DB, ID)
 }
 
-func (su SessionUseCase) CreateSessionEvents(clientID string, ID int, events *[]tutorme.Event) (*[]tutorme.Event, error) {
+func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutorme.Event) (*tutorme.Event, error) {
 	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
-	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{ID})
+	var err = new(error)
+	var tx *sqlx.Tx
+	var session *tutorme.Session
+	var isOverLapping bool
+	var insertedEvents *[]tutorme.Event
 
-	if err != nil {
-		return nil, err
+	tx, *err = su.DB.Beginx()
+
+	defer tutorme.HandleTransactions(tx, err)
+
+	session, *err = su.SessionStore.GetSessionByID(tx, ID)
+
+	if *err != nil {
+		return nil, *err
+	}
+
+	if session.State == tutorme.SCHEDULED {
+		*err = errors.New("Cannot change tutor event after scheduled")
+		return nil, *err
+	}
+
+	forClient := false
+	var clientIDs []string
+
+	for i := 0; i < len(session.Clients); i++ {
+		if session.Clients[i].ID == clientID {
+			forClient = true
+		}
+		clientIDs = append(clientIDs, session.Clients[i].ID)
 	}
 
 	if !forClient {
-		return nil, errors.New("Session does not belong to client")
+		*err = errors.New("Session does not belong to client")
+		return nil, *err
 	}
 
-	isOverLapping, err := su.SessionStore.CheckOverlapingEvents(su.DB, ID, events)
-
-	if err != nil {
-		return nil, err
+	if session.TargetedEventID.Valid == true && session.TutorID != clientID {
+		*err = errors.New("Only tutor can change scheduled event date")
+		return nil, *err
 	}
 
-	if !isOverLapping {
-		return nil, errors.New("Events overlap")
+	isOverLapping, *err = su.SessionStore.CheckOverlapingEvents(tx, clientIDs, &[]tutorme.Event{event})
+
+	if *err != nil {
+		return nil, *err
 	}
 
-	insertedEvents, err := su.SessionStore.CreateSessionEvents(su.DB, *events)
+	if isOverLapping {
+		*err = errors.New("Events overlap")
+		return nil, *err
+	}
 
-	return insertedEvents, err
+	insertedEvents, *err = su.SessionStore.CreateSessionEvents(tx, []tutorme.Event{event})
+
+	if *err != nil {
+		return nil, *err
+	}
+
+	createdEvent := (*insertedEvents)[0]
+	currentEvent := session.TargetedEventID
+
+	_, *err = su.SessionStore.UpdateSession(tx, ID, clientID, "", sql.NullInt64{Valid: true, Int64: int64(createdEvent.ID)})
+
+	*err = su.SessionStore.DeleteSessionEvents(tx, []int{int(currentEvent.Int64)})
+
+	return &createdEvent, *err
 }
 
 func (su SessionUseCase) ClientActionOnSessionEvent(clientID string, sessionID int, canAttend bool) error {

@@ -6,7 +6,6 @@ import (
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 )
 
@@ -177,11 +176,6 @@ func (dv *DocumentView) UpdateDocumentOrderEndpoint(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	log.Errorj(log.JSON{
-		"documentIds": payload.DocumentIDs,
-		"from":        "UpdateDocumentOrder",
-	})
 
 	listOfDocuments, err := dv.DocumentUseCase.UpdateDocumentOrder(
 		claims.ClientID,
