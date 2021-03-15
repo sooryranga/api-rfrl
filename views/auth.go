@@ -163,7 +163,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 	claims := &tutorme.JWTClaims{
 		newClient.ID,
 		newClient.Email.String,
-		true,
+		false,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},
@@ -220,7 +220,7 @@ func (av *AuthView) Login(c echo.Context) error {
 	claims := &tutorme.JWTClaims{
 		existingClient.ID,
 		existingClient.Email.String,
-		true,
+		false,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},
