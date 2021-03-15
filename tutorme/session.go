@@ -73,6 +73,7 @@ type SessionStore interface {
 	CreateClientSelectionOfEvent(db DB, sessionID int, clientID string, canAttend bool) error
 	GetScheduledEventsFromClientIDs(db DB, clientIds []string, state string) (*[]Event, error)
 	DeleteSessionEvents(db DB, eventIds []int) error
+	CheckClientsAttendedTutorSession(db DB, tutorID string, clientIDs []string) (bool, error)
 }
 
 type SessionUseCase interface {
