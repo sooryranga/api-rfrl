@@ -19,3 +19,6 @@ Logging :
 
 To create migration:
 `migrate create -ext sql  -dir ./migration <file_name>`
+
+To migrate up:
+`migrate -database "postgres://tutorme:secretpassword1@localhost:5432/tutorme?sslmode=disable" -path ./migration up`
