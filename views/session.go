@@ -7,7 +7,6 @@ import (
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 )
 
@@ -160,8 +159,6 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 
 	event := tutorme.NewEvent(start, end, payload.Title)
 
-	log.Errorj(log.JSON{"sessionID": payload.SessionID})
-
 	event, err = sv.SessionUseCase.CreateSessionEvent(claims.ClientID, payload.SessionID, *event)
 
 	if err != nil {
@@ -203,7 +200,6 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 	roomID := c.QueryParam("room_id")
 	state := c.QueryParam("state")
 
-	log.Errorj(log.JSON{"roomID": roomID, "state": state})
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
