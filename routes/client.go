@@ -24,6 +24,6 @@ func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.P
 
 	validate.RegisterStructValidation(views.ClientPayloadValidation, views.ClientPayload{})
 	r.POST("/", clientView.CreateClientEndpoint)
-	r.PUT("/:id", clientView.UpdateClientEndpoint)
-	r.GET("/:id", clientView.GetClientEndpoint)
+	r.PUT("/:id/", clientView.UpdateClientEndpoint)
+	r.GET("/:id/", clientView.GetClientEndpoint)
 }

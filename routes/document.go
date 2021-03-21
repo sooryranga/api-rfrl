@@ -22,9 +22,9 @@ func RegisterDocumentRoutes(e *echo.Echo, validate *validator.Validate, key *rsa
 	}))
 
 	r.POST("/", documentViews.CreateDocumentEndpoint)
-	r.PUT("/:id", documentViews.UpdateDocumentEndpoint)
-	r.DELETE("/:id", documentViews.DeleteDocumentEndpoint)
-	r.GET("/:id", documentViews.GetDocumentEndpoint)
+	r.PUT("/:id/", documentViews.UpdateDocumentEndpoint)
+	r.DELETE("/:id/", documentViews.DeleteDocumentEndpoint)
+	r.GET("/:id/", documentViews.GetDocumentEndpoint)
 
 	r2 := e.Group("/document-order")
 	r2.Use(middleware.JWTWithConfig(middleware.JWTConfig{

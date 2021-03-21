@@ -23,9 +23,9 @@ func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.
 	}))
 
 	sessionR.POST("/", sessionViews.CreateSessionEndpoint)
-	sessionR.PUT("/:id", sessionViews.UpdateSessionEndpoint)
-	sessionR.DELETE("/:id", sessionViews.DeleteSessionEndpoint)
-	sessionR.GET("/:id", sessionViews.GetSessionEndpoint)
+	sessionR.PUT("/:id/", sessionViews.UpdateSessionEndpoint)
+	sessionR.DELETE("/:id/", sessionViews.DeleteSessionEndpoint)
+	sessionR.GET("/:id/", sessionViews.GetSessionEndpoint)
 
 	sessionEventR := e.Group("/session/:sessionId/event")
 	sessionEventR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
@@ -35,7 +35,7 @@ func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.
 	}))
 
 	sessionEventR.POST("/", sessionViews.CreateSessionEventEndpoint)
-	sessionEventR.GET("/:id", sessionViews.GetSessionEventEndpoint)
+	sessionEventR.GET("/:id/", sessionViews.GetSessionEventEndpoint)
 
 	clientActionOnEventR := e.Group("/session/:sessionId/book")
 	clientActionOnEventR.Use(middleware.JWTWithConfig(middleware.JWTConfig{

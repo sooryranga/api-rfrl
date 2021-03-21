@@ -7,6 +7,7 @@ import (
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 )
 
@@ -206,18 +207,20 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var sessions *[]tutorme.Session
+	sessions := &([]tutorme.Session{})
+
+	log.Errorj(log.JSON{"sessions": sessions})
 	if roomID != "" {
 		sessions, err = sv.SessionUseCase.GetSessionByRoomId(claims.ClientID, roomID, state)
 	} else {
 		sessions, err = sv.SessionUseCase.GetSessionByClientID(claims.ClientID, state)
 	}
-
+	log.Errorj(log.JSON{"sessions": sessions})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, sessions)
+	return c.JSON(http.StatusOK, *sessions)
 }
 
 func (sv *SessionView) CreateClientActionOnSessionEvent(c echo.Context) error {

@@ -78,6 +78,8 @@ func main() {
 	// Body Limit Middleware
 	e.Use(middleware.BodyLimit("10M"))
 
+	e.Use(middleware.CORS())
+
 	// Stores
 	authStore := store.NewAuthStore()
 	clientStore := store.NewClientStore()
