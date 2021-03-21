@@ -16,8 +16,8 @@ func RegisterAuthRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.Pri
 		Key:          *key,
 	}
 	validate.RegisterStructValidation(views.LoginPayloadValidation, views.LoginPayload{})
-	e.POST("/login", authview.Login)
+	e.POST("/login/", authview.Login)
 
 	validate.RegisterStructValidation(views.SignUpPayloadValidation, views.SignUpPayload{})
-	e.POST("/signup", authview.Signup)
+	e.POST("/signup/", authview.Signup)
 }

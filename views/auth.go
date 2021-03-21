@@ -31,7 +31,6 @@ type (
 
 // SignUpPayloadValidation validates client inputs
 func SignUpPayloadValidation(sl validator.StructLevel) {
-
 	payload := sl.Current().Interface().(SignUpPayload)
 
 	switch payload.Type {
