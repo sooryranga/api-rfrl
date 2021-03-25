@@ -1,13 +1,12 @@
 package store
 
 import (
-	"database/sql"
-
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
+	"gopkg.in/guregu/null.v4"
 )
 
 // SessionStore holds all store related function for session
@@ -283,7 +282,7 @@ func (ss SessionStore) UpdateSession(
 	id int,
 	by string,
 	state string,
-	eventID sql.NullInt64,
+	eventID null.Int,
 ) (*tutorme.Session, error) {
 	query := sq.Update("tutor_session").Set("updated_by", by)
 

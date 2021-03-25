@@ -1,11 +1,10 @@
 package usecases
 
 import (
-	"database/sql"
-
 	"github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+	"gopkg.in/guregu/null.v4"
 )
 
 // SessionUseCase holds all business related functions for session
@@ -76,7 +75,7 @@ func (su SessionUseCase) UpdateSession(
 	}
 
 	//TODO: Add logic on what should be updated
-	updatedSession, *err = su.SessionStore.UpdateSession(tx, ID, updatedBy, state, sql.NullInt64{Valid: false})
+	updatedSession, *err = su.SessionStore.UpdateSession(tx, ID, updatedBy, state, null.NewInt(0, false))
 
 	if *err != nil {
 		return session, *err
@@ -215,7 +214,7 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 	createdEvent := (*insertedEvents)[0]
 	currentEvent := session.TargetedEventID
 
-	_, *err = su.SessionStore.UpdateSession(tx, ID, clientID, "", sql.NullInt64{Valid: true, Int64: int64(createdEvent.ID)})
+	_, *err = su.SessionStore.UpdateSession(tx, ID, clientID, "", null.IntFrom(int64(createdEvent.ID)))
 
 	*err = su.SessionStore.DeleteSessionEvents(tx, []int{int(currentEvent.Int64)})
 

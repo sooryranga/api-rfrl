@@ -2,7 +2,6 @@ package tutorme
 
 import (
 	"crypto/rsa"
-	"database/sql"
 	"io/ioutil"
 	"os"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"gopkg.in/guregu/null.v4"
 )
 
 // JWTClaims are custom claims extending default ones.
@@ -67,14 +67,14 @@ func GetSigningKey() (*rsa.PrivateKey, error) {
 
 // Auth model
 type Auth struct {
-	ID           string         `db:"id"`
-	CreatedAt    time.Time      `db:"created_at"`
-	UpdatedAt    time.Time      `db:"updated_at"`
-	Token        sql.NullString `db:"token"`
-	AuthType     string         `db:"auth_type"`
-	Email        sql.NullString `db:"email"`
-	PasswordHash []byte         `db:"password_hash"`
-	ClientID     string         `db:"client_id"`
+	ID           string      `db:"id"`
+	CreatedAt    time.Time   `db:"created_at"`
+	UpdatedAt    time.Time   `db:"updated_at"`
+	Token        null.String `db:"token"`
+	AuthType     string      `db:"auth_type"`
+	Email        null.String `db:"email"`
+	PasswordHash []byte      `db:"password_hash"`
+	ClientID     string      `db:"client_id"`
 }
 
 type AuthStore interface {

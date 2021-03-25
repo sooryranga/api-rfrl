@@ -1,29 +1,30 @@
 package tutorme
 
 import (
-	sql "database/sql"
 	"time"
+
+	"gopkg.in/guregu/null.v4"
 )
 
 type Session struct {
-	ID              int           `db:"id" json:"id"`
-	CreatedAt       time.Time     `db:"created_at" json:"created_at"`
-	UpdatedAt       time.Time     `db:"updated_at" json:"updated_at"`
-	TutorID         string        `db:"tutor_id" json:"tutor_id"`
-	UpdatedBy       string        `db:"updated_by" json:"updated_by"`
-	RoomID          string        `db:"room_id" json:"room_id"`
-	Clients         []Client      `json:"clients"`
-	State           string        `db:"state" json:"state"`
-	TargetedEventID sql.NullInt64 `db:"event_id" json:"event_id"`
+	ID              int       `db:"id" json:"id"`
+	CreatedAt       time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
+	TutorID         string    `db:"tutor_id" json:"tutor_id"`
+	UpdatedBy       string    `db:"updated_by" json:"updated_by"`
+	RoomID          string    `db:"room_id" json:"room_id"`
+	Clients         []Client  `json:"clients"`
+	State           string    `db:"state" json:"state"`
+	TargetedEventID null.Int  `db:"event_id" json:"event_id"`
 }
 
 type Event struct {
-	ID        int            `db:"id" json:"id"`
-	CreatedAt time.Time      `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time      `db:"updated_at" json:"updated_at"`
-	StartTime time.Time      `db:"start_time" json:"start_time"`
-	EndTime   time.Time      `db:"end_time" json:"end_time"`
-	Title     sql.NullString `db:"title" json:"title"`
+	ID        int         `db:"id" json:"id"`
+	CreatedAt time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time   `db:"updated_at" json:"updated_at"`
+	StartTime time.Time   `db:"start_time" json:"start_time"`
+	EndTime   time.Time   `db:"end_time" json:"end_time"`
+	Title     null.String `db:"title" json:"title"`
 }
 
 const (
@@ -49,9 +50,10 @@ func NewEvent(
 	end time.Time,
 	title string,
 ) *Event {
-	event := Event{StartTime: start, EndTime: end}
-	if title != "" {
-		event.Title = sql.NullString{String: title, Valid: false}
+	event := Event{
+		StartTime: start,
+		EndTime:   end,
+		Title:     null.NewString(title, title != ""),
 	}
 	return &event
 }
@@ -66,7 +68,7 @@ type SessionStore interface {
 	CheckSessionsIsForClient(db DB, client string, sessionIDs []int) (bool, error)
 	CheckOverlapingEvents(db DB, clientIDs []string, events *[]Event) (bool, error)
 	DeleteSession(db DB, ID int) error
-	UpdateSession(db DB, ID int, by string, state string, EventID sql.NullInt64) (*Session, error)
+	UpdateSession(db DB, ID int, by string, state string, EventID null.Int) (*Session, error)
 	CreateSession(db DB, session *Session) (*Session, error)
 	CreateSessionClients(db DB, sessionID int, clientIDs []string) (*[]Client, error)
 	CreateSessionEvents(db DB, events []Event) (*[]Event, error)
