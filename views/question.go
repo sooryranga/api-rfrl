@@ -11,11 +11,10 @@ import (
 
 type (
 	QuestionPayload struct {
-		ID     int      `path:"id"`
-		Title  string   `json:"title" validate:"required,gte=0,lte=150"`
-		Body   string   `json:body" validate:"required, gte=0"`
-		Images []string `json:"images" validate:"omitempty,dive,url"`
-		Tags   []int    `json:"tags" validate:"numeric"`
+		ID    int    `path:"id"`
+		Title string `json:"title" validate:"required,gte=0,lte=150"`
+		Body  string `json:body" validate:"required, gte=0"`
+		Tags  []int  `json:"tags" validate:"numeric"`
 	}
 )
 
@@ -40,7 +39,6 @@ func (qv *QuestionView) CreateQuestionEndpoint(c echo.Context) error {
 		claims.ClientID,
 		payload.Title,
 		payload.Body,
-		payload.Images,
 		payload.Tags,
 	)
 
@@ -69,7 +67,6 @@ func (qv QuestionView) UpdateQuestionEndpoint(c echo.Context) error {
 		payload.ID,
 		payload.Title,
 		payload.Body,
-		payload.Images,
 		payload.Tags,
 	)
 
