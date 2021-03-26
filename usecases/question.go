@@ -19,8 +19,8 @@ func NewQuestionUsesCase(
 	return &QuestionUseCase{db, clientStore, questionStore}
 }
 
-func (qu *QuestionUseCase) CreateQuestion(clientID string, title string, body string, images []string, tags []int) (*tutorme.Question, error) {
-	question := tutorme.NewQuestion(title, body, images, tags, clientID)
+func (qu *QuestionUseCase) CreateQuestion(clientID string, title string, body string, tags []int) (*tutorme.Question, error) {
+	question := tutorme.NewQuestion(title, body, tags, clientID)
 	var err = new(error)
 	var tx *sqlx.Tx
 
@@ -46,7 +46,7 @@ func (qu *QuestionUseCase) CreateQuestion(clientID string, title string, body st
 	return createdQuestion, nil
 }
 
-func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string, body string, image []string, tags []int) (*tutorme.Question, error) {
+func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string, body string, tags []int) (*tutorme.Question, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
 
@@ -55,7 +55,7 @@ func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string,
 	defer tutorme.HandleTransactions(tx, err)
 
 	var updatedQuestion *tutorme.Question
-	updatedQuestion, *err = qu.QuestionStore.UpdateQuestion(tx, clientID, id, title, body, image, tags)
+	updatedQuestion, *err = qu.QuestionStore.UpdateQuestion(tx, clientID, id, title, body, tags)
 
 	if *err != nil {
 		return nil, *err

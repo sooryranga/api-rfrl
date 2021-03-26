@@ -15,11 +15,11 @@ type (
 	// DocumentPayload is the struct used to hold payload from /session
 	SessionPayload struct {
 		ID              int      `path:"id"`
-		TutorID         string   `json:"tutor_id" validate:"required,gte=0,lte=100"`
-		RoomID          string   `json:"room_id" validate:"required, gte=0, lte=10"`
-		ClientIDs       []string `json:"client_ids" validate:"required"`
+		TutorID         string   `json:"tutorId" validate:"required,gte=0,lte=100"`
+		RoomID          string   `json:"roomId" validate:"required, gte=0, lte=10"`
+		ClientIDs       []string `json:"clientIds" validate:"required"`
 		State           string   `json:"state" validate:"required"`
-		TargetedEventID int      `json:"targeted_event_id" validate:"omitempty"`
+		TargetedEventID int      `json:"targetedEventId" validate:"omitempty"`
 	}
 
 	// SessionEventPayload is the struct used to hold payload from /session/:sessionId/event/:id
@@ -33,7 +33,7 @@ type (
 
 	ClientSelectionOfSessionEventPayload struct {
 		SessionID int  `path:'sessionId"`
-		CanAttend bool `json:"can_attend" validate:"required"`
+		CanAttend bool `json:"canAttend" validate:"required"`
 	}
 )
 

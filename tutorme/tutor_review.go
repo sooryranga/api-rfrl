@@ -4,9 +4,9 @@ import "time"
 
 type TutorReview struct {
 	ID         int       `db:"id" json:"id"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
-	TutorID    string    `db:"tutor_id" json:"tutor_id"`
+	CreatedAt  time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt  time.Time `db:"updated_at" json:"updatedAt"`
+	TutorID    string    `db:"tutor_id" json:"tutorId"`
 	FromID     string    `db:"from_id" json:"-"`
 	FromClient Client    `json:"from"`
 	Stars      int       `db:"stars" json:"stars"`
@@ -14,8 +14,8 @@ type TutorReview struct {
 }
 
 type TutorReviewAggregate struct {
-	TotalStars       int `db:"total_stars" json:"total_stars"`
-	TotalReviewCount int `db:"total_review_count" json:"total_review_count"`
+	TotalStars       int `db:"total_stars" json:"totalStars"`
+	TotalReviewCount int `db:"total_review_count" json:"totalReviewCount"`
 }
 
 func NewTutorReview(TutorID string, Stars int, Review string) TutorReview {

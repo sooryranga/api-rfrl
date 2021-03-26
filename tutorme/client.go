@@ -10,10 +10,10 @@ import (
 // Client model
 type Client struct {
 	ID        string      `db:"id" json:"id" mapstructure:"id"`
-	CreatedAt time.Time   `db:"created_at" json:"created_at" mapstructure:"created_at"`
-	UpdatedAt time.Time   `db:"updated_at" json:"updated_at" mapstructure:"updated_at"`
-	FirstName null.String `db:"first_name" json:"first_name" mapstructure:"first_name"`
-	LastName  null.String `db:"last_name" json:"last_name" mapstructure:"last_name"`
+	CreatedAt time.Time   `db:"created_at" json:"createdAt" mapstructure:"created_at"`
+	UpdatedAt time.Time   `db:"updated_at" json:"updatedAt" mapstructure:"updated_at"`
+	FirstName null.String `db:"first_name" json:"firstName" mapstructure:"first_name"`
+	LastName  null.String `db:"last_name" json:"lastName" mapstructure:"last_name"`
 	About     null.String `db:"about" json:"about" mapstructure:"about"`
 	Email     null.String `db:"email" json:"email" mapstructure:"email"`
 	Photo     null.String `db:"photo" json:"photo" mapstructure:"photo"`

@@ -12,7 +12,7 @@ import (
 type (
 	TutorReviewPayload struct {
 		ID      int    `path:"id"`
-		TutorID string `json:"tutor_id" validate:"required,gte=0,lte=100"`
+		TutorID string `json:"tutorId" validate:"required,gte=0,lte=100"`
 		Stars   int    `json:"stars" validate:"required,numeric,gte=0,lte=10"`
 		Review  string `json:"review"`
 	}

@@ -8,22 +8,22 @@ import (
 
 type Session struct {
 	ID              int       `db:"id" json:"id"`
-	CreatedAt       time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
-	TutorID         string    `db:"tutor_id" json:"tutor_id"`
-	UpdatedBy       string    `db:"updated_by" json:"updated_by"`
-	RoomID          string    `db:"room_id" json:"room_id"`
+	CreatedAt       time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt       time.Time `db:"updated_at" json:"updatedAt"`
+	TutorID         string    `db:"tutor_id" json:"tutorAd"`
+	UpdatedBy       string    `db:"updated_by" json:"updatedAy"`
+	RoomID          string    `db:"room_id" json:"roomId"`
 	Clients         []Client  `json:"clients"`
 	State           string    `db:"state" json:"state"`
-	TargetedEventID null.Int  `db:"event_id" json:"event_id"`
+	TargetedEventID null.Int  `db:"event_id" json:"eventId"`
 }
 
 type Event struct {
 	ID        int         `db:"id" json:"id"`
-	CreatedAt time.Time   `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time   `db:"updated_at" json:"updated_at"`
-	StartTime time.Time   `db:"start_time" json:"start_time"`
-	EndTime   time.Time   `db:"end_time" json:"end_time"`
+	CreatedAt time.Time   `db:"created_at" json:"createdAt"`
+	UpdatedAt time.Time   `db:"updated_at" json:"updatedAt"`
+	StartTime time.Time   `db:"start_time" json:"startTime"`
+	EndTime   time.Time   `db:"end_time" json:"endTime"`
 	Title     null.String `db:"title" json:"title"`
 }
 

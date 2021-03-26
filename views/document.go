@@ -20,9 +20,9 @@ type (
 
 	// DocumentOrderPayload is the struct used to hold payload from /document-order
 	DocumentOrderPayload struct {
-		RefType     string `json:"ref_type" query:"ref_type" validate:"required,oneof= user session"`
-		RefID       string `json:"ref_id" query:"ref_id" validate:"gte=0,base64"`
-		DocumentIDs []int  `json:"document_ids" validate:"required,gt=0,dive,required,numeric"`
+		RefType     string `json:"refType" query:"ref_type" validate:"required,oneof= user session"`
+		RefID       string `json:"refId" query:"ref_id" validate:"gte=0,base64"`
+		DocumentIDs []int  `json:"documentIds" validate:"required,gt=0,dive,required,numeric"`
 	}
 )
 
