@@ -180,6 +180,36 @@ func (av *AuthView) Signup(c echo.Context) error {
 	})
 }
 
+func (av *AuthView) AuthorizedLogin(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	existingClient, err := av.AuthUseCases.LoginWithJWT(claims.ClientID)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	newClaims := &tutorme.JWTClaims{
+		existingClient.ID,
+		existingClient.Email.String,
+		false,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		},
+	}
+
+	token, err := av.AuthUseCases.GenerateToken(newClaims, &av.Key)
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"token":  token,
+		"client": existingClient,
+	})
+}
+
 // Login is used to login an client
 func (av *AuthView) Login(c echo.Context) error {
 	payload := LoginPayload{}
