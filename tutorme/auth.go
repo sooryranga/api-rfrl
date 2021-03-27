@@ -92,5 +92,6 @@ type AuthUseCase interface {
 	LoginEmail(email string, password string) (*Client, error)
 	LoginGoogle(token string) (*Client, error)
 	LoginLinkedIn(token string) (*Client, error)
+	LoginWithJWT(clientID string) (*Client, error)
 	GenerateToken(claims *JWTClaims, signingKey *rsa.PrivateKey) (string, error)
 }
