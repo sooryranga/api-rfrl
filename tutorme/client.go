@@ -51,15 +51,21 @@ type Education struct {
 	InstitutionLogo string    `db:"institution_logo"`
 }
 
+type GetClientsOptions struct {
+	IsTutor null.Bool
+}
+
 type ClientStore interface {
 	GetClientFromID(db DB, id string) (*Client, error)
 	CreateClient(db DB, client *Client) (*Client, error)
 	UpdateClient(db DB, ID string, client *Client) (*Client, error)
 	GetClientFromIDs(db DB, ID []string) (*[]Client, error)
+	GetClients(db DB, options GetClientsOptions) (*[]Client, error)
 }
 
 type ClientUseCase interface {
 	CreateClient(firstName string, lastName string, about string, email string, photo string, isTutor null.Bool) (*Client, error)
 	UpdateClient(id string, firstName string, lastName string, about string, email string, photo string, isTutor null.Bool) (*Client, error)
 	GetClient(id string) (*Client, error)
+	GetClients(options GetClientsOptions) (*[]Client, error)
 }

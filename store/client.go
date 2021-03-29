@@ -24,12 +24,43 @@ WHERE client.id = $1
 	SELECT * FROM client
 	WHERE client.id IN (?)
 `
-	insertClientSQL string = `
-INSERT INTO client (first_name, last_name, about, email, photo, is_tutor)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING *
-	`
 )
+
+func (cl *ClientStore) GetClients(db tutorme.DB, options tutorme.GetClientsOptions) (*[]tutorme.Client, error) {
+	query := sq.Select("*").From("client")
+
+	if options.IsTutor.Valid {
+		query = query.Where(sq.Eq{"is_tutor": options.IsTutor.Bool})
+	}
+
+	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
+
+	clients := make([]tutorme.Client, 0)
+
+	if err != nil {
+		return &clients, err
+	}
+
+	rows, err := db.Queryx(sql, args...)
+
+	if err != nil {
+		return &clients, err
+	}
+
+	for rows.Next() {
+		var client tutorme.Client
+
+		err := rows.StructScan(&client)
+
+		if err != nil {
+			return &clients, err
+		}
+
+		clients = append(clients, client)
+	}
+
+	return &clients, nil
+}
 
 // GetClientFromID queries the database for client with id
 func (cl *ClientStore) GetClientFromID(db tutorme.DB, id string) (*tutorme.Client, error) {
