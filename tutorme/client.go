@@ -3,20 +3,20 @@ package tutorme
 import (
 	"time"
 
-	"github.com/labstack/gommon/log"
 	"gopkg.in/guregu/null.v4"
 )
 
 // Client model
 type Client struct {
-	ID        string      `db:"id" json:"id" mapstructure:"id"`
-	CreatedAt time.Time   `db:"created_at" json:"createdAt" mapstructure:"created_at"`
-	UpdatedAt time.Time   `db:"updated_at" json:"updatedAt" mapstructure:"updated_at"`
-	FirstName null.String `db:"first_name" json:"firstName" mapstructure:"first_name"`
-	LastName  null.String `db:"last_name" json:"lastName" mapstructure:"last_name"`
-	About     null.String `db:"about" json:"about" mapstructure:"about"`
-	Email     null.String `db:"email" json:"email" mapstructure:"email"`
-	Photo     null.String `db:"photo" json:"photo" mapstructure:"photo"`
+	ID        string      `db:"id" json:"id"`
+	CreatedAt time.Time   `db:"created_at" json:"createdAt"`
+	UpdatedAt time.Time   `db:"updated_at" json:"updatedAt"`
+	FirstName null.String `db:"first_name" json:"firstName"`
+	LastName  null.String `db:"last_name" json:"lastName"`
+	About     null.String `db:"about" json:"about"`
+	Email     null.String `db:"email" json:"email"`
+	Photo     null.String `db:"photo" json:"photo"`
+	IsTutor   null.Bool   `db:"is_tutor" json:"isTutor"`
 }
 
 // NewClient creates new client model struct
@@ -26,6 +26,7 @@ func NewClient(
 	about string,
 	email string,
 	photo string,
+	isTutor null.Bool,
 ) *Client {
 	client := Client{
 		FirstName: null.NewString(firstName, firstName != ""),
@@ -33,8 +34,9 @@ func NewClient(
 		About:     null.NewString(about, about != ""),
 		Email:     null.NewString(email, email != ""),
 		Photo:     null.NewString(photo, photo != ""),
+		IsTutor:   isTutor,
 	}
-	log.Errorf("%v", client)
+
 	return &client
 }
 
@@ -57,7 +59,7 @@ type ClientStore interface {
 }
 
 type ClientUseCase interface {
-	CreateClient(firstName string, lastName string, about string, email string, photo string) (*Client, error)
-	UpdateClient(id string, firstName string, lastName string, about string, email string, photo string) (*Client, error)
+	CreateClient(firstName string, lastName string, about string, email string, photo string, isTutor null.Bool) (*Client, error)
+	UpdateClient(id string, firstName string, lastName string, about string, email string, photo string, isTutor null.Bool) (*Client, error)
 	GetClient(id string) (*Client, error)
 }

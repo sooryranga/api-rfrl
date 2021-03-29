@@ -8,12 +8,12 @@ import (
 
 // Document model
 type Document struct {
-	ID          int         `db:"id" json:"id" mapstructure:"id"`
-	CreatedAt   time.Time   `db:"created_at" json:"createdAt" mapstructure:"created_at"`
-	UpdatedAt   time.Time   `db:"updated_at" json:"updatedAt" mapstructure:"updated_at"`
-	Src         string      `db:"src" json:"src" mapstructure:"src"`
-	Name        string      `db:"name" json:"name" mapstructure:"name"`
-	Description null.String `db:"description" json:"description" mapstructure:"description"`
+	ID          int         `db:"id" json:"id"`
+	CreatedAt   time.Time   `db:"created_at" json:"createdAt"`
+	UpdatedAt   time.Time   `db:"updated_at" json:"updatedAt"`
+	Src         string      `db:"src" json:"src"`
+	Name        string      `db:"name" json:"name"`
+	Description null.String `db:"description" json:"description"`
 	ClientID    string      `db:"client_id"`
 }
 
