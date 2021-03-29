@@ -13,19 +13,29 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"gopkg.in/guregu/null.v4"
 )
+
+type loginFields struct {
+	Email    string `json:"email" validate:"omitempty,email"`
+	Token    string `json:"token"`
+	Password string `json:"password" validate:"omitempty,gte=10"`
+	Type     string `json:"type" validate:"required,oneof= google linkedin email"`
+}
 
 type (
 	// SignUpPayload is the struct used to hold payload from /signup
 	SignUpPayload struct {
-		Email     string `json:"email" validate:"omitempty,email"`
-		FirstName string `json:"firstName"`
-		LastName  string `json:"lastName"`
-		Token     string `json:"token"`
-		Photo     string `json:"profileImageURL"`
-		About     string `json:"about"`
-		Password  string `json:"password" validate:"omitempty,gte=10"`
-		Type      string `json:"type" validate:"required,oneof= google linkedin email"`
+		FirstName string    `json:"firstName"`
+		LastName  string    `json:"lastName"`
+		Photo     string    `json:"profileImageURL"`
+		About     string    `json:"about"`
+		IsTutor   null.Bool `json:"isTutor"`
+		loginFields
+	}
+	// LoginPayload is the struct used to hold payload from /login
+	LoginPayload struct {
+		loginFields
 	}
 )
 
@@ -53,16 +63,6 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 
 	// plus can do more, even with different tag than "fnameorlname"
 }
-
-type (
-	// LoginPayload is the struct used to hold payload from /login
-	LoginPayload struct {
-		Email    string `json:"email" validate:"omitempty,email"`
-		Token    string `json:"token"`
-		Password string `json:"password" validate:"omitempty,gte=10"`
-		Type     string `json:"type" validate:"required,oneof= google linkedin email"`
-	}
-)
 
 // LoginPayloadValidation validates client inputs
 func LoginPayloadValidation(sl validator.StructLevel) {
@@ -118,6 +118,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 			payload.LastName,
 			payload.Photo,
 			payload.About,
+			payload.IsTutor,
 		)
 	case tutorme.LINKEDIN:
 		newClient, err = av.AuthUseCases.SignupLinkedIn(
@@ -127,6 +128,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 			payload.LastName,
 			payload.Photo,
 			payload.About,
+			payload.IsTutor,
 		)
 	case tutorme.EMAIL:
 		newClient, err = av.AuthUseCases.SignupEmail(
@@ -137,6 +139,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 			payload.LastName,
 			payload.Photo,
 			payload.About,
+			payload.IsTutor,
 		)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
@@ -148,10 +151,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-				return echo.NewHTTPError(
-					http.StatusInternalServerError,
-					fmt.Sprintf("Client is already signed up with %s", payload.Type),
-				)
+				return av.login(c, payload.loginFields)
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
 		}
@@ -210,17 +210,7 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	})
 }
 
-// Login is used to login an client
-func (av *AuthView) Login(c echo.Context) error {
-	payload := LoginPayload{}
-
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
+func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	var existingClient *tutorme.Client
 	var err error
 
@@ -236,8 +226,6 @@ func (av *AuthView) Login(c echo.Context) error {
 	}
 
 	if err != nil {
-		c.Logger().Error(err)
-
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
@@ -261,4 +249,19 @@ func (av *AuthView) Login(c echo.Context) error {
 		"token":  token,
 		"client": existingClient,
 	})
+}
+
+// Login is used to login an client
+func (av *AuthView) Login(c echo.Context) error {
+	payload := LoginPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return av.login(c, payload.loginFields)
 }
