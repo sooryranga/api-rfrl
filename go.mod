@@ -20,5 +20,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/guregu/null.v4 v4.0.0
 )

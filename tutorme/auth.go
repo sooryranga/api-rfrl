@@ -82,6 +82,8 @@ type AuthStore interface {
 	GetByEmail(db DB, email string) (*Client, []byte, error)
 	CreateWithEmail(db DB, auth *Auth, clientID string) (int, error)
 	CreateWithToken(db DB, auth *Auth, clientID string) (int, error)
+	CheckEmailAuthExists(db DB, clientID string, email string) (bool, error)
+	UpdateAuthEmail(db DB, clientID string, email string) error
 }
 
 type AuthUseCase interface {
