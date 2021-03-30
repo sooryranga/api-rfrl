@@ -5,6 +5,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+	"gopkg.in/guregu/null.v4"
 )
 
 // ClientStore holds all store related functions for client
@@ -163,6 +164,18 @@ func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Cl
 	if client.IsTutor.Valid {
 		query = query.Set("is_tutor", client.IsTutor)
 	}
+	if client.WorkEmail.Valid {
+		query = query.Set("work_email", client.WorkEmail)
+	}
+	if client.VerifiedWorkEmail.Valid {
+		query = query.Set("verified_work_email", client.VerifiedWorkEmail)
+	}
+	if client.Email.Valid {
+		query = query.Set("email", client.Email)
+	}
+	if client.VerifiedEmail.Valid {
+		query = query.Set("verified_email", client.VerifiedEmail)
+	}
 
 	sql, args, err := query.
 		Where(sq.Eq{"id": ID}).
@@ -183,4 +196,91 @@ func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Cl
 
 	err = row.StructScan(&m)
 	return &m, err
+}
+
+const createEmailVerification string = `
+INSERT INTO email_verification(client_id, email, email_type, pass_code)
+VALUES ($1, $2, $3, $4)
+`
+
+func (cl *ClientStore) CreateEmailVerification(
+	db tutorme.DB,
+	clientID string,
+	email string,
+	emailType string,
+	passCode string,
+) error {
+	_, err := db.Queryx(createEmailVerification, clientID, email, emailType, passCode)
+
+	return err
+}
+
+const verifyEmail string = `
+	SELECT id 
+	FROM email_verification
+	WHERE client_id = $1
+	AND email = $2
+	AND email_type = $3
+	AND pass_code = $4
+	LIMIT 1
+`
+
+const deleteVerifyEmailFromId string = `
+	DELETE FROM email_verification
+	WHERE id = $1
+`
+
+func (cl *ClientStore) VerifyEmail(
+	db tutorme.DB,
+	clientID string,
+	email string,
+	emailType string,
+	passCode string,
+) error {
+	var id null.Int
+
+	err := db.QueryRowx(verifyEmail, clientID, email, emailType, passCode).Scan(&id)
+
+	if err != nil {
+		return err
+	}
+
+	if id.Valid == false {
+		return errors.New("Could not find email to verify")
+	}
+
+	_, err = db.Queryx(deleteVerifyEmailFromId, id)
+
+	return err
+}
+
+const getVerificationEmail string = `
+SELECT email FROM email_verification
+WHERE client_id = $1 AND email_type = $2
+`
+
+func (cl *ClientStore) GetVerificationEmail(db tutorme.DB, clientID string, emailType string) (string, error) {
+	var email null.String
+	err := db.QueryRowx(getVerificationEmail, clientID, emailType).Scan(&email)
+
+	if err != nil {
+		return "", err
+	}
+
+	if email.Valid == false {
+		return "", errors.New("Could not find verification email")
+	}
+
+	return email.String, nil
+}
+
+const deleteVerificationEmail string = `
+DELETE FROM email_verification
+WHERE client_id = $1 AND email_type = $2
+`
+
+func (cl *ClientStore) DeleteVerificationEmail(db tutorme.DB, clientID string, emailType string) error {
+	_, err := db.Queryx(deleteVerificationEmail, clientID, emailType)
+
+	return err
 }

@@ -231,7 +231,7 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
 		}
 
-		return echo.NewHTTPError(http.StatusInternalServerError, "Client or password is not correct")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	claims := &tutorme.JWTClaims{
