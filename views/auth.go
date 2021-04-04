@@ -162,7 +162,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 	claims := &tutorme.JWTClaims{
 		newClient.ID,
 		newClient.Email.String,
-		false,
+		newClient.IsAdmin.Bool,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},
@@ -196,7 +196,7 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	newClaims := &tutorme.JWTClaims{
 		existingClient.ID,
 		existingClient.Email.String,
-		false,
+		existingClient.IsAdmin.Bool,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},
@@ -237,7 +237,7 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	claims := &tutorme.JWTClaims{
 		existingClient.ID,
 		existingClient.Email.String,
-		false,
+		existingClient.IsAdmin.Bool,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},

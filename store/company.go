@@ -17,14 +17,8 @@ func NewCompanyStore() *CompanyStore {
 	return &CompanyStore{}
 }
 
-const createCompany string = `
-INSERT INTO company (name)
-VALUES ($1)
-RETURNING *
-`
-
 const selectCompany string = `
-SELECT * FROM company WHERE name = $1 
+SELECT * FROM company WHERE company_name = $1 
 `
 
 func (cs *CompanyStore) SelectCompany(db tutorme.DB, name string) (*tutorme.Company, error) {
@@ -38,6 +32,12 @@ func (cs *CompanyStore) SelectCompany(db tutorme.DB, name string) (*tutorme.Comp
 
 	return &company, nil
 }
+
+const createCompany string = `
+INSERT INTO company (company_name)
+VALUES ($1)
+RETURNING *
+`
 
 func (cs *CompanyStore) CreateOrSelectCompany(db tutorme.DB, name string) (*tutorme.Company, error) {
 	var company tutorme.Company
@@ -61,7 +61,7 @@ const createCompanyEmailDomain string = `
 INSERT INTO company_email (company_name, email_domain)
 VALUES ($1, $2)
 ON CONFLICT (email_domain) DO UPDATE
-SET suggestions = suggestions + 1;
+SET suggestions = company_email.suggestions + 1;
 `
 
 func (cs *CompanyStore) CreateCompanyEmailDomain(db tutorme.DB, name string, emailDomian string) (string, error) {
@@ -74,7 +74,7 @@ func (cs *CompanyStore) CreateCompanyEmailDomain(db tutorme.DB, name string, ema
 	return emailDomian, nil
 }
 
-func (cs *CompanyStore) UpdatedCompany(db tutorme.DB, company tutorme.Company) (*tutorme.Company, error) {
+func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*tutorme.Company, error) {
 	query := sq.Update("company")
 
 	if company.Photo.Valid {
@@ -99,10 +99,10 @@ func (cs *CompanyStore) UpdatedCompany(db tutorme.DB, company tutorme.Company) (
 		return nil, err
 	}
 
-	var updatedCompany *tutorme.Company
-	err = db.QueryRowx(sql, args...).StructScan(updatedCompany)
+	var updatedCompany tutorme.Company
+	err = db.QueryRowx(sql, args...).StructScan(&updatedCompany)
 
-	return updatedCompany, err
+	return &updatedCompany, err
 }
 
 const updateOrCreateCompanyEmail string = `
@@ -119,7 +119,7 @@ func (cs *CompanyStore) UpdateOrCreateCompanyEmail(db tutorme.DB, name string, e
 
 const getCompanies string = `
 SELECT * FROM company WHERE active = $1
-ORDER BY name
+ORDER BY company_name
 `
 
 func (cs *CompanyStore) GetCompanies(db tutorme.DB, active bool) (*[]tutorme.Company, error) {
