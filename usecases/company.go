@@ -55,9 +55,11 @@ func (comu *CompanyUseCase) UpdateCompany(
 
 	tx, *err = comu.db.Beginx()
 
+	defer tutorme.HandleTransactions(tx, err)
+
 	company := tutorme.NewCompany(name, photo, industry, about, active)
 	var updatedCompany *tutorme.Company
-	updatedCompany, *err = comu.CompanyStore.UpdatedCompany(tx, company)
+	updatedCompany, *err = comu.CompanyStore.UpdateCompany(tx, company)
 
 	if *err != nil {
 		return nil, *err

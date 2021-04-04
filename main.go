@@ -87,6 +87,7 @@ func main() {
 	sessionStore := store.NewSessionStore()
 	tutorReviewStore := store.NewTutorReviewStore()
 	questionStore := store.NewQuestionStore()
+	companyStore := store.NewCompanyStore()
 
 	// Usecases
 	emailerUseCase := usecases.NewEmailerUseCase()
@@ -96,6 +97,7 @@ func main() {
 	sessionUseCase := usecases.NewSessionUseCase(*db, sessionStore)
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)
 	questionUseCase := usecases.NewQuestionUsesCase(db, clientStore, questionStore)
+	companyUseCase := usecases.NewCompanyUseCase(*db, companyStore)
 
 	routes.RegisterAuthRoutes(e, validate, signingKey, publicKey, authUseCase)
 	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
@@ -103,6 +105,7 @@ func main() {
 	routes.RegisterSessionRoutes(e, validate, publicKey, sessionUseCase)
 	routes.RegisterTutorReviewRoutes(e, validate, publicKey, tutorUseCase)
 	routes.RegisteerQuestionRoutes(e, validate, publicKey, questionUseCase)
+	routes.RegisterCompanyRoutes(e, validate, publicKey, companyUseCase)
 
 	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {

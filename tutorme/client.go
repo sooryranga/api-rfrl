@@ -20,9 +20,11 @@ type Client struct {
 	LastName          null.String `db:"last_name" json:"lastName"`
 	About             null.String `db:"about" json:"about"`
 	Email             null.String `db:"email" json:"email"`
-	WorkEmail         null.String `db:"work_email" json:"work_email"`
+	WorkEmail         null.String `db:"work_email" json:"workEmail"`
+	CompanyName       null.String `db:"company_name" json:"companyName"`
 	Photo             null.String `db:"photo" json:"photo"`
 	IsTutor           null.Bool   `db:"is_tutor" json:"isTutor"`
+	IsAdmin           null.Bool   `db:"is_admin" json:"-"`
 	VerifiedWorkEmail null.Bool   `db:"verified_work_email" json:"verifiedWorkEmail"`
 	VerifiedEmail     null.Bool   `db:"verified_email" json:"verifiedEmail"`
 }
