@@ -14,6 +14,7 @@ type ClientUseCase struct {
 	clientStore tutorme.ClientStore
 	emailer     tutorme.EmailerUseCase
 	authStore   tutorme.AuthStore
+	fireStore   tutorme.FirstStoreClient
 }
 
 // NewClientUseCase creates new ClientUseCase
@@ -22,12 +23,14 @@ func NewClientUseCase(
 	clientStore tutorme.ClientStore,
 	authStore tutorme.AuthStore,
 	emailer tutorme.EmailerUseCase,
+	fireStore tutorme.FirstStoreClient,
 ) *ClientUseCase {
 	return &ClientUseCase{
 		&db,
 		clientStore,
 		emailer,
 		authStore,
+		fireStore,
 	}
 }
 
@@ -48,7 +51,28 @@ func (cl *ClientUseCase) CreateClient(
 		photo,
 		isTutor,
 	)
-	return cl.clientStore.CreateClient(cl.db, client)
+	var err = new(error)
+	var tx *sqlx.Tx
+
+	tx, *err = cl.db.Beginx()
+
+	defer tutorme.HandleTransactions(tx, err)
+
+	var createdClient *tutorme.Client
+	createdClient, *err = cl.clientStore.CreateClient(cl.db, client)
+
+	if *err != nil {
+		return nil, *err
+	}
+
+	*err = cl.fireStore.CreateClient(
+		createdClient.ID,
+		createdClient.Photo.String,
+		createdClient.FirstName.String,
+		createdClient.LastName.String,
+	)
+
+	return createdClient, *err
 }
 
 // UpdateClient use case to update a new client
@@ -61,6 +85,13 @@ func (cl *ClientUseCase) UpdateClient(
 	photo string,
 	isTutor null.Bool,
 ) (*tutorme.Client, error) {
+	var err = new(error)
+	var tx *sqlx.Tx
+
+	tx, *err = cl.db.Beginx()
+
+	defer tutorme.HandleTransactions(tx, err)
+
 	client := tutorme.NewClient(
 		firstName,
 		lastName,
@@ -70,7 +101,16 @@ func (cl *ClientUseCase) UpdateClient(
 		isTutor,
 	)
 
-	return cl.clientStore.UpdateClient(cl.db, id, client)
+	var updatedClient *tutorme.Client
+	updatedClient, *err = cl.clientStore.UpdateClient(cl.db, id, client)
+
+	if *err != nil {
+		return nil, *err
+	}
+
+	*err = cl.fireStore.UpdateClient(id, client.Photo, client.FirstName, client.LastName)
+
+	return updatedClient, *err
 }
 
 // GetClient use case to get existing client
