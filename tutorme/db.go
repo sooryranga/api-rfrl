@@ -34,7 +34,6 @@ type DB interface {
 }
 
 func HandleTransactions(tx *sqlx.Tx, err *error) {
-	log.Errorj(log.JSON{"err": *err, "*err != nil": *err != nil})
 	if p := recover(); p != nil {
 		tx.Rollback()
 		log.Error(p)
