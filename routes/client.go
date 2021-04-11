@@ -40,4 +40,12 @@ func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.P
 	}))
 
 	tutoringClientR.GET("/", clientView.GetClientsEndpoint)
+
+	clientEventsR := e.Group("/client/:clientID/events")
+	clientEventsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    key,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
+	clientEventsR.GET("/", clientView.GetClientEventsEndpoint)
 }

@@ -3,6 +3,7 @@ package views
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/go-playground/validator"
@@ -39,6 +40,13 @@ type (
 		Email    string `json:"email" validate:"email"`
 		Type     string `json:"type" validate:"required,oneof= user work"`
 		PassCode string `json:"passCode" validate:"omitempty,len=6,numeric"`
+	}
+
+	GetClientEventsEndpointEndpointPayload struct {
+		ClientID  string `path:"clientID"`
+		StartTime string `query:"startTime" validate:"omitempty, datetime"`
+		EndTime   string `query:"endTime" validate:"omitempty, datetime"`
+		State     string `query:"state" validate:"omitempty,oneof= scheduled pending"`
 	}
 )
 
@@ -262,6 +270,58 @@ func (cv *ClientView) GetVerificationEmails(c echo.Context) error {
 		GetVerificationEmailsResponse{email},
 	)
 
+}
+
+func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
+	payload := GetClientEventsEndpointEndpointPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	claims, err := tutorme.GetClaims(c)
+
+	if !claims.Admin && claims.ClientID != payload.ClientID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "You are unauthorized to view this client")
+	}
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var startTime null.Time
+	if payload.StartTime != "" {
+		start, err := time.Parse(time.RFC3339, payload.StartTime)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		startTime = null.NewTime(start, true)
+	}
+
+	var endTime null.Time
+	if payload.EndTime != "" {
+		end, err := time.Parse(time.RFC3339, payload.EndTime)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		endTime = null.NewTime(end, true)
+	}
+
+	var state null.String
+	if payload.State == "" {
+		state = null.NewString(tutorme.SCHEDULED, true)
+	} else {
+		state = null.NewString(payload.State, true)
+	}
+
+	events, err := cv.ClientUseCase.GetClientEvents(payload.ClientID, startTime, endTime, state)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, *events)
 }
 
 func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
