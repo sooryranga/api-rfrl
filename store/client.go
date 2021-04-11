@@ -4,6 +4,7 @@ import (
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
+	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
@@ -283,4 +284,161 @@ func (cl *ClientStore) DeleteVerificationEmail(db tutorme.DB, clientID string, e
 	_, err := db.Queryx(deleteVerificationEmail, clientID, emailType)
 
 	return err
+}
+
+func (cl ClientStore) GetRelatedEventsByClientIDs(
+	db tutorme.DB,
+	clientIDs []string,
+	startTime null.Time,
+	endTime null.Time,
+	state null.String,
+) (*[]tutorme.Event, error) {
+	sessionQuery := getSessionEventsRelatedToClientsQuery(clientIDs)
+
+	if startTime.Valid {
+		sessionQuery = sessionQuery.Where(sq.GtOrEq{"scheduled_event.start_time": startTime})
+	}
+
+	if endTime.Valid {
+		sessionQuery = sessionQuery.Where(sq.LtOrEq{"scheduled_event.end_time": endTime})
+	}
+
+	if state.Valid {
+		sessionQuery = sessionQuery.Where(sq.Eq{"tutor_session.state": state})
+	}
+
+	events := make([]tutorme.Event, 0)
+	sql, args, err := sessionQuery.PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return &events, err
+	}
+
+	rows, err := db.Queryx(sql, args...)
+
+	if err != nil {
+		return &events, err
+	}
+
+	for rows.Next() {
+		var event tutorme.Event
+
+		err = rows.StructScan(&event)
+
+		if err != nil {
+			return &events, err
+		}
+		events = append(events, event)
+	}
+
+	clientQuery := getEventsRelatedToClientsQuery(clientIDs)
+
+	if startTime.Valid {
+		clientQuery = clientQuery.Where(sq.GtOrEq{"start_time": startTime})
+	}
+
+	if endTime.Valid {
+		clientQuery = clientQuery.Where(sq.LtOrEq{"end_time": endTime})
+	}
+
+	sql, args, err = clientQuery.PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return &events, err
+	}
+
+	rows, err = db.Queryx(sql, args...)
+
+	if err != nil {
+		return &events, err
+	}
+
+	for rows.Next() {
+		var event tutorme.Event
+
+		err = rows.StructScan(&event)
+
+		if err != nil {
+			return &events, err
+		}
+		events = append(events, event)
+	}
+
+	return &events, nil
+}
+
+func getSessionEventsRelatedToClientsQuery(clientIDs []string) sq.SelectBuilder {
+	return sq.Select("scheduled_event.*").
+		From("scheduled_event").
+		Join("tutor_session ON tutor_session.event_id = scheduled_event.id").
+		Join("session_client ON session_client.session_id = tutor_session.id").
+		Where(sq.Eq{"session_client.client_id": clientIDs})
+}
+
+func getEventsRelatedToClientsQuery(clientIDs []string) sq.SelectBuilder {
+	return sq.Select("*").
+		From("scheduled_event").
+		Join("client_event ON client_event.event_id = scheduled_event.id").
+		Where(sq.Eq{"client_event.client_id": clientIDs})
+}
+
+func checkOverlapingSessionEvents(db tutorme.DB, clientIDs []string, events *[]tutorme.Event) (bool, error) {
+	query := getSessionEventsRelatedToClientsQuery(clientIDs).
+		Where(sq.Eq{"tutor_session.state": tutorme.SCHEDULED}).
+		Prefix("SELECT EXISTS(")
+
+	query = filterInclusiveDateRange(query, events)
+
+	sql, args, err := query.Suffix(")").PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return true, err
+	}
+
+	m := false
+
+	row := db.QueryRowx(sql, args...)
+	err = row.Scan(&m)
+
+	return m, err
+}
+
+func checkOverlapingClientEvents(db tutorme.DB, clientIDs []string, events *[]tutorme.Event) (bool, error) {
+	query := getEventsRelatedToClientsQuery(clientIDs).
+		Prefix("SELECT EXISTS(")
+
+	query = filterInclusiveDateRange(query, events)
+
+	sql, args, err := query.Suffix(")").PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return true, err
+	}
+
+	m := false
+
+	row := db.QueryRowx(sql, args...)
+	err = row.Scan(&m)
+
+	return m, err
+}
+
+func (cl ClientStore) CheckOverlapingEventsByClientIDs(db tutorme.DB, clientIds []string, events *[]tutorme.Event) (bool, error) {
+	clientOverlap, err := checkOverlapingClientEvents(db, clientIds, events)
+
+	if err != nil {
+		return true, err
+	}
+	sessionOverlap, err := checkOverlapingSessionEvents(db, clientIds, events)
+
+	if err != nil {
+		return true, err
+	}
+
+	log.Errorj(log.JSON{
+		"clientOverlap":  clientOverlap,
+		"sessionOverlap": sessionOverlap,
+	})
+
+	return clientOverlap || sessionOverlap, nil
 }

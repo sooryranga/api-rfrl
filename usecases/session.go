@@ -12,10 +12,11 @@ import (
 type SessionUseCase struct {
 	DB           *sqlx.DB
 	SessionStore tutorme.SessionStore
+	ClientStore  tutorme.ClientStore
 }
 
-func NewSessionUseCase(db sqlx.DB, sessionStore tutorme.SessionStore) *SessionUseCase {
-	return &SessionUseCase{&db, sessionStore}
+func NewSessionUseCase(db sqlx.DB, sessionStore tutorme.SessionStore, clientStore tutorme.ClientStore) *SessionUseCase {
+	return &SessionUseCase{&db, sessionStore, clientStore}
 }
 
 func (su *SessionUseCase) CreateSession(
@@ -208,7 +209,7 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 		return nil, *err
 	}
 
-	isOverLapping, *err = su.SessionStore.CheckOverlapingEvents(tx, clientIDs, &[]tutorme.Event{event})
+	isOverLapping, *err = su.ClientStore.CheckOverlapingEventsByClientIDs(tx, clientIDs, &[]tutorme.Event{event})
 
 	if *err != nil {
 		return nil, *err
@@ -284,7 +285,7 @@ func (su SessionUseCase) GetSessionRelatedEvents(
 		return nil, errors.New("Session does not belong to client")
 	}
 
-	return su.SessionStore.GetRelatedEventsByClientIDs(su.DB, clientIds, startTime, endTime, state)
+	return su.ClientStore.GetRelatedEventsByClientIDs(su.DB, clientIds, startTime, endTime, state)
 }
 
 func (su SessionUseCase) GetSessionEventByID(clientID string, sessionID int, ID int) (*tutorme.Event, error) {
