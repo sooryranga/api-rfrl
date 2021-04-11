@@ -59,6 +59,10 @@ func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, 
 	query = db.Rebind(query)
 	rows, err = db.Queryx(query, args...)
 
+	if err != nil {
+		return nil, err
+	}
+
 	for rows.Next() {
 		var result getSessionClientsResult
 
@@ -66,11 +70,17 @@ func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, 
 		if err != nil {
 			return nil, err
 		}
-		session := &sessions[idToIndex[result.SessionID]]
+
+		index := idToIndex[result.SessionID]
+		session := &sessions[index]
+
+		if session.TutorID == result.Client.ID {
+			session.Tutor = result.Client
+		}
+
 		session.Clients = append(session.Clients, result.Client)
 	}
 
-	log.Errorj(log.JSON{"sessions": sessions})
 	return &sessions, nil
 }
 
@@ -376,80 +386,6 @@ func (ss SessionStore) GetSessionEventFromSessionID(
 	return &event, err
 }
 
-const getScheduledEventfromClientIDs string = `
-SELECT scheduled_event.* FROM scheduled_event
-JOIN client_event ON client_event.event_id = scheduled_event.id
-WHERE client_event.client_id IN (?)
-	`
-
-func (ss SessionStore) GetScheduledEventsFromClientIDs(
-	db tutorme.DB,
-	clientIds []string,
-	state string,
-) (*[]tutorme.Event, error) {
-	// Events related to session that is scheduled
-	sessionQuery := sq.Select("scheduled_event.*").
-		From("tutor_session").
-		Join("session_client ON session_client.session_id = tutor_session.id").
-		Join("scheduled_event ON tutor_session.event_id = scheduled_event.id").
-		Where(sq.Eq{"session_client.client_id": clientIds}).
-		Where(sq.Eq{"tutor_session.state": tutorme.SCHEDULED})
-
-	if state != "" {
-		sessionQuery = sessionQuery.Where(sq.Eq{"tutor_session.state": state})
-	}
-	sql, args, err := sessionQuery.PlaceholderFormat(sq.Dollar).ToSql()
-
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := db.Queryx(sql, args...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	events := &([]tutorme.Event{})
-
-	for rows.Next() {
-		var e tutorme.Event
-
-		err = rows.StructScan(&e)
-		if err != nil {
-			return nil, err
-		}
-		*events = append(*events, e)
-	}
-
-	// Events related to user created event
-	clientQuery, args, err := sqlx.In(getScheduledEventfromClientIDs, clientIds)
-
-	if err != nil {
-		return nil, err
-	}
-
-	clientQuery = db.Rebind(clientQuery)
-
-	rows, err = db.Queryx(clientQuery, args...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		var e tutorme.Event
-
-		err = rows.StructScan(&e)
-		if err != nil {
-			return nil, err
-		}
-		*events = append(*events, e)
-	}
-
-	return events, nil
-}
-
 const deleteSessionEvents string = `
 DELETE FROM scheduled_event
 WHERE id in (?)
@@ -511,14 +447,25 @@ func filterInclusiveDateRange(query sq.SelectBuilder, events *[]tutorme.Event) s
 	return query
 }
 
-func checkOverlapingSessionEvents(db tutorme.DB, clientIDs []string, events *[]tutorme.Event) (bool, error) {
-	query := sq.Select("*").
-		Prefix("SELECT EXISTS(").
+func getSessionEventsRelatedToClientsQuery(clientIDs []string) sq.SelectBuilder {
+	return sq.Select("scheduled_event.*").
 		From("scheduled_event").
 		Join("tutor_session ON tutor_session.event_id = scheduled_event.id").
 		Join("session_client ON session_client.session_id = tutor_session.id").
-		Where(sq.Eq{"session_client.client_id": clientIDs}).
-		Where(sq.Eq{"tutor_session.state": tutorme.SCHEDULED})
+		Where(sq.Eq{"session_client.client_id": clientIDs})
+}
+
+func getEventsRelatedToClientsQuery(clientIDs []string) sq.SelectBuilder {
+	return sq.Select("*").
+		From("scheduled_event").
+		Join("client_event ON client_event.event_id = scheduled_event.id").
+		Where(sq.Eq{"client_event.client_id": clientIDs})
+}
+
+func checkOverlapingSessionEvents(db tutorme.DB, clientIDs []string, events *[]tutorme.Event) (bool, error) {
+	query := getSessionEventsRelatedToClientsQuery(clientIDs).
+		Where(sq.Eq{"tutor_session.state": tutorme.SCHEDULED}).
+		Prefix("SELECT EXISTS(")
 
 	query = filterInclusiveDateRange(query, events)
 
@@ -537,11 +484,8 @@ func checkOverlapingSessionEvents(db tutorme.DB, clientIDs []string, events *[]t
 }
 
 func checkOverlapingClientEvents(db tutorme.DB, clientIDs []string, events *[]tutorme.Event) (bool, error) {
-	query := sq.Select("*").
-		Prefix("SELECT EXISTS(").
-		From("scheduled_event").
-		Join("client_event ON client_event.event_id = scheduled_event.id").
-		Where(sq.Eq{"client_event.client_id": clientIDs})
+	query := getEventsRelatedToClientsQuery(clientIDs).
+		Prefix("SELECT EXISTS(")
 
 	query = filterInclusiveDateRange(query, events)
 
@@ -557,6 +501,87 @@ func checkOverlapingClientEvents(db tutorme.DB, clientIDs []string, events *[]tu
 	err = row.Scan(&m)
 
 	return m, err
+}
+
+func (ss SessionStore) GetRelatedEventsByClientIDs(
+	db tutorme.DB,
+	clientIDs []string,
+	startTime null.Time,
+	endTime null.Time,
+	state null.String,
+) (*[]tutorme.Event, error) {
+	sessionQuery := getSessionEventsRelatedToClientsQuery(clientIDs)
+
+	if startTime.Valid {
+		sessionQuery = sessionQuery.Where(sq.GtOrEq{"scheduled_event.start_time": startTime})
+	}
+
+	if endTime.Valid {
+		sessionQuery = sessionQuery.Where(sq.LtOrEq{"scheduled_event.end_time": endTime})
+	}
+
+	if state.Valid {
+		sessionQuery = sessionQuery.Where(sq.Eq{"tutor_session.state": state})
+	}
+
+	events := make([]tutorme.Event, 0)
+	sql, args, err := sessionQuery.PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return &events, err
+	}
+
+	rows, err := db.Queryx(sql, args...)
+
+	if err != nil {
+		return &events, err
+	}
+
+	for rows.Next() {
+		var event tutorme.Event
+
+		err = rows.StructScan(&event)
+
+		if err != nil {
+			return &events, err
+		}
+		events = append(events, event)
+	}
+
+	clientQuery := getEventsRelatedToClientsQuery(clientIDs)
+
+	if startTime.Valid {
+		clientQuery = clientQuery.Where(sq.GtOrEq{"start_time": startTime})
+	}
+
+	if endTime.Valid {
+		clientQuery = clientQuery.Where(sq.LtOrEq{"end_time": endTime})
+	}
+
+	sql, args, err = clientQuery.PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return &events, err
+	}
+
+	rows, err = db.Queryx(sql, args...)
+
+	if err != nil {
+		return &events, err
+	}
+
+	for rows.Next() {
+		var event tutorme.Event
+
+		err = rows.StructScan(&event)
+
+		if err != nil {
+			return &events, err
+		}
+		events = append(events, event)
+	}
+
+	return &events, nil
 }
 
 func (ss SessionStore) CheckOverlapingEvents(db tutorme.DB, clientIds []string, events *[]tutorme.Event) (bool, error) {

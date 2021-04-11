@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
@@ -19,7 +20,7 @@ import (
 type loginFields struct {
 	Email    string `json:"email" validate:"omitempty,email"`
 	Token    string `json:"token"`
-	Password string `json:"password" validate:"omitempty,gte=10"`
+	Password string `json:"password" validate:"omitempty,gte=6"`
 	Type     string `json:"type" validate:"required,oneof= google linkedin email"`
 }
 
@@ -42,7 +43,7 @@ type (
 // SignUpPayloadValidation validates client inputs
 func SignUpPayloadValidation(sl validator.StructLevel) {
 	payload := sl.Current().Interface().(SignUpPayload)
-
+	log.Errorj(log.JSON{"payload": payload})
 	switch payload.Type {
 	case tutorme.GOOGLE:
 		if len(payload.Token) == 0 {
@@ -56,7 +57,7 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 		if len(payload.Email) == 0 {
 			sl.ReportError(payload.Email, "email", "Email", "validEmail", "")
 		}
-		if len(payload.Password) < 10 {
+		if len(payload.Password) < 6 {
 			sl.ReportError(payload.Email, "password", "Password", "validPassworrd", "")
 		}
 	}
@@ -68,7 +69,7 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 func LoginPayloadValidation(sl validator.StructLevel) {
 
 	payload := sl.Current().Interface().(LoginPayload)
-
+	log.Errorj(log.JSON{"payload": payload})
 	switch payload.Type {
 	case tutorme.GOOGLE:
 		if len(payload.Token) == 0 {
@@ -82,7 +83,7 @@ func LoginPayloadValidation(sl validator.StructLevel) {
 		if len(payload.Email) == 0 {
 			sl.ReportError(payload.Email, "email", "Email", "validEmail", "")
 		}
-		if len(payload.Password) < 10 {
+		if len(payload.Password) < 6 {
 			sl.ReportError(payload.Email, "password", "Password", "validPassworrd", "")
 		}
 	}
