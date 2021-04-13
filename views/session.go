@@ -7,6 +7,7 @@ import (
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
@@ -38,8 +39,8 @@ type (
 
 	GetSessionRelatedEventsEndpointPayload struct {
 		SessionID int    `path:"sessionID"`
-		StartTime string `query:"startTime" validate:"omitempty, datetime"`
-		EndTime   string `query:"endTime" validate:"omitempty, datetime"`
+		StartTime string `query:"start" validate:"omitempty, datetime"`
+		EndTime   string `query:"end" validate:"omitempty, datetime"`
 		State     string `query:"state" validate:"omitempty,oneof= scheduled pending"`
 	}
 )
@@ -62,12 +63,13 @@ func (sv *SessionView) CreateSessionEndpoint(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-
+	log.Errorf(payload.State)
 	session, err := sv.SessionUseCase.CreateSession(
 		payload.TutorID,
 		claims.ClientID,
 		payload.RoomID,
 		payload.ClientIDs,
+		payload.State,
 	)
 
 	if err != nil {
@@ -90,10 +92,30 @@ func (sv *SessionView) UpdateSessionEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{payload.ID})
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !forClient {
+		return echo.NewHTTPError(http.StatusUnauthorized, "You are unauthorized to update this session")
+	}
+
 	session, err := sv.SessionUseCase.UpdateSession(payload.ID, claims.ClientID, payload.State)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if session.TargetedEventID.Valid {
+		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, session.Event.ID)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		session.Event = *event
 	}
 
 	return c.JSON(http.StatusOK, session)
@@ -133,10 +155,30 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{ID})
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !forClient {
+		return echo.NewHTTPError(http.StatusBadRequest, "Session does not belong to client")
+	}
+
 	session, err := sv.SessionUseCase.GetSessionByID(claims.ClientID, ID)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if session.TargetedEventID.Valid {
+		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, session.Event.ID)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		session.Event = *event
 	}
 
 	return c.JSON(http.StatusOK, session)
@@ -197,7 +239,17 @@ func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	event, err := sv.SessionUseCase.GetSessionEventByID(claims.ClientID, sessionID, ID)
+	forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{sessionID})
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !forClient {
+		return echo.NewHTTPError(http.StatusBadRequest, "Session does not belong to client")
+	}
+
+	event, err := sv.SessionUseCase.GetSessionEventByID(sessionID, ID)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -217,11 +269,53 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 	}
 
 	sessions := &([]tutorme.Session{})
+	sessionIDs := make([]int, 0)
 
 	if roomID != "" {
 		sessions, err = sv.SessionUseCase.GetSessionByRoomId(claims.ClientID, roomID, state)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		for i := 0; i < len(*sessions); i++ {
+			sessionIDs = append(sessionIDs, (*sessions)[i].ID)
+		}
+
+		forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, sessionIDs)
+
+		if err != nil {
+			return err
+		}
+
+		if !forClient {
+			return errors.New("Room does not belong to client")
+		}
+
 	} else {
 		sessions, err = sv.SessionUseCase.GetSessionByClientID(claims.ClientID, state)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		sessionIDs := make([]int, len(*sessions))
+		for i := 0; i < len(*sessions); i++ {
+			sessionIDs = append(sessionIDs, (*sessions)[i].ID)
+		}
+	}
+
+	sessionIDToEvent, err := sv.SessionUseCase.GetSessionsEvent(sessionIDs)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	for i := 0; i < len(*sessions); i++ {
+		session := (*sessions)[i]
+		if event, ok := sessionIDToEvent[session.ID]; ok {
+			session.Event = *event
+		}
 	}
 
 	if err != nil {
@@ -250,6 +344,20 @@ func (sv *SessionView) CreateClientActionOnSessionEvent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	allClientsResponded, err := sv.SessionUseCase.CheckAllClientSessionHasResponded(payload.SessionID)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if allClientsResponded {
+		_, err = sv.SessionUseCase.UpdateSession(payload.SessionID, claims.ClientID, tutorme.SCHEDULED)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+	}
+
 	return c.NoContent(http.StatusOK)
 }
 
@@ -266,23 +374,23 @@ func (sv *SessionView) GetSessionRelatedEventsEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var startTime null.Time
+	var start null.Time
 	if payload.StartTime != "" {
-		start, err := time.Parse(time.RFC3339, payload.StartTime)
+		parsedStart, err := time.Parse(time.RFC3339, payload.StartTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		startTime = null.NewTime(start, true)
+		start = null.NewTime(parsedStart, true)
 	}
 
-	var endTime null.Time
+	var end null.Time
 	if payload.EndTime != "" {
-		end, err := time.Parse(time.RFC3339, payload.EndTime)
+		parsedEnd, err := time.Parse(time.RFC3339, payload.EndTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		endTime = null.NewTime(end, true)
+		end = null.NewTime(parsedEnd, true)
 	}
 
 	var state null.String
@@ -292,7 +400,7 @@ func (sv *SessionView) GetSessionRelatedEventsEndpoint(c echo.Context) error {
 		state = null.NewString(payload.State, true)
 	}
 
-	events, err := sv.SessionUseCase.GetSessionRelatedEvents(claims.ClientID, payload.SessionID, startTime, endTime, state)
+	events, err := sv.SessionUseCase.GetSessionRelatedEvents(claims.ClientID, payload.SessionID, start, end, state)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

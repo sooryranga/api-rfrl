@@ -18,16 +18,21 @@ func NewSessionStore() *SessionStore {
 
 type getSessionClientsResult struct {
 	tutorme.Client
-	SessionID int `db:"session_id"`
+	CanAttend null.Bool `db:"can_attend"`
+	SessionID int       `db:"session_id"`
 }
 
 const getSessionClients string = `
-SELECT client.*, session_client.session_id as "session_id" FROM session_client
+SELECT 
+	client.*, 
+	session_client.session_id as "session_id",
+	session_client.can_attend as "can_attend" 
+FROM session_client
 JOIN client ON session_client.client_id = client.id
 WHERE session_client.session_id in (?)
 	`
 
-func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, error) {
+func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows, clientID string) (*[]tutorme.Session, error) {
 	idToIndex := make(map[int]int)
 	sessions := make([]tutorme.Session, 0)
 	var sessionIds []int
@@ -77,6 +82,10 @@ func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, 
 			session.Tutor = result.Client
 		}
 
+		if result.Client.ID == clientID {
+			session.CanAttend = result.CanAttend
+		}
+
 		session.Clients = append(session.Clients, result.Client)
 	}
 
@@ -85,7 +94,7 @@ func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, 
 
 func (ss *SessionStore) GetSessionByClientID(db tutorme.DB, clientID string, state string) (*[]tutorme.Session, error) {
 	query := sq.
-		Select("tutor_session.*").
+		Select(`tutor_session.*`).
 		From("tutor_session").
 		Join("session_client ON tutor_session.id = session_client.session_id").
 		Where(sq.Eq{"session_client.client_id": clientID})
@@ -106,7 +115,7 @@ func (ss *SessionStore) GetSessionByClientID(db tutorme.DB, clientID string, sta
 		return nil, err
 	}
 
-	return getSessionWithClients(db, rows)
+	return getSessionWithClients(db, rows, clientID)
 }
 
 const getSessionByRoomID string = `
@@ -114,7 +123,7 @@ SELECT * FROM tutor_session
 WHERE room_id = $1 AND state = $2
 	`
 
-func (ss *SessionStore) GetSessionByRoomID(db tutorme.DB, roomID string, state string) (*[]tutorme.Session, error) {
+func (ss *SessionStore) GetSessionByRoomID(db tutorme.DB, clientID string, roomID string, state string) (*[]tutorme.Session, error) {
 	query := sq.Select("*").From("tutor_session").Where(sq.Eq{"room_id": roomID})
 
 	if state != "" {
@@ -133,7 +142,7 @@ func (ss *SessionStore) GetSessionByRoomID(db tutorme.DB, roomID string, state s
 		return nil, err
 	}
 
-	return getSessionWithClients(db, rows)
+	return getSessionWithClients(db, rows, clientID)
 }
 
 const checkSessionsIsForClient string = `
@@ -165,14 +174,14 @@ SELECT * FROM tutor_session
 WHERE id = $1
 	`
 
-func (ss *SessionStore) GetSessionByID(db tutorme.DB, ID int) (*tutorme.Session, error) {
+func (ss *SessionStore) GetSessionByID(db tutorme.DB, clientID string, ID int) (*tutorme.Session, error) {
 	rows, err := db.Queryx(getSessionByID, ID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	sessions, err := getSessionWithClients(db, rows)
+	sessions, err := getSessionWithClients(db, rows, clientID)
 
 	if err != nil {
 		return nil, err
@@ -271,13 +280,57 @@ func (ss SessionStore) CreateClientSelectionOfEvent(
 	return err
 }
 
+const getSessionsEvent string = `
+SELECT scheduled_event.*, tutor_session.id as "session_id" FROM tutor_session
+INNER JOIN tutor_session.event_id = scheduled_event.id
+WHERE tutor_session.id in (?)
+`
+
+type getSessionsEventResult struct {
+	tutorme.Event
+	SessionID int `db:"session_id"`
+}
+
+func (ss SessionStore) GetSessionsEvent(db tutorme.DB, sessionIDs []int) (map[int]*tutorme.Event, error) {
+	sessionIDToEventMap := make(map[int]*tutorme.Event)
+	query, args, err := sqlx.In(getSessionsEvent, sessionIDs)
+
+	if err != nil {
+		return nil, err
+	}
+	query = db.Rebind(query)
+
+	rows, err := db.Queryx(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var result getSessionsEventResult
+
+		err := rows.StructScan(&result)
+
+		if err != nil {
+			return nil, err
+		}
+		sessionIDToEventMap[result.SessionID] = &result.Event
+	}
+
+	return sessionIDToEventMap, nil
+}
+
 const getSessionByIDForUpdate string = `
-SELECT * FROM tutor_session
-WHERE id = $1
+SELECT 
+	tutor_session.*, 
+	session_client.can_attend as "can_attend" 
+FROM tutor_session
+INNER JOIN session_client ON session_client.session_id = tutor_session.id
+WHERE tutor_session.id = $1
 FOR UPDATE OF tutor_session
 	`
 
-func (ss SessionStore) GetSessionByIDForUpdate(db tutorme.DB, ID int) (*tutorme.Session, error) {
+func (ss SessionStore) GetSessionByIDForUpdate(db tutorme.DB, clientID string, ID int) (*tutorme.Session, error) {
 	row := db.QueryRowx(getSessionByIDForUpdate, ID)
 
 	var m tutorme.Session
@@ -444,6 +497,29 @@ func filterInclusiveDateRange(query sq.SelectBuilder, events *[]tutorme.Event) s
 		)
 	}
 	return query
+}
+
+const checkAllClientSessionHasRespondedQuery string = `
+SELECT EXISTS(
+	SELECT 1 FROM session_client
+	WHERE session_client.session_id = $1 AND 
+	session_client.can_attend = NULL
+)
+`
+
+func (ss SessionStore) CheckAllClientSessionHasResponded(db tutorme.DB, id int) (bool, error) {
+	var notAllClientsResponded null.Bool
+	err := db.QueryRowx(checkAllClientSessionHasRespondedQuery, id).Scan(&notAllClientsResponded)
+
+	if err != nil {
+		return false, err
+	}
+
+	if !notAllClientsResponded.Valid {
+		return false, errors.New("Unexpected invalid bool returned from database")
+	}
+
+	return !notAllClientsResponded.Bool, nil
 }
 
 const checkClientsAttendedTutorSession string = `

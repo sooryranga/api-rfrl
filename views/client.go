@@ -44,8 +44,8 @@ type (
 
 	GetClientEventsEndpointEndpointPayload struct {
 		ClientID  string `path:"clientID"`
-		StartTime string `query:"startTime" validate:"omitempty, datetime"`
-		EndTime   string `query:"endTime" validate:"omitempty, datetime"`
+		StartTime string `query:"start" validate:"omitempty, datetime"`
+		EndTime   string `query:"end" validate:"omitempty, datetime"`
 		State     string `query:"state" validate:"omitempty,oneof= scheduled pending"`
 	}
 )
@@ -289,23 +289,23 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var startTime null.Time
+	var start null.Time
 	if payload.StartTime != "" {
-		start, err := time.Parse(time.RFC3339, payload.StartTime)
+		parsedStart, err := time.Parse(time.RFC3339, payload.StartTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		startTime = null.NewTime(start, true)
+		start = null.NewTime(parsedStart, true)
 	}
 
-	var endTime null.Time
+	var end null.Time
 	if payload.EndTime != "" {
-		end, err := time.Parse(time.RFC3339, payload.EndTime)
+		parsedEnd, err := time.Parse(time.RFC3339, payload.EndTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		endTime = null.NewTime(end, true)
+		end = null.NewTime(parsedEnd, true)
 	}
 
 	var state null.String
@@ -315,7 +315,7 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 		state = null.NewString(payload.State, true)
 	}
 
-	events, err := cv.ClientUseCase.GetClientEvents(payload.ClientID, startTime, endTime, state)
+	events, err := cv.ClientUseCase.GetClientEvents(payload.ClientID, start, end, state)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
