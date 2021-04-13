@@ -289,18 +289,18 @@ func (cl *ClientStore) DeleteVerificationEmail(db tutorme.DB, clientID string, e
 func (cl ClientStore) GetRelatedEventsByClientIDs(
 	db tutorme.DB,
 	clientIDs []string,
-	startTime null.Time,
-	endTime null.Time,
+	start null.Time,
+	end null.Time,
 	state null.String,
 ) (*[]tutorme.Event, error) {
 	sessionQuery := getSessionEventsRelatedToClientsQuery(clientIDs)
 
-	if startTime.Valid {
-		sessionQuery = sessionQuery.Where(sq.GtOrEq{"scheduled_event.start_time": startTime})
+	if start.Valid {
+		sessionQuery = sessionQuery.Where(sq.GtOrEq{"scheduled_event.start_time": start})
 	}
 
-	if endTime.Valid {
-		sessionQuery = sessionQuery.Where(sq.LtOrEq{"scheduled_event.end_time": endTime})
+	if end.Valid {
+		sessionQuery = sessionQuery.Where(sq.LtOrEq{"scheduled_event.end_time": end})
 	}
 
 	if state.Valid {
@@ -333,12 +333,12 @@ func (cl ClientStore) GetRelatedEventsByClientIDs(
 
 	clientQuery := getEventsRelatedToClientsQuery(clientIDs)
 
-	if startTime.Valid {
-		clientQuery = clientQuery.Where(sq.GtOrEq{"start_time": startTime})
+	if start.Valid {
+		clientQuery = clientQuery.Where(sq.GtOrEq{"start_time": start})
 	}
 
-	if endTime.Valid {
-		clientQuery = clientQuery.Where(sq.LtOrEq{"end_time": endTime})
+	if end.Valid {
+		clientQuery = clientQuery.Where(sq.LtOrEq{"end_time": end})
 	}
 
 	sql, args, err = clientQuery.PlaceholderFormat(sq.Dollar).ToSql()
