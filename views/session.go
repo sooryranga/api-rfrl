@@ -109,13 +109,13 @@ func (sv *SessionView) UpdateSessionEndpoint(c echo.Context) error {
 	}
 
 	if session.TargetedEventID.Valid {
-		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, session.Event.ID)
+		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, int(session.TargetedEventID.Int64))
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		session.Event = *event
+		session.Event = event
 	}
 
 	return c.JSON(http.StatusOK, session)
@@ -170,15 +170,15 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-
+	log.Errorj(log.JSON{"session": session})
 	if session.TargetedEventID.Valid {
-		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, session.Event.ID)
+		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, int(session.TargetedEventID.Int64))
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		session.Event = *event
+		session.Event = event
 	}
 
 	return c.JSON(http.StatusOK, session)
@@ -299,27 +299,24 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		sessionIDs := make([]int, len(*sessions))
 		for i := 0; i < len(*sessions); i++ {
 			sessionIDs = append(sessionIDs, (*sessions)[i].ID)
 		}
 	}
 
-	sessionIDToEvent, err := sv.SessionUseCase.GetSessionsEvent(sessionIDs)
+	if len(sessionIDs) > 0 {
+		sessionIDToEvent, err := sv.SessionUseCase.GetSessionsEvent(sessionIDs)
 
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	for i := 0; i < len(*sessions); i++ {
-		session := (*sessions)[i]
-		if event, ok := sessionIDToEvent[session.ID]; ok {
-			session.Event = *event
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-	}
 
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		for i := 0; i < len(*sessions); i++ {
+			session := (*sessions)[i]
+			if event, ok := sessionIDToEvent[session.ID]; ok {
+				(*sessions)[i].Event = event
+			}
+		}
 	}
 
 	return c.JSON(http.StatusOK, *sessions)

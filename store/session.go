@@ -282,7 +282,7 @@ func (ss SessionStore) CreateClientSelectionOfEvent(
 
 const getSessionsEvent string = `
 SELECT scheduled_event.*, tutor_session.id as "session_id" FROM tutor_session
-INNER JOIN tutor_session.event_id = scheduled_event.id
+INNER JOIN scheduled_event ON tutor_session.event_id = scheduled_event.id
 WHERE tutor_session.id in (?)
 `
 
