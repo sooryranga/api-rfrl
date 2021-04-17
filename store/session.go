@@ -345,6 +345,7 @@ func (ss SessionStore) UpdateSession(
 	by string,
 	state string,
 	eventID null.Int,
+	conferenceID null.String,
 ) (*tutorme.Session, error) {
 	query := sq.Update("tutor_session").Set("updated_by", by)
 
@@ -354,6 +355,10 @@ func (ss SessionStore) UpdateSession(
 
 	if eventID.Valid {
 		query = query.Set("event_id", eventID)
+	}
+
+	if conferenceID.Valid {
+		query = query.Set("conference_id", conferenceID)
 	}
 
 	sql, args, err := query.
@@ -522,7 +527,19 @@ func (ss SessionStore) CheckAllClientSessionHasResponded(db tutorme.DB, id int) 
 	return !notAllClientsResponded.Bool, nil
 }
 
-const checkClientsAttendedTutorSession string = `
+const getSessionFromConferenceIDQuery string = `
+SELECT * FROM tutor_session
+WHERE conference_id = $1
+`
+
+func (ss SessionStore) GetSessionFromConferenceID(db tutorme.DB, conferenceID string) (*tutorme.Session, error) {
+	var session tutorme.Session
+	err := db.QueryRowx(getSessionFromConferenceIDQuery, conferenceID).StructScan(&session)
+
+	return &session, err
+}
+
+const checkClientsAttendedTutorSessionQuery string = `
 SELECT count(client_id) FROM session_client
 JOIN tutor_session ON tutor_session.id = session_client.session_id
 WHERE client_id IN (?) 
@@ -533,7 +550,7 @@ GROUP BY session_id
 	`
 
 func (ss SessionStore) CheckClientsAttendedTutorSession(db tutorme.DB, tutorID string, clientIDs []string) (bool, error) {
-	sql, args, err := sqlx.In(checkClientsAttendedTutorSession, clientIDs, tutorID)
+	sql, args, err := sqlx.In(checkClientsAttendedTutorSessionQuery, clientIDs, tutorID)
 
 	if err != nil {
 		return false, err
