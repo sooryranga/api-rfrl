@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -42,6 +43,10 @@ type (
 		StartTime string `query:"start" validate:"omitempty, datetime"`
 		EndTime   string `query:"end" validate:"omitempty, datetime"`
 		State     string `query:"state" validate:"omitempty,oneof= scheduled pending"`
+	}
+
+	GetSessionConferenceIDEndpointResponse struct {
+		ConferenceID string `json:"conferenceID"`
 	}
 )
 
@@ -218,6 +223,68 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, *event)
+}
+
+func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
+	ID, err := strconv.Atoi(c.Param("sessionID"))
+
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{ID})
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !forClient {
+		return echo.NewHTTPError(http.StatusBadRequest, "Session does not belong to client")
+	}
+
+	session, err := sv.SessionUseCase.GetSessionByID(claims.ClientID, ID)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !session.TargetedEventID.Valid {
+		return echo.NewHTTPError(http.StatusBadRequest, "This session is not scheduled")
+	}
+
+	event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, int(session.TargetedEventID.Int64))
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+	}
+
+	session.Event = event
+
+	if session.Event.StartTime.Sub(time.Now()).Minutes() > 30 {
+		return echo.NewHTTPError(
+			http.StatusBadGateway, fmt.Sprintf(
+				"Session event starts at : %s. Please try again closer to that time.",
+				session.Event.StartTime.Format(time.RFC3339),
+			),
+		)
+	}
+
+	if session.Event.EndTime.Sub(time.Now()).Minutes() < -10 {
+		return echo.NewHTTPError(
+			http.StatusBadGateway,
+			fmt.Sprintf(
+				"Session event has ended at : %s.",
+				session.Event.EndTime.Format(time.RFC3339),
+			),
+		)
+	}
+
+	return c.JSON(
+		http.StatusOK,
+		GetSessionConferenceIDEndpointResponse{ConferenceID: session.ConferenceID},
+	)
 }
 
 func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {

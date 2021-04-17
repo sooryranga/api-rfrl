@@ -85,8 +85,13 @@ func (su SessionUseCase) UpdateSession(
 		return nil, *err
 	}
 
+	conferenceID := null.NewString("", false)
+	if state == tutorme.SCHEDULED {
+		conferenceID = null.NewString("gen_random_uuid()", true)
+	}
+
 	//TODO: Add logic on what should be updated
-	updatedSession, *err = su.SessionStore.UpdateSession(tx, ID, updatedBy, state, null.NewInt(0, false))
+	updatedSession, *err = su.SessionStore.UpdateSession(tx, ID, updatedBy, state, null.NewInt(0, false), conferenceID)
 
 	if *err != nil {
 		return session, *err
@@ -213,7 +218,14 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 	createdEvent := (*insertedEvents)[0]
 	currentEvent := session.TargetedEventID
 
-	_, *err = su.SessionStore.UpdateSession(tx, ID, clientID, "", null.IntFrom(int64(createdEvent.ID)))
+	_, *err = su.SessionStore.UpdateSession(
+		tx,
+		ID,
+		clientID,
+		"",
+		null.IntFrom(int64(createdEvent.ID)),
+		null.NewString("", false),
+	)
 
 	if *err != nil {
 		return nil, *err
@@ -298,4 +310,8 @@ func (su SessionUseCase) GetSessionsEvent(sessionIDs []int) (map[int]*tutorme.Ev
 
 func (su SessionUseCase) CheckSessionsIsForClient(clientID string, sessionIDs []int) (bool, error) {
 	return su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, sessionIDs)
+}
+
+func (su SessionUseCase) GetSessionFromConferenceID(conferenceID string) (*tutorme.Session, error) {
+	return su.SessionStore.GetSessionFromConferenceID(su.DB, conferenceID)
 }

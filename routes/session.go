@@ -47,6 +47,15 @@ func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.
 
 	clientActionOnEventR.POST("/", sessionViews.CreateClientActionOnSessionEvent)
 
+	sessionConferenceR := e.Group("/session/:sessionID/conference")
+	sessionConferenceR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    key,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
+
+	sessionConferenceR.GET("/", sessionViews.GetSessionConferenceIDEndpoint)
+
 	sessionsR := e.Group("/sessions/")
 	sessionsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
