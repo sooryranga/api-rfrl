@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,6 +12,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gorilla/websocket"
+)
+
+type (
+	// ClientPayload is the struct used to hold payload from /client
+	SubmitCodePayload struct {
+		ID       int    `path:"sessionId"`
+		Code     string `json:"code"`
+		Language string `json:"language"`
+	}
 )
 
 type ConferenceView struct {
@@ -71,4 +81,45 @@ func (cv *ConferenceView) ConnectToSessionClients(c echo.Context) error {
 	cv.ConferenceUseCase.Serve(ws, conferenceID)
 
 	return nil
+}
+
+func (cv *ConferenceView) SubmitCode(c echo.Context) error {
+	payload := SubmitCodePayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	_, ok := tutorme.CodeLanguageToTopic[payload.Language]
+
+	if !ok {
+		return echo.NewHTTPError(
+			http.StatusBadRequest,
+			fmt.Sprintf("Programming Language (%s) not supported", payload.Language),
+		)
+	}
+
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	forClient, err := cv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{payload.ID})
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !forClient {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized for this session")
+	}
+
+	err = cv.ConferenceUseCase.SubmitCode(payload.ID, payload.Code, payload.Language)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.NoContent(http.StatusOK)
 }
