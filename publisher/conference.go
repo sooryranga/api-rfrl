@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/labstack/gommon/log"
 )
 
 type ConferencePublisher struct {
@@ -34,6 +35,8 @@ func (cp *ConferencePublisher) PublishCode(codeID int, rawCode string, language 
 	}
 
 	topic := tutorme.CodeLanguageToTopic[language]
+
+	log.Error(topic)
 
 	err = cp.Publisher.Publish(topic, codeInJSON)
 

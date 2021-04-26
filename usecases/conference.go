@@ -185,7 +185,6 @@ func (h ConferenceHub) Run() {
 			}
 
 		case message := <-h.broadcast:
-			log.Errorj(log.JSON{"broadcast-message": message})
 			conferenceID := message.ConferenceID
 			conferenceClients, ok := h.sessionConnectedClients[conferenceID]
 
@@ -212,8 +211,13 @@ type ConferenceUseCase struct {
 	ConferencePublisher tutorme.ConferencePublisher
 }
 
-func NewConferenceUseCase(hub *ConferenceHub) ConferenceUseCase {
-	return ConferenceUseCase{Hub: hub}
+func NewConferenceUseCase(db *sqlx.DB, conferenceStore tutorme.ConferenceStore, hub *ConferenceHub, publisher tutorme.ConferencePublisher) ConferenceUseCase {
+	return ConferenceUseCase{
+		DB: db,
+		Hub: hub,
+		ConferencePublisher: publisher,
+		ConferenceStore: conferenceStore,
+	}
 }
 
 func (cu ConferenceUseCase) Serve(conn *websocket.Conn, conferenceID string) {
