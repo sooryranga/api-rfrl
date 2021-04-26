@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/labstack/gommon/log"
 )
 
 type GooglePublisher struct {
@@ -41,7 +42,7 @@ func (p *GooglePublisher) Publish(topicName string, data []byte) error {
 	if !ok {
 		return errors.New("topic not found")
 	}
-
+	log.Error(data)
 	publishResult := topic.Publish(ctx, &pubsub.Message{
 		Data: data,
 	})
