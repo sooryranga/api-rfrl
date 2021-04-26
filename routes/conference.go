@@ -16,7 +16,7 @@ func RegisterConferenceRoutes(e *echo.Echo, publicKey *rsa.PublicKey, sessionUse
 	conferenceR := e.Group("/conference/:conferenceID")
 	conferenceR.GET("/", views.ConnectToSessionClients)
 
-	conferenceSessionR := e.Group("conference-session/:sessionId")
+	conferenceSessionR := e.Group("conference-session/:sessionID")
 	conferenceSessionR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    publicKey,
 		SigningMethod: tutorme.AlgorithmRS256,

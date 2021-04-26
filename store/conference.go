@@ -18,20 +18,20 @@ const selectConferenceQuery = `
 `
 
 const createConferenceQuery = `
-INSERT INTO session_conference(session_id)
-VALUES ($1)
+INSERT INTO session_conference(session_id, latest_code)
+VALUES ($1, null)
 RETURNING *
 `
 
-func GetOrCreateConference(db tutorme.DB, sessionID int) (*tutorme.Conference, error) {
-	var conference *tutorme.Conference
-	err := db.QueryRowx(selectConferenceQuery, sessionID).StructScan(conference)
+func (cs *ConferenceStore) GetOrCreateConference(db tutorme.DB, sessionID int) (*tutorme.Conference, error) {
+	var conference tutorme.Conference
+	err := db.QueryRowx(selectConferenceQuery, sessionID).StructScan(&conference)
 
 	if err != nil && err == sql.ErrNoRows {
-		err = db.QueryRowx(createConferenceQuery, sessionID).StructScan(conference)
+		err = db.QueryRowx(createConferenceQuery, sessionID).StructScan(&conference)
 	}
 
-	return conference, err
+	return &conference, err
 }
 
 const createCodeQuery = `
@@ -46,9 +46,11 @@ SET latest_code = $1
 WHERE session_id = $2
 `
 
-func CreateNewCode(db tutorme.DB, sessionID int, rawCode string) (*tutorme.Code, error) {
+func (cs *ConferenceStore) CreateNewCode(db tutorme.DB, sessionID int, rawCode string) (*tutorme.Code, error) {
 	var code tutorme.Code
-	err := db.QueryRowx(createCodeQuery, rawCode).StructScan(&code)
+	row := db.QueryRowx(createCodeQuery, rawCode)
+
+	err := row.StructScan(&code)
 
 	if err != nil {
 		return nil, err

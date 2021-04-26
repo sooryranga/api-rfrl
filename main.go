@@ -10,6 +10,7 @@ import (
 	"time"
 
 	firebase "firebase.google.com/go"
+	"github.com/Arun4rangan/api-tutorme/publisher"
 	"github.com/Arun4rangan/api-tutorme/routes"
 	"github.com/Arun4rangan/api-tutorme/store"
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
@@ -43,6 +44,12 @@ func getPostgresURI() string {
 		postgresURI = strings.Replace(postgresURI, search, password, 1)
 	}
 	return postgresURI
+}
+
+func getGoogleProjectID() string {
+	projectID := os.Getenv("PUBSUB_PROJECT_ID")
+
+	return projectID
 }
 
 func main() {
@@ -103,6 +110,23 @@ func main() {
 
 	go conferenceHub.Run()
 
+	// setup google publisher
+	projectID := getGoogleProjectID()
+	googlePublisher, err := publisher.NewGooglePublisher(projectID)
+
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+
+	err = googlePublisher.CreateTopic(tutorme.JavascriptTopic)
+
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+
+	//publisher
+	conferencePublisher := publisher.NewConferencePublisher(googlePublisher)
+
 	// Stores
 	authStore := store.NewAuthStore()
 	clientStore := store.NewClientStore()
@@ -111,6 +135,7 @@ func main() {
 	tutorReviewStore := store.NewTutorReviewStore()
 	questionStore := store.NewQuestionStore()
 	companyStore := store.NewCompanyStore()
+	conferenceStore := store.NewConferenceStore()
 	fireStoreClient := store.NewFireStore(client)
 
 	// Usecases
@@ -122,7 +147,7 @@ func main() {
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)
 	questionUseCase := usecases.NewQuestionUsesCase(db, clientStore, questionStore)
 	companyUseCase := usecases.NewCompanyUseCase(*db, companyStore)
-	conferenceUseCase := usecases.NewConferenceUseCase(conferenceHub)
+	conferenceUseCase := usecases.NewConferenceUseCase(db, conferenceStore, conferenceHub, conferencePublisher)
 
 	routes.RegisterAuthRoutes(e, validate, signingKey, publicKey, authUseCase)
 	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
