@@ -9,11 +9,14 @@ services:
         condition: service_healthy
     links:
       - pubsub
+      - backend
     environment:
       - PUBSUB_EMULATOR_HOST=pubsub:8681
       - PUBSUB_PROJECT_ID=tutorproject-292921
+      - API_KEY=9ab270da-307a-40a7-be5c-12285f24161e
+      - API_HOST=http://backend:8010
     volumes:
-      - .consumer/javascript/:/app
+      - ./consumer/javascript/:/app
 
   backend:
     build:
@@ -44,6 +47,7 @@ services:
       - FIREBASE_AUTH_FILE=/run/secrets/fire-base-auth
       - PUBSUB_EMULATOR_HOST=pubsub:8681
       - PUBSUB_PROJECT_ID=tutorproject-292921
+      - API_KEY=9ab270da-307a-40a7-be5c-12285f24161e
     volumes:
       - ./:/app
 

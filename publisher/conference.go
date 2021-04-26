@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/Arun4rangan/api-tutorme/tutorme"
-	"github.com/labstack/gommon/log"
 )
 
 type ConferencePublisher struct {
@@ -18,14 +17,16 @@ func NewConferencePublisher(publisher tutorme.Publisher) *ConferencePublisher {
 }
 
 type PublishingCode struct {
-	ID   int    `json:"id"`
-	Code string `json:"code"`
+	ID        int    `json:"id"`
+	SessionID int    `json:"sessionId"`
+	Code      string `json:"code"`
 }
 
-func (cp *ConferencePublisher) PublishCode(codeID int, rawCode string, language string) error {
-	code := tutorme.Code{
-		ID:   codeID,
-		Code: rawCode,
+func (cp *ConferencePublisher) PublishCode(sessionID int, codeID int, rawCode string, language string) error {
+	code := PublishingCode{
+		ID:        codeID,
+		SessionID: sessionID,
+		Code:      rawCode,
 	}
 
 	codeInJSON, err := json.Marshal(code)
@@ -35,8 +36,6 @@ func (cp *ConferencePublisher) PublishCode(codeID int, rawCode string, language 
 	}
 
 	topic := tutorme.CodeLanguageToTopic[language]
-
-	log.Error(topic)
 
 	err = cp.Publisher.Publish(topic, codeInJSON)
 

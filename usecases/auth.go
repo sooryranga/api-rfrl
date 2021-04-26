@@ -19,7 +19,7 @@ type AuthUseCase struct {
 	db          *sqlx.DB
 	authStore   tutorme.AuthStore
 	clientStore tutorme.ClientStore
-	fireStore   tutorme.FirstStoreClient
+	fireStore   tutorme.FireStoreClient
 }
 
 // NewAuthUseCase creates new AuthUseCase
@@ -27,7 +27,7 @@ func NewAuthUseCase(
 	db sqlx.DB,
 	authStore tutorme.AuthStore,
 	clientStore tutorme.ClientStore,
-	fireStore tutorme.FirstStoreClient,
+	fireStore tutorme.FireStoreClient,
 ) *AuthUseCase {
 	return &AuthUseCase{&db, authStore, clientStore, fireStore}
 }

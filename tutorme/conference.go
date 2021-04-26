@@ -37,7 +37,7 @@ type Conference struct {
 // Code model
 type Code struct {
 	ID     int         `db:"id" json:"-"`
-	Code   string      `db:"code" json:"-"`
+	Code   null.String `db:"code" json:"-"`
 	Result null.String `db:"result" json:"result"`
 }
 
@@ -49,14 +49,16 @@ var CodeLanguageToTopic = map[string]string{
 
 type ConferenceUseCase interface {
 	Serve(conn *websocket.Conn, conferenceID string)
-	SubmitCode(sessionID int, code string, language string) error
+	SubmitCode(sessionID int, code string, language string) (int, error)
+	SetCodeResult(sessionID int, ID int, result string) error
 }
 
 type ConferenceStore interface {
 	GetOrCreateConference(db DB, sessionID int) (*Conference, error)
 	CreateNewCode(db DB, sessionID int, rawCode string) (*Code, error)
+	UpdateCode(db DB, id int, code Code) (*Code, error)
 }
 
 type ConferencePublisher interface {
-	PublishCode(codeID int, code string, language string) error
+	PublishCode(sessionID int, codeID int, code string, language string) error
 }

@@ -14,4 +14,4 @@ RUN npm ci --only=production
 
 RUN npm install -g nodemon
 
-CMD [ "nodemon", "consumer.js" ]
+CMD [ "nodemon", "/app/consumer.js"]
