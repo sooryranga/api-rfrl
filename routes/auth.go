@@ -29,4 +29,13 @@ func RegisterAuthRoutes(e *echo.Echo, validate *validator.Validate, privateKey *
 		Claims:        &tutorme.JWTClaims{},
 	}))
 	loginAuth.POST("/", authview.AuthorizedLogin)
+
+	signUpFlowView := e.Group("/sign-up-flow")
+	signUpFlowView.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    publicKey,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
+	signUpFlowView.PUT("/", authview.UpdateSignUpFlow)
+
 }

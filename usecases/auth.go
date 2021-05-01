@@ -33,7 +33,7 @@ func NewAuthUseCase(
 }
 
 // SignupWithToken allows user to sign up with token from google or linkedin auth
-func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.Auth) (*tutorme.Client, error) {
+func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.Auth) (*tutorme.Client, *tutorme.Auth, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
 
@@ -42,7 +42,7 @@ func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.
 	defer tutorme.HandleTransactions(tx, err)
 
 	if *err != nil {
-		return nil, *err
+		return nil, nil, *err
 	}
 
 	var createdClient *tutorme.Client
@@ -50,13 +50,14 @@ func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.
 	createdClient, *err = au.clientStore.CreateClient(tx, newClient)
 
 	if *err != nil {
-		return nil, *err
+		return nil, nil, *err
 	}
 
-	_, *err = au.authStore.CreateWithToken(tx, auth, createdClient.ID)
+	var createdAuth *tutorme.Auth
+	createdAuth, *err = au.authStore.CreateWithToken(tx, auth, createdClient.ID)
 
 	if *err != nil {
-		return nil, *err
+		return nil, nil, *err
 	}
 
 	*err = au.fireStore.CreateClient(
@@ -66,7 +67,7 @@ func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.
 		createdClient.LastName.String,
 	)
 
-	return createdClient, *err
+	return createdClient, createdAuth, *err
 }
 
 // SignupGoogle allows user to sign up with google
@@ -78,11 +79,11 @@ func (au *AuthUseCase) SignupGoogle(
 	photo string,
 	about string,
 	isTutor null.Bool,
-) (*tutorme.Client, error) {
+) (*tutorme.Client, *tutorme.Auth, error) {
 
 	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor)
 	auth := tutorme.Auth{
-		AuthType: tutorme.GOOGLE,
+		AuthType: null.NewString(tutorme.GOOGLE, true),
 		Token:    null.StringFrom(token),
 	}
 
@@ -98,12 +99,12 @@ func (au *AuthUseCase) SignupLinkedIn(
 	photo string,
 	about string,
 	isTutor null.Bool,
-) (*tutorme.Client, error) {
+) (*tutorme.Client, *tutorme.Auth, error) {
 
 	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor)
 
 	auth := tutorme.Auth{
-		AuthType: tutorme.LINKEDIN,
+		AuthType: null.NewString(tutorme.LINKEDIN, true),
 		Token:    null.StringFrom(token),
 	}
 
@@ -120,11 +121,11 @@ func (au *AuthUseCase) SignupEmail(
 	photo string,
 	about string,
 	isTutor null.Bool,
-) (*tutorme.Client, error) {
+) (*tutorme.Client, *tutorme.Auth, error) {
 	hash, hashError := hashAndSalt([]byte(password))
 
 	if hashError != nil {
-		return nil, hashError
+		return nil, nil, hashError
 	}
 
 	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor)
@@ -141,7 +142,7 @@ func (au *AuthUseCase) SignupEmail(
 	defer tutorme.HandleTransactions(tx, err)
 
 	if *err != nil {
-		return nil, *err
+		return nil, nil, *err
 	}
 
 	var createdClient *tutorme.Client
@@ -149,13 +150,14 @@ func (au *AuthUseCase) SignupEmail(
 	createdClient, *err = au.clientStore.CreateClient(tx, newClient)
 
 	if *err != nil {
-		return nil, *err
+		return nil, nil, *err
 	}
 
-	_, *err = au.authStore.CreateWithEmail(tx, &auth, createdClient.ID)
+	var createdAuth *tutorme.Auth
+	createdAuth, *err = au.authStore.CreateWithEmail(tx, &auth, createdClient.ID)
 
 	if *err != nil {
-		return nil, *err
+		return nil, nil, *err
 	}
 
 	*err = au.fireStore.CreateClient(
@@ -165,49 +167,49 @@ func (au *AuthUseCase) SignupEmail(
 		createdClient.LastName.String,
 	)
 
-	return createdClient, *err
+	return createdClient, createdAuth, *err
 }
 
 // LoginEmail allows user to login with email by checking password hash against the has the passed in
-func (au *AuthUseCase) LoginEmail(email string, password string) (*tutorme.Client, error) {
-	c, passwordHash, err := au.authStore.GetByEmail(au.db, email)
+func (au *AuthUseCase) LoginEmail(email string, password string) (*tutorme.Client, *tutorme.Auth, error) {
+	c, auth, err := au.authStore.GetByEmail(au.db, email)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "GetByEmail")
+		return nil, nil, errors.Wrap(err, "GetByEmail")
 	}
 
 	err = bcrypt.CompareHashAndPassword(
-		passwordHash,
+		auth.PasswordHash,
 		[]byte(password),
 	)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "CompareHashAndPassword")
+		return nil, nil, errors.Wrap(err, "CompareHashAndPassword")
 	}
 
-	return c, nil
+	return c, auth, err
 }
 
-func (au *AuthUseCase) LoginWithJWT(clientID string) (*tutorme.Client, error) {
+func (au *AuthUseCase) LoginWithJWT(clientID string) (*tutorme.Client, *tutorme.Auth, error) {
 	c, err := au.clientStore.GetClientFromID(au.db, clientID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New(fmt.Sprintf("Client not found with %s", clientID))
+			return nil, nil, errors.New(fmt.Sprintf("Client not found with %s", clientID))
 		}
-		return nil, errors.Wrap(err, "LoginWithJWT")
+		return nil, nil, errors.Wrap(err, "LoginWithJWT")
 	}
 
-	return c, nil
+	return c, nil, err
 }
 
 // LoginGoogle allow user to login with their google oauth token
-func (au *AuthUseCase) LoginGoogle(token string) (*tutorme.Client, error) {
+func (au *AuthUseCase) LoginGoogle(token string) (*tutorme.Client, *tutorme.Auth, error) {
 	return au.authStore.GetByToken(au.db, token, tutorme.GOOGLE)
 }
 
 // LoginLinkedIn allow user to login with their linkedin
-func (au *AuthUseCase) LoginLinkedIn(token string) (*tutorme.Client, error) {
+func (au *AuthUseCase) LoginLinkedIn(token string) (*tutorme.Client, *tutorme.Auth, error) {
 	return au.authStore.GetByToken(au.db, token, tutorme.LINKEDIN)
 }
 
@@ -240,4 +242,8 @@ func (au *AuthUseCase) GenerateToken(claims *tutorme.JWTClaims, signingKey *rsa.
 	}
 
 	return t, nil
+}
+
+func (au *AuthUseCase) UpdateSignUpFlow(clientID string, stage tutorme.SignUpFlow) error {
+	return au.authStore.UpdateSignUpFlow(au.db, clientID, stage)
 }
