@@ -63,7 +63,7 @@ func (fs *FireStoreClient) UpdateClient(id string, photo null.String, firstName 
 	updates := make([]firestore.Update, 0)
 
 	if photo.Valid {
-		updates = append(updates, firestore.Update{Path: "avatar", Value: photo})
+		updates = append(updates, firestore.Update{Path: "avatar", Value: photo.String})
 	}
 
 	if firstName.Valid && lastName.Valid {
