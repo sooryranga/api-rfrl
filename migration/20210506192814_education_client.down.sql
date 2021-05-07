@@ -1,0 +1,18 @@
+BEGIN;
+
+ALTER TABLE IF EXISTS client
+  DROP COLUMN institution;
+
+ALTER TABLE IF EXISTS client
+  DROP COLUMN degree;
+
+ALTER TABLE IF EXISTS client
+  DROP COLUMN field_of_study;
+
+ALTER TABLE IF EXISTS client
+  DROP COLUMN start_year;
+
+ALTER TABLE IF EXISTS client
+  DROP COLUMN end_year;
+
+END;
