@@ -47,27 +47,26 @@ func (dc *DocumentUseCase) DeleteDocument(
 	clientID string,
 	ID int,
 ) error {
-	tx, err := dc.db.Beginx()
-	if err != nil {
-		return err
+	var err = new(error)
+	var tx *sqlx.Tx
+
+	tx, *err = dc.db.Beginx()
+	defer tutorme.HandleTransactions(tx, err)
+
+	if *err != nil {
+		return *err
 	}
 
-	err = dc.documentStore.RemoveAndRenumberDocumentsOrder(tx, ID, clientID)
+	*err = dc.documentStore.RemoveAndRenumberDocumentsOrder(tx, ID, clientID)
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return errors.Wrap(rb, err.Error())
-		}
-		return err
+	if *err != nil {
+		return *err
 	}
 
-	err = dc.documentStore.DeleteDocument(tx, ID, clientID)
+	*err = dc.documentStore.DeleteDocument(tx, ID, clientID)
 
 	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return errors.Wrap(rb, err.Error())
-		}
-		return err
+		return *err
 	}
 
 	return nil

@@ -204,3 +204,10 @@ func (cl *ClientUseCase) DeleteVerificationEmail(clientID string, emailType stri
 func (cl *ClientUseCase) GetClientEvents(clientID string, start null.Time, end null.Time, state null.String) (*[]tutorme.Event, error) {
 	return cl.clientStore.GetRelatedEventsByClientIDs(cl.db, []string{clientID}, start, end, state)
 }
+
+func (cl *ClientUseCase) CreateOrUpdateClientEducation(clientID string, institution string, degree string, fieldOfStudy string, startYear int, endYear int) error {
+	education := tutorme.NewEducation(institution, degree, fieldOfStudy, startYear, endYear)
+	err := cl.clientStore.CreateOrUpdateClientEducation(cl.db, clientID, education)
+
+	return err
+}

@@ -15,12 +15,12 @@ type (
 		ID          int    `path:"id"`
 		Src         string `json:"src" validate:"required,url"`
 		Name        string `json:"name" validate:"required,gte=0,lte=100"`
-		description string `json:"description" validate:"omitempty,base64"`
+		Description string `json:"description" validate:"omitempty,base64"`
 	}
 
 	// DocumentOrderPayload is the struct used to hold payload from /document-order
 	DocumentOrderPayload struct {
-		RefType     string `json:"refType" query:"ref_type" validate:"required,oneof= user session"`
+		RefType     string `json:"refType" query:"ref_type" validate:"required,oneof= client session"`
 		RefID       string `json:"refId" query:"ref_id" validate:"gte=0,base64"`
 		DocumentIDs []int  `json:"documentIds" validate:"required,gt=0,dive,required,numeric"`
 	}
@@ -48,7 +48,7 @@ func (dv *DocumentView) CreateDocumentEndpoint(c echo.Context) error {
 		claims.ClientID,
 		payload.Src,
 		payload.Name,
-		payload.description,
+		payload.Description,
 	)
 
 	if err != nil {
@@ -77,7 +77,7 @@ func (dv *DocumentView) UpdateDocumentEndpoint(c echo.Context) error {
 		payload.ID,
 		payload.Src,
 		payload.Name,
-		payload.description,
+		payload.Description,
 	)
 
 	if err != nil {

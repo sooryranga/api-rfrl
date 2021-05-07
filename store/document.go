@@ -43,6 +43,12 @@ DELETE FROM document_order
 WHERE ref_type = $1 AND ref_id = $2
 `
 
+	deleteDocumentOrderWithDocumentID string = `
+DELETE FROM document_order 
+WHERE document_id = $1 
+RETURNING *
+`
+
 	getDocumentOrderQuery string = `
 SELECT document.* FROM document_order
 JOIN document ON document.id = document_order.document_id
@@ -132,8 +138,12 @@ func (dc *DocumentStore) CheckDocumentsBelongToclients(
 }
 
 func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db tutorme.DB, ID int, clientID string) error {
+	rows, err := db.Queryx(deleteDocumentOrderWithDocumentID, ID)
 
-	rows, err := db.Queryx(removeDocumentOrder, ID)
+	if err != nil {
+		return err
+	}
+
 	docOrders := make([]tutorme.DocumentOrder, 0)
 
 	for rows.Next() {
@@ -154,7 +164,7 @@ func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db tutorme.DB, ID int, 
 			sq.Or{
 				sq.And{
 					sq.Eq{"ref_type": docOrder.RefType},
-					sq.Eq{"ref_if": docOrder.RefID},
+					sq.Eq{"ref_id": docOrder.RefID},
 					sq.Expr("page > ?", docOrder.Page),
 				},
 			},
@@ -174,7 +184,7 @@ func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db tutorme.DB, ID int, 
 		args...,
 	)
 
-	return errors.Wrap(err, "RemoveAndRenumberDocuments")
+	return err
 }
 
 func createDocumentOrder(

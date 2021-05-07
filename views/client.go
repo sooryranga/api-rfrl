@@ -25,14 +25,13 @@ type (
 		IsTutor   null.Bool `json:"isTutor"`
 	}
 
-	// EducationPaylod is the struct used to create education
-	EducationPaylod struct {
-		Institution     string `json:"institution"`
-		Degree          string `json:"degree"`
-		FeildOfStudy    string `json:"fieldOfStudy"`
-		start           string `json:"start" validate:"datetime"`
-		end             string `json:"end" validate:"omitempty, datetime"`
-		InstitutionLogo string `json:"institutionLogo"`
+	// EducationPayload is the struct used to create education
+	EducationPayload struct {
+		Institution  string `json:"institution"`
+		Degree       string `json:"degree"`
+		FieldOfStudy string `json:"fieldOfStudy"`
+		StartYear    int    `json:"startYear"`
+		EndYear      int    `json:"endYear"`
 	}
 
 	// VerifyEmailPayload is the struct used to verify email
@@ -355,4 +354,53 @@ func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+func (cv *ClientView) CreateEducation(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	clientID := c.Param("clientID")
+
+	if claims.ClientID != clientID && !claims.Admin {
+		return echo.NewHTTPError(http.StatusUnauthorized, "You are unauthorized to edit this client")
+	}
+
+	payload := EducationPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if payload.StartYear < 1950 || payload.StartYear > time.Now().Year()+5 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Wrong StartYear")
+	}
+
+	if payload.EndYear < 1950 || payload.StartYear > time.Now().Year()+10 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Wrong EndYear")
+	}
+
+	err = cv.ClientUseCase.CreateOrUpdateClientEducation(
+		clientID,
+		payload.Institution,
+		payload.Degree,
+		payload.FieldOfStudy,
+		payload.StartYear,
+		payload.EndYear,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	client, err := cv.ClientUseCase.GetClient(clientID)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, client)
 }
