@@ -544,7 +544,7 @@ SELECT count(client_id) FROM session_client
 JOIN tutor_session ON tutor_session.id = session_client.session_id
 WHERE client_id IN (?) 
 AND can_attend = TRUE 
-AND tutor_session.state = 'paid'
+AND tutor_session.state = 'scheduled'
 AND tutor_session.tutor_id = ?
 GROUP BY session_id
 	`

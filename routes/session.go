@@ -11,9 +11,9 @@ import (
 )
 
 // RegisterSessionRoutes session routes
-func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, sessionUseCase tutorme.SessionUseCase) {
+func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, sessionUseCase tutorme.SessionUseCase, tutorReviewUseCase tutorme.TutorReviewUseCase) {
 
-	sessionViews := views.SessionView{SessionUseCase: sessionUseCase}
+	sessionViews := views.SessionView{SessionUseCase: sessionUseCase, TutorReviewUseCase: tutorReviewUseCase}
 
 	sessionR := e.Group("/session")
 	sessionR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
