@@ -11,10 +11,11 @@ import (
 
 type (
 	TutorReviewPayload struct {
-		ID      int    `path:"id"`
-		TutorID string `json:"tutorId" validate:"required,gte=0,lte=100"`
-		Stars   int    `json:"stars" validate:"required,numeric,gte=0,lte=10"`
-		Review  string `json:"review"`
+		ID       int    `path:"id"`
+		TutorID  string `json:"tutorId" validate:"required,gte=0,lte=100"`
+		Stars    int    `json:"stars" validate:"required,numeric,gte=0,lte=10"`
+		Review   string `json:"review"`
+		Headline string `json:"headline"`
 	}
 )
 
@@ -44,6 +45,7 @@ func (trv *TutorReviewView) CreateTutorReviewEndpoint(c echo.Context) error {
 		payload.TutorID,
 		payload.Stars,
 		payload.Review,
+		payload.Headline,
 	)
 
 	if err != nil {
@@ -71,6 +73,7 @@ func (trv *TutorReviewView) UpdateTutorReviewEndpoint(c echo.Context) error {
 		payload.ID,
 		payload.Stars,
 		payload.Review,
+		payload.Headline,
 	)
 
 	if err != nil {
@@ -150,4 +153,22 @@ func (trv *TutorReviewView) GetTutorReviewsAggregateEndpoint(c echo.Context) err
 	}
 
 	return c.JSON(http.StatusOK, *aggregateReview)
+}
+
+func (trv *TutorReviewView) GetPendingReviewsEndpoint(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	pendingReviewForClient, err := trv.TutorReviewUseCase.GetPendingReviews(
+		claims.ClientID,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, pendingReviewForClient)
 }
