@@ -147,7 +147,7 @@ func (trs *TutorReviewStore) GetTutorReviews(db tutorme.DB, tutorID string) (*[]
 }
 
 const getTutorReviewsAggregateByTutorID string = `
-SELECT SUM(stars) as total_stars, COUNT(*) as total_review_count FROM tutor_review
+SELECT COALESCE(SUM(stars),0) as total_stars, COALESCE(COUNT(*),1) as total_review_count FROM tutor_review
 WHERE tutor_review.tutor_id = $1
 `
 

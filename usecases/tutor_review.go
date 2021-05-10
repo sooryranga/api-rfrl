@@ -125,16 +125,19 @@ func (tru *TutorReviewUseCase) GetTutorReviews(TutorID string) (*[]tutorme.Tutor
 		clientIDToIndex[(*tutorReviews)[i].FromID] = i
 	}
 
-	clients, err := tru.ClientStore.GetClientFromIDs(tru.DB, clientIDs)
+	if len(clientIDs) > 0 {
+		clients, err := tru.ClientStore.GetClientFromIDs(tru.DB, clientIDs)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+
+		for i := 0; i < len(*clients); i++ {
+			index := clientIDToIndex[(*clients)[i].ID]
+			(*tutorReviews)[index].FromClient = (*clients)[i]
+		}
 	}
 
-	for i := 0; i < len(*clients); i++ {
-		index := clientIDToIndex[(*clients)[i].ID]
-		(*tutorReviews)[index].FromClient = (*clients)[i]
-	}
 	return tutorReviews, nil
 }
 
