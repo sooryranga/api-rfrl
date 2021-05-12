@@ -20,7 +20,8 @@ func RegisterConferenceRoutes(
 	views := views.ConferenceView{SessionUseCase: sessionUseCase, ConferenceUseCase: conferenceUseCase}
 
 	conferenceR := e.Group("/conference/:conferenceID")
-	conferenceR.GET("/", views.ConnectToSessionClients)
+	conferenceR.GET("/yjs/", views.ConnectToSessionYJSClients)
+	conferenceR.GET("/simple-peer/", views.ConnectToSessionSimplePeerClients)
 
 	conferenceSessionR := e.Group("conference-session/:sessionID")
 	conferenceSessionR.POST("/code/", views.SubmitCode, middleware.JWTWithConfig(middleware.JWTConfig{

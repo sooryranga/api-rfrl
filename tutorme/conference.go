@@ -18,13 +18,23 @@ const (
 	PingPeriod = (PongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	MaxMessageSize = 512
+	MaxMessageSize = 32768
 )
 
 const (
 	RUNNING     string = "running"
 	NOT_RUNNING string = "not_running"
 )
+
+const (
+	// FROM is const
+	YJS        string = "yjs"
+	SIMPLEPEER string = "simple-peer"
+)
+
+type WebsocketError struct {
+	Error string `json:"error"`
+}
 
 // Conference model
 type Conference struct {
@@ -48,7 +58,7 @@ var CodeLanguageToTopic = map[string]string{
 }
 
 type ConferenceUseCase interface {
-	Serve(conn *websocket.Conn, conferenceID string)
+	Serve(conn *websocket.Conn, conferenceID string, from string)
 	SubmitCode(sessionID int, code string, language string) (int, error)
 	SetCodeResult(sessionID int, ID int, result string) error
 }
