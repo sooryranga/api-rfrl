@@ -308,6 +308,12 @@ func (cu ConferenceUseCase) SubmitCode(sessionID int, rawCode string, language s
 		return 0, *err
 	}
 
+	*err = cu.FireStore.CreateCode(sessionID, code.ID)
+
+	if *err != nil {
+		return 0, *err
+	}
+
 	*err = cu.ConferencePublisher.PublishCode(sessionID, code.ID, rawCode, language)
 
 	return code.ID, *err
