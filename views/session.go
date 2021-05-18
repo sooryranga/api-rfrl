@@ -302,7 +302,7 @@ func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 
 	return c.JSON(
 		http.StatusOK,
-		GetSessionConferenceIDEndpointResponse{ConferenceID: session.ConferenceID},
+		GetSessionConferenceIDEndpointResponse{ConferenceID: session.ConferenceID.String},
 	)
 }
 
