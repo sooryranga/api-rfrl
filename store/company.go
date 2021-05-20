@@ -7,6 +7,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	"gopkg.in/guregu/null.v4"
 )
 
 // CompanyStore holds all store related functions for company
@@ -58,20 +59,14 @@ func (cs *CompanyStore) CreateOrSelectCompany(db tutorme.DB, name string) (*tuto
 }
 
 const createCompanyEmailDomain string = `
-INSERT INTO company_email (company_name, email_domain)
-VALUES ($1, $2)
-ON CONFLICT (email_domain) DO UPDATE
-SET suggestions = company_email.suggestions + 1;
+INSERT INTO company_email (email_domain)
+VALUES ($1)
 `
 
-func (cs *CompanyStore) CreateCompanyEmailDomain(db tutorme.DB, name string, emailDomian string) (string, error) {
-	_, err := db.Queryx(createCompanyEmailDomain, name, emailDomian)
+func (cs *CompanyStore) CreateCompanyEmailDomain(db tutorme.DB, emailDomian string) error {
+	_, err := db.Queryx(createCompanyEmailDomain, emailDomian)
 
-	if err != nil {
-		return "", err
-	}
-
-	return emailDomian, nil
+	return err
 }
 
 func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*tutorme.Company, error) {
@@ -140,4 +135,17 @@ func (cs *CompanyStore) GetCompanies(db tutorme.DB, active bool) (*[]tutorme.Com
 		companies = append(companies, company)
 	}
 	return &companies, nil
+}
+
+const getCompanyNameFromEmailDomainQuery string = `
+SELECT company_name FROM company_email
+WHERE email_domain = $1
+`
+
+func (cs *CompanyStore) GetCompanyNameFromEmailDomain(db tutorme.DB, emailDomain string) (null.String, error) {
+	var name null.String
+
+	err := db.QueryRowx(getCompanyNameFromEmailDomainQuery, emailDomain).Scan(&name)
+
+	return name, err
 }
