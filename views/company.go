@@ -34,26 +34,6 @@ type CompanyView struct {
 	CompanyUseCase tutorme.CompanyUseCase
 }
 
-func (comv *CompanyView) SuggestCompanyView(c echo.Context) error {
-	payload := SuggestCompanyPayload{}
-
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	if err := c.Validate(payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	_, err := comv.CompanyUseCase.CreateSuggestion(payload.Name, payload.EmailDomain)
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	return c.NoContent(http.StatusCreated)
-}
-
 func (comv *CompanyView) UpdateCompanyView(c echo.Context) error {
 	payload := UpdateCompanyViewPayload{}
 

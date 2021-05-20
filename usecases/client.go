@@ -1,7 +1,9 @@
 package usecases
 
 import (
+	"database/sql"
 	"errors"
+	"strings"
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/jmoiron/sqlx"
@@ -10,11 +12,12 @@ import (
 
 // ClientUseCase holds all business related functions for client
 type ClientUseCase struct {
-	db          *sqlx.DB
-	clientStore tutorme.ClientStore
-	emailer     tutorme.EmailerUseCase
-	authStore   tutorme.AuthStore
-	fireStore   tutorme.FireStoreClient
+	db           *sqlx.DB
+	clientStore  tutorme.ClientStore
+	emailer      tutorme.EmailerUseCase
+	authStore    tutorme.AuthStore
+	fireStore    tutorme.FireStoreClient
+	companyStore tutorme.CompanyStore
 }
 
 // NewClientUseCase creates new ClientUseCase
@@ -24,6 +27,7 @@ func NewClientUseCase(
 	authStore tutorme.AuthStore,
 	emailer tutorme.EmailerUseCase,
 	fireStore tutorme.FireStoreClient,
+	companyStore tutorme.CompanyStore,
 ) *ClientUseCase {
 	return &ClientUseCase{
 		&db,
@@ -31,6 +35,7 @@ func NewClientUseCase(
 		emailer,
 		authStore,
 		fireStore,
+		companyStore,
 	}
 }
 
@@ -153,6 +158,47 @@ func (cl *ClientUseCase) CreateEmailVerification(clientID string, email string, 
 	return cl.clientStore.CreateEmailVerification(cl.db, clientID, email, emailType, passcode)
 }
 
+func (cl *ClientUseCase) verifyUserEmail(tx *sqlx.Tx, clientID string, email string) (*tutorme.Client, error) {
+	err := cl.authStore.UpdateAuthEmail(tx, clientID, email)
+
+	if err != nil {
+		return nil, err
+	}
+
+	client := tutorme.Client{Email: null.NewString(email, true), VerifiedEmail: null.NewBool(true, true)}
+
+	updatedClient, err := cl.clientStore.UpdateClient(tx, clientID, &client)
+
+	return updatedClient, err
+}
+
+func (cl *ClientUseCase) verifyWorkEmail(tx *sqlx.Tx, clientID string, email string) (*tutorme.Client, error) {
+	at := strings.LastIndex(email, "@")
+	_, domain := email[:at], email[at+1:]
+
+	companyName, err := cl.companyStore.GetCompanyNameFromEmailDomain(tx, domain)
+
+	if err == sql.ErrNoRows {
+		err = cl.companyStore.CreateCompanyEmailDomain(tx, domain)
+
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	client := tutorme.Client{
+		WorkEmail:         null.NewString(email, true),
+		VerifiedWorkEmail: null.NewBool(true, true),
+		CompanyName:       companyName,
+	}
+
+	updatedClient, err := cl.clientStore.UpdateClient(tx, clientID, &client)
+
+	return updatedClient, err
+}
+
 func (cl *ClientUseCase) VerifyEmail(clientID string, email string, emailType string, passCode string) (*tutorme.Client, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
@@ -167,24 +213,12 @@ func (cl *ClientUseCase) VerifyEmail(clientID string, email string, emailType st
 		return nil, *err
 	}
 
-	if emailType == tutorme.UserEmail {
-		*err = cl.authStore.UpdateAuthEmail(tx, clientID, email)
-
-		if *err != nil {
-			return nil, *err
-		}
-	}
-
-	var client tutorme.Client
 	var updatedClient *tutorme.Client
-
 	if emailType == tutorme.WorkEmail {
-		client = tutorme.Client{WorkEmail: null.NewString(email, true), VerifiedWorkEmail: null.NewBool(true, true)}
-	} else {
-		client = tutorme.Client{Email: null.NewString(email, true), VerifiedEmail: null.NewBool(true, true)}
+		updatedClient, *err = cl.verifyWorkEmail(tx, clientID, email)
+	} else if emailType == tutorme.UserEmail {
+		updatedClient, *err = cl.verifyUserEmail(tx, clientID, email)
 	}
-
-	updatedClient, *err = cl.clientStore.UpdateClient(tx, clientID, &client)
 
 	if *err != nil {
 		return nil, *err

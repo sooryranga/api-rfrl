@@ -257,6 +257,9 @@ func (cv *ClientView) GetVerificationEmails(c echo.Context) error {
 	)
 
 	if err != nil {
+		if err.Error() == "Could not find verification email" {
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		}
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
