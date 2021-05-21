@@ -9,12 +9,6 @@ import (
 )
 
 type (
-	// SuggestCompanyPayload is the struct used to hold payload from /company/suggest
-	SuggestCompanyPayload struct {
-		Name        string `json:"name" validate:"gte=3"`
-		EmailDomain string `json:"emailDomain" validate:"gte=3"`
-	}
-
 	UpdateCompanyViewPayload struct {
 		Name     string      `json:"name" validate:"gte=3"`
 		Photo    null.String `json:"photo"`
