@@ -103,7 +103,8 @@ func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*
 const updateOrCreateCompanyEmail string = `
 INSERT INTO company_email (email_domain, company_name, active)
 VALUES ($1, $2, $3)
-ON CONFLICT (email_domain) DO UPDATE
+ON CONFLICT ON CONSTRAINT email_domain 
+DO UPDATE
 SET company_name = $2, active = $3
 `
 

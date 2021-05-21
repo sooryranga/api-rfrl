@@ -142,6 +142,7 @@ func main() {
 	questionStore := store.NewQuestionStore()
 	companyStore := store.NewCompanyStore()
 	conferenceStore := store.NewConferenceStore()
+	reportClientStore := store.NewReportClientStore()
 	fireStoreClient := store.NewFireStore(client)
 
 	// Usecases
@@ -154,15 +155,17 @@ func main() {
 	questionUseCase := usecases.NewQuestionUsesCase(db, clientStore, questionStore)
 	companyUseCase := usecases.NewCompanyUseCase(*db, companyStore)
 	conferenceUseCase := usecases.NewConferenceUseCase(db, conferenceStore, conferenceHub, conferencePublisher, fireStoreClient)
+	reportClientUseCase := usecases.NewReportClientUseCase(*db, reportClientStore)
 
 	routes.RegisterAuthRoutes(e, validate, signingKey, publicKey, authUseCase)
 	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
 	routes.RegisterDocumentRoutes(e, validate, publicKey, documentUseCase)
 	routes.RegisterSessionRoutes(e, validate, publicKey, sessionUseCase, tutorUseCase)
 	routes.RegisterTutorReviewRoutes(e, validate, publicKey, tutorUseCase)
-	routes.RegisteerQuestionRoutes(e, validate, publicKey, questionUseCase)
+	routes.RegisterQuestionRoutes(e, validate, publicKey, questionUseCase)
 	routes.RegisterCompanyRoutes(e, validate, publicKey, companyUseCase)
 	routes.RegisterConferenceRoutes(e, publicKey, apiKey, sessionUseCase, conferenceUseCase)
+	routes.RegisterReportClient(e, validate, publicKey, reportClientUseCase)
 
 	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {
