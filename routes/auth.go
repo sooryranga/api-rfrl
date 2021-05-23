@@ -38,4 +38,12 @@ func RegisterAuthRoutes(e *echo.Echo, validate *validator.Validate, privateKey *
 	}))
 	signUpFlowView.PUT("/", authview.UpdateSignUpFlow)
 
+	blockAuth := e.Group("/block")
+	blockAuth.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    publicKey,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
+	blockAuth.POST("/", authview.BlockClient)
+
 }
