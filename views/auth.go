@@ -42,6 +42,11 @@ type (
 	SignUpFlowPayload struct {
 		Stage tutorme.SignUpFlow `json:"stage"`
 	}
+
+	BlockClientPayload struct {
+		ClientID null.String `json:"clientId" validate:"required"`
+		Blocked  null.Bool   `json:"blocked" validate:"required"`
+	}
 )
 
 // SignUpPayloadValidation validates client inputs
@@ -290,4 +295,37 @@ func (av *AuthView) UpdateSignUpFlow(c echo.Context) error {
 	}
 
 	return av.AuthUseCases.UpdateSignUpFlow(claims.ClientID, payload.Stage)
+}
+
+func (av *AuthView) BlockClient(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !claims.Admin {
+		return echo.NewHTTPError(http.StatusUnauthorized, "You are unauthorized to use this view")
+	}
+
+	payload := BlockClientPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	err = av.AuthUseCases.BlockClient(
+		payload.ClientID.String,
+		payload.Blocked.Bool,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.NoContent(http.StatusOK)
 }
