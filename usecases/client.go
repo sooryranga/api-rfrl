@@ -176,7 +176,7 @@ func (cl *ClientUseCase) verifyWorkEmail(tx *sqlx.Tx, clientID string, email str
 	at := strings.LastIndex(email, "@")
 	_, domain := email[:at], email[at+1:]
 
-	companyName, err := cl.companyStore.GetCompanyNameFromEmailDomain(tx, domain)
+	companyID, err := cl.companyStore.GetCompanyIDFromEmailDomain(tx, domain)
 
 	if err == sql.ErrNoRows {
 		err = cl.companyStore.CreateCompanyEmailDomain(tx, domain)
@@ -191,7 +191,7 @@ func (cl *ClientUseCase) verifyWorkEmail(tx *sqlx.Tx, clientID string, email str
 	client := tutorme.Client{
 		WorkEmail:         null.NewString(email, true),
 		VerifiedWorkEmail: null.NewBool(true, true),
-		CompanyName:       companyName,
+		CompanyID:         companyID,
 	}
 
 	updatedClient, err := cl.clientStore.UpdateClient(tx, clientID, &client)
