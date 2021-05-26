@@ -15,8 +15,25 @@ func NewCompanyUseCase(db sqlx.DB, companyStore tutorme.CompanyStore) *CompanyUs
 	return &CompanyUseCase{&db, companyStore}
 }
 
-func (comu *CompanyUseCase) UpdateCompany(
+func (comu *CompanyUseCase) GetCompany(id int) (*tutorme.Company, error) {
+	return comu.CompanyStore.GetCompany(comu.db, id)
+}
+
+func (comu *CompanyUseCase) CreateCompany(
 	name string,
+	photo null.String,
+	industry null.String,
+	about null.String,
+	active null.Bool,
+) (*tutorme.Company, error) {
+
+	company := tutorme.NewCompany(null.StringFrom(name), photo, industry, about, active)
+	return comu.CompanyStore.CreateCompany(comu.db, company)
+}
+
+func (comu *CompanyUseCase) UpdateCompany(
+	ID int,
+	name null.String,
 	photo null.String,
 	industry null.String,
 	about null.String,
@@ -30,6 +47,7 @@ func (comu *CompanyUseCase) UpdateCompany(
 	defer tutorme.HandleTransactions(tx, err)
 
 	company := tutorme.NewCompany(name, photo, industry, about, active)
+	company.ID = ID
 	var updatedCompany *tutorme.Company
 	updatedCompany, *err = comu.CompanyStore.UpdateCompany(tx, company)
 

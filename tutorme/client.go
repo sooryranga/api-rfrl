@@ -41,7 +41,7 @@ type Client struct {
 	About             null.String `db:"about" json:"about"`
 	Email             null.String `db:"email" json:"email"`
 	WorkEmail         null.String `db:"work_email" json:"workEmail"`
-	CompanyID         null.String `db:"company_id" json:"companyID"`
+	CompanyID         null.Int    `db:"company_id" json:"companyID"`
 	Photo             null.String `db:"photo" json:"photo"`
 	IsTutor           null.Bool   `db:"is_tutor" json:"isTutor"`
 	IsAdmin           null.Bool   `db:"is_admin" json:"-"`
