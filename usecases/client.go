@@ -245,3 +245,32 @@ func (cl *ClientUseCase) CreateOrUpdateClientEducation(clientID string, institut
 
 	return err
 }
+
+func (cl *ClientUseCase) GetClientWantingCompanyReferrals(clientID string) ([]int, error) {
+	return cl.clientStore.GetClientWantingCompanyReferrals(cl.db, clientID)
+}
+
+func (cl *ClientUseCase) CreateClientWantingCompanyReferrals(clientID string, active bool, companyIDs []int) error {
+	var err = new(error)
+	var tx *sqlx.Tx
+
+	tx, *err = cl.db.Beginx()
+
+	defer tutorme.HandleTransactions(tx, err)
+
+	client := tutorme.Client{}
+	client.IsLookingForReferral = null.NewBool(active, true)
+	_, *err = cl.clientStore.UpdateClient(cl.db, clientID, &client)
+
+	if *err != nil {
+		return *err
+	}
+
+	if !active {
+		return *err
+	}
+
+	*err = cl.clientStore.CreateClientWantingCompanyReferrals(tx, clientID, companyIDs)
+
+	return *err
+}

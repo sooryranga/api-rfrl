@@ -33,20 +33,21 @@ func NewEducation(institution string, degree string, fieldOfStudy string, startY
 
 // Client model
 type Client struct {
-	ID                string      `db:"id" json:"id"`
-	CreatedAt         time.Time   `db:"created_at" json:"createdAt"`
-	UpdatedAt         time.Time   `db:"updated_at" json:"updatedAt"`
-	FirstName         null.String `db:"first_name" json:"firstName"`
-	LastName          null.String `db:"last_name" json:"lastName"`
-	About             null.String `db:"about" json:"about"`
-	Email             null.String `db:"email" json:"email"`
-	WorkEmail         null.String `db:"work_email" json:"workEmail"`
-	CompanyID         null.Int    `db:"company_id" json:"companyID"`
-	Photo             null.String `db:"photo" json:"photo"`
-	IsTutor           null.Bool   `db:"is_tutor" json:"isTutor"`
-	IsAdmin           null.Bool   `db:"is_admin" json:"-"`
-	VerifiedWorkEmail null.Bool   `db:"verified_work_email" json:"verifiedWorkEmail"`
-	VerifiedEmail     null.Bool   `db:"verified_email" json:"verifiedEmail"`
+	ID                   string      `db:"id" json:"id"`
+	CreatedAt            time.Time   `db:"created_at" json:"createdAt"`
+	UpdatedAt            time.Time   `db:"updated_at" json:"updatedAt"`
+	FirstName            null.String `db:"first_name" json:"firstName"`
+	LastName             null.String `db:"last_name" json:"lastName"`
+	About                null.String `db:"about" json:"about"`
+	Email                null.String `db:"email" json:"email"`
+	WorkEmail            null.String `db:"work_email" json:"workEmail"`
+	CompanyID            null.Int    `db:"company_id" json:"companyID"`
+	Photo                null.String `db:"photo" json:"photo"`
+	IsTutor              null.Bool   `db:"is_tutor" json:"isTutor"`
+	IsAdmin              null.Bool   `db:"is_admin" json:"-"`
+	VerifiedWorkEmail    null.Bool   `db:"verified_work_email" json:"verifiedWorkEmail"`
+	VerifiedEmail        null.Bool   `db:"verified_email" json:"verifiedEmail"`
+	IsLookingForReferral null.Bool   `db:"is_looking_for_referral" json:"is_looking_for_referral"`
 	Education
 }
 
@@ -88,6 +89,8 @@ type ClientStore interface {
 	GetRelatedEventsByClientIDs(db DB, clientIDs []string, start null.Time, end null.Time, state null.String) (*[]Event, error)
 	CheckOverlapingEventsByClientIDs(db DB, clientIDs []string, events *[]Event) (bool, error)
 	CreateOrUpdateClientEducation(db DB, clientID string, education Education) error
+	CreateClientWantingCompanyReferrals(db DB, clientID string, companyIDs []int) error
+	GetClientWantingCompanyReferrals(db DB, clientID string) ([]int, error)
 }
 
 type ClientUseCase interface {
@@ -101,4 +104,6 @@ type ClientUseCase interface {
 	DeleteVerificationEmail(clientID string, emailType string) error
 	GetClientEvents(clientID string, start null.Time, end null.Time, state null.String) (*[]Event, error)
 	CreateOrUpdateClientEducation(clientID string, institution string, degree string, fieldOfStudy string, startYear int, endYear int) error
+	CreateClientWantingCompanyReferrals(clientID string, IsLookingForReferral bool, companyIds []int) error
+	GetClientWantingCompanyReferrals(clientId string) ([]int, error)
 }
