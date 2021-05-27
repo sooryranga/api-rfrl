@@ -176,6 +176,9 @@ func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Cl
 	if client.VerifiedEmail.Valid {
 		query = query.Set("verified_email", client.VerifiedEmail)
 	}
+	if client.IsLookingForReferral.Valid {
+		query = query.Set("is_looking_for_referral", client.IsLookingForReferral)
+	}
 
 	sql, args, err := query.
 		Where(sq.Eq{"id": ID}).
@@ -485,4 +488,62 @@ func (cl ClientStore) CreateOrUpdateClientEducation(db tutorme.DB, clientID stri
 	)
 
 	return err
+}
+
+const deleteClientWantingCompanyReferralsSQuery string = `
+DELETE FROM client_wanting_company_referral WHERE client_id = $1
+`
+
+func (cl ClientStore) CreateClientWantingCompanyReferrals(db tutorme.DB, clientID string, companyIDs []int) error {
+	_, err := db.Queryx(deleteClientWantingCompanyReferralsSQuery, clientID)
+
+	if err != nil {
+		return err
+	}
+
+	if len(companyIDs) == 0 {
+		return nil
+	}
+
+	query := sq.Insert("client_wanting_company_referral").
+		Columns("client_id", "company_id")
+
+	for i := 0; i < len(companyIDs); i++ {
+		query = query.Values(clientID, companyIDs[i])
+	}
+
+	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Queryx(sql, args...)
+
+	return err
+}
+
+const getClientWantingCompanyReferralsQuery string = `
+SELECT company_id FROM client_wanting_company_referral WHERE client_id = $1
+`
+
+func (cl ClientStore) GetClientWantingCompanyReferrals(db tutorme.DB, clientID string) ([]int, error) {
+	companyIDs := make([]int, 0)
+
+	rows, err := db.Queryx(getClientWantingCompanyReferralsQuery, clientID)
+
+	if err != nil {
+		return companyIDs, err
+	}
+
+	for rows.Next() {
+		var companyID int
+		err = rows.Scan(&companyID)
+		if err != nil {
+			return companyIDs, err
+		}
+		companyIDs = append(companyIDs, companyID)
+	}
+
+	return companyIDs, nil
 }

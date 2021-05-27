@@ -34,14 +34,17 @@ func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.P
 
 	r.PUT("/:clientID/education/", clientView.CreateEducation)
 
-	tutoringClientR := e.Group("/clients")
-	tutoringClientR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+	r.PUT("/:clientID/wanting-company-referral/", clientView.CreateWantingReferralCompany)
+	r.GET("/:clientID/wanting-company-referral/", clientView.GetWantingReferralCompany)
+
+	clientsR := e.Group("/clients")
+	clientsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
 		SigningMethod: tutorme.AlgorithmRS256,
 		Claims:        &tutorme.JWTClaims{},
 	}))
 
-	tutoringClientR.GET("/", clientView.GetClientsEndpoint)
+	clientsR.GET("/", clientView.GetClientsEndpoint)
 
 	clientEventsR := e.Group("/client/:clientID/events")
 	clientEventsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
