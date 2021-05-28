@@ -56,6 +56,12 @@ type (
 	GetReferralCompanyResponse struct {
 		CompanyIds []int `json:"companyIds"`
 	}
+
+	GetClientsEndpointPayload struct {
+		FromCompanyIds           []int     `query:"fromCompanyIds"`
+		IsTutor                  null.Bool `query:"isTutor"`
+		WantingReferralCompanyId null.Int  `query:"wantingReferralCompanyId"`
+	}
 )
 
 // ClientPayloadValidation validates client inputs
@@ -152,23 +158,24 @@ func (cv *ClientView) GetClientEndpoint(c echo.Context) error {
 }
 
 func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	payload := GetClientsEndpointPayload{}
 
-	if err != nil {
+	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	isTutor := null.Bool{}
-	err = isTutor.UnmarshalText([]byte(c.QueryParam("is_tutor")))
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if payload.IsTutor.Valid && payload.IsTutor.Bool && payload.WantingReferralCompanyId.Valid {
+		return echo.NewHTTPError(http.StatusBadRequest, "Cannot be looking for tutors wanting referrals")
 	}
 
-	options := tutorme.GetClientsOptions{IsTutor: isTutor}
+	if payload.IsTutor.Valid && !payload.IsTutor.Bool && len(payload.FromCompanyIds) > 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Cannot be looking for clients from certain companies")
+	}
 
-	if !claims.Admin {
-		options.IsTutor = null.NewBool(true, true)
+	options := tutorme.GetClientsOptions{
+		IsTutor:                  payload.IsTutor,
+		CompanyIds:               payload.FromCompanyIds,
+		WantingReferralCompanyId: payload.WantingReferralCompanyId,
 	}
 
 	clients, err := cv.ClientUseCase.GetClients(options)

@@ -41,13 +41,13 @@ type Client struct {
 	About                null.String `db:"about" json:"about"`
 	Email                null.String `db:"email" json:"email"`
 	WorkEmail            null.String `db:"work_email" json:"workEmail"`
-	CompanyID            null.Int    `db:"company_id" json:"companyID"`
+	CompanyID            null.Int    `db:"company_id" json:"companyId"`
 	Photo                null.String `db:"photo" json:"photo"`
 	IsTutor              null.Bool   `db:"is_tutor" json:"isTutor"`
 	IsAdmin              null.Bool   `db:"is_admin" json:"-"`
 	VerifiedWorkEmail    null.Bool   `db:"verified_work_email" json:"verifiedWorkEmail"`
 	VerifiedEmail        null.Bool   `db:"verified_email" json:"verifiedEmail"`
-	IsLookingForReferral null.Bool   `db:"is_looking_for_referral" json:"is_looking_for_referral"`
+	IsLookingForReferral null.Bool   `db:"is_looking_for_referral" json:"isLookingForReferral"`
 	Education
 }
 
@@ -73,7 +73,9 @@ func NewClient(
 }
 
 type GetClientsOptions struct {
-	IsTutor null.Bool
+	IsTutor                  null.Bool
+	CompanyIds               []int
+	WantingReferralCompanyId null.Int
 }
 
 type ClientStore interface {

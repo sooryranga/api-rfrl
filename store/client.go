@@ -31,13 +31,26 @@ WHERE client.id = $1
 )
 
 func (cl *ClientStore) GetClients(db tutorme.DB, options tutorme.GetClientsOptions) (*[]tutorme.Client, error) {
-	query := sq.Select("*").From("client")
+	query := sq.Select("client.*").From("client")
 
 	if options.IsTutor.Valid {
 		query = query.Where(sq.Eq{"is_tutor": options.IsTutor.Bool})
 	}
 
-	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
+	if len(options.CompanyIds) > 0 {
+		query = query.Where(sq.Eq{"company_id": options.CompanyIds})
+	}
+
+	if options.WantingReferralCompanyId.Valid {
+		query = query.Join("client_wanting_company_referral ON client.id = client_wanting_company_referral.client_id").
+			Where(sq.Eq{"client_wanting_company_referral.company_id": options.WantingReferralCompanyId.Int64})
+	}
+
+	sql, args, err := query.
+		OrderBy("id DESC").
+		PlaceholderFormat(sq.Dollar).ToSql()
+
+	log.Error(sql)
 
 	clients := make([]tutorme.Client, 0)
 
