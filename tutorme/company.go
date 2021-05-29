@@ -11,6 +11,12 @@ type Company struct {
 	Active   null.Bool   `db:"active" json:"active"`
 }
 
+type CompanyEmailDomain struct {
+	EmailDomain string   `db:"email_domain" json:"emailDomain"`
+	CompanyID   null.Int `db:"company_id" json:"companyId"`
+	Active      bool     `db:"active" json:"active"`
+}
+
 func NewCompany(
 	name null.String,
 	photo null.String,
@@ -33,6 +39,7 @@ type CompanyUseCase interface {
 	UpdateCompanyEmail(name string, emailDomain string, active bool) error
 	GetCompanies(active bool) (*[]Company, error)
 	GetCompany(id int) (*Company, error)
+	GetCompanyEmails(withCompany null.Bool) (*[]CompanyEmailDomain, error)
 }
 
 type CompanyStore interface {
@@ -45,4 +52,5 @@ type CompanyStore interface {
 	GetCompanies(db DB, active bool) (*[]Company, error)
 	GetCompanyIDFromEmailDomain(db DB, domain string) (null.Int, error)
 	GetCompany(db DB, id int) (*Company, error)
+	GetCompanyEmails(db DB, withCompany null.Bool) (*[]CompanyEmailDomain, error)
 }

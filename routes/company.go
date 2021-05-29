@@ -23,6 +23,7 @@ func RegisterCompanyRoutes(e *echo.Echo, validate *validator.Validate, publicKey
 	companyR.POST("/", views.CreateCompanyView)
 	companyR.PUT("/:id/", views.UpdateCompanyView)
 	companyR.PUT("/email/", views.UpdateCompanyEmailView)
+	companyR.GET("/email/", views.GetCompanyEmailView)
 	companyR.GET("/", views.GetCompanies)
 	companyR.GET("/:id/", views.GetCompany)
 }
