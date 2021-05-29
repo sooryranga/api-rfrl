@@ -63,7 +63,7 @@ func (comu *CompanyUseCase) UpdateCompany(
 }
 
 func (comu *CompanyUseCase) UpdateCompanyEmail(
-	name string,
+	name null.String,
 	emailDomain string,
 	active bool,
 ) error {
@@ -72,4 +72,8 @@ func (comu *CompanyUseCase) UpdateCompanyEmail(
 
 func (comu *CompanyUseCase) GetCompanies(active bool) (*[]tutorme.Company, error) {
 	return comu.CompanyStore.GetCompanies(comu.db, active)
+}
+
+func (comu *CompanyUseCase) GetCompanyEmail(companyEmail string) (*tutorme.CompanyEmailDomain, error) {
+	return comu.CompanyStore.GetCompanyEmail(comu.db, companyEmail)
 }

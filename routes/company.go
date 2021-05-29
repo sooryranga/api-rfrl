@@ -21,9 +21,17 @@ func RegisterCompanyRoutes(e *echo.Echo, validate *validator.Validate, publicKey
 		Claims:        &tutorme.JWTClaims{},
 	}))
 	companyR.POST("/", views.CreateCompanyView)
-	companyR.PUT("/:id/", views.UpdateCompanyView)
-	companyR.PUT("/email/", views.UpdateCompanyEmailView)
-	companyR.GET("/email/", views.GetCompanyEmailView)
 	companyR.GET("/", views.GetCompanies)
+	companyR.PUT("/:id/", views.UpdateCompanyView)
 	companyR.GET("/:id/", views.GetCompany)
+
+	companyEmailR := e.Group("/company-email")
+	companyEmailR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    publicKey,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
+	companyEmailR.PUT("/", views.UpdateCompanyEmailView)
+	companyEmailR.GET("/", views.GetCompanyEmailsView)
+	companyEmailR.GET("/:companyEmail/", views.GetCompanyEmailView)
 }
