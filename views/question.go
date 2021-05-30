@@ -7,6 +7,7 @@ import (
 	"github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gopkg.in/guregu/null.v4"
 )
 
 type (
@@ -113,7 +114,17 @@ func (qv QuestionView) GetQuestionEndpoint(c echo.Context) error {
 }
 
 func (qv QuestionView) GetQuestionsEndpoint(c echo.Context) error {
-	questions, err := qv.QuestionUseCase.GetQuestions()
+	lastQuestionParam := c.QueryParam("lastQuestion")
+	var lastQuestion null.Int
+	if lastQuestionParam != "" {
+		i, err := strconv.Atoi(lastQuestionParam)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		}
+		lastQuestion = null.IntFrom(int64(i))
+	}
+
+	questions, err := qv.QuestionUseCase.GetQuestions(lastQuestion)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
