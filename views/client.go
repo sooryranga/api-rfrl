@@ -58,9 +58,10 @@ type (
 	}
 
 	GetClientsEndpointPayload struct {
-		FromCompanyIds           []int     `query:"fromCompanyIds"`
-		IsTutor                  null.Bool `query:"isTutor"`
-		WantingReferralCompanyId null.Int  `query:"wantingReferralCompanyId"`
+		FromCompanyIds           []int       `query:"fromCompanyIds"`
+		IsTutor                  null.Bool   `query:"isTutor"`
+		WantingReferralCompanyId null.Int    `query:"wantingReferralCompanyId"`
+		LastTutor                null.String `query:"lastClient"`
 	}
 )
 
@@ -176,6 +177,7 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 		IsTutor:                  payload.IsTutor,
 		CompanyIds:               payload.FromCompanyIds,
 		WantingReferralCompanyId: payload.WantingReferralCompanyId,
+		LastTutor:                payload.LastTutor,
 	}
 
 	clients, err := cv.ClientUseCase.GetClients(options)
