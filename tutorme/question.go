@@ -2,6 +2,8 @@ package tutorme
 
 import (
 	"time"
+
+	"gopkg.in/guregu/null.v4"
 )
 
 type Tags struct {
@@ -37,7 +39,7 @@ type QuestionUseCase interface {
 	UpdateQuestion(clientID string, id int, title string, body string, tags []int) (*Question, error)
 	DeleteQuestion(clientID string, id int) error
 	GetQuestion(id int) (*Question, error)
-	GetQuestions() (*[]Question, error)
+	GetQuestions(lastQuestion null.Int) (*[]Question, error)
 	GetQuestionsForClient(clientID string) (*[]Question, error)
 	ApplyToQuestion(clientID string, id int) error
 }
@@ -47,7 +49,7 @@ type QuestionStore interface {
 	UpdateQuestion(db DB, clientID string, id int, title string, body string, tags []int) (*Question, error)
 	DeleteQuestion(db DB, id int) error
 	GetQuestion(db DB, id int) (*Question, error)
-	GetQuestions(db DB) (*[]Question, error)
+	GetQuestions(db DB, lastQuestion null.Int) (*[]Question, error)
 	GetQuestionsForClient(db DB, clientID string) (*[]Question, error)
 	ApplyToQuestion(db DB, clientID string, id int) error
 }
