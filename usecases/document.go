@@ -150,7 +150,7 @@ func (dc *DocumentUseCase) GetDocumentOrder(
 	refID string,
 	refType string,
 ) ([]tutorme.Document, error) {
-	check, err := dc.checkclientIsInRef(clientID, refType, refID)
+	check, err := dc.checkclientIsAbleToViewDocument(clientID, refType, refID)
 	if err != nil {
 		return nil, err
 	}
@@ -180,6 +180,28 @@ func (dc *DocumentUseCase) checkDocumentsAreForRef(
 	}
 
 	return dc.documentStore.CheckDocumentsBelongToclients(dc.db, clientIDs, documentIds)
+}
+
+func (dc *DocumentUseCase) checkclientIsAbleToViewDocument(
+	clientID string,
+	refType string,
+	refID string,
+) (bool, error) {
+	if refType == tutorme.ClientRef {
+		return true, nil
+	}
+	if refType == tutorme.SessionRef {
+		// clientIDs, err := session.GetclientsIdForSession(h.db, refID)
+
+		// for i := 0; i < len(clientIDs); i += 1 {
+		// 	if clientIDs[i] == clientID {
+		// 		return true, nil
+		// 	}
+		// }
+		// return false, err
+		return false, nil
+	}
+	return false, nil
 }
 
 func (dc *DocumentUseCase) checkclientIsInRef(
