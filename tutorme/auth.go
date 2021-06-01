@@ -144,15 +144,17 @@ func GetSigningKey() (*rsa.PrivateKey, error) {
 
 // Auth model
 type Auth struct {
-	ID           int         `db:"id" json:"-"`
-	CreatedAt    time.Time   `db:"created_at" json:"-"`
-	UpdatedAt    time.Time   `db:"updated_at" json:"-"`
-	Token        null.String `db:"token" json:"-"`
-	AuthType     null.String `db:"auth_type" json:"-"`
-	Email        null.String `db:"email" json:"-"`
-	PasswordHash []byte      `db:"password_hash" json:"-"`
-	ClientID     string      `db:"client_id" json:"-"`
-	Stage        SignUpFlow  `db:"sign_up_flow" json:"signUpStage"`
+	ID            int         `db:"id" json:"-"`
+	CreatedAt     time.Time   `db:"created_at" json:"-"`
+	UpdatedAt     time.Time   `db:"updated_at" json:"-"`
+	Token         null.String `db:"token" json:"-"`
+	AuthType      null.String `db:"auth_type" json:"-"`
+	Email         null.String `db:"email" json:"-"`
+	PasswordHash  []byte      `db:"password_hash" json:"-"`
+	ClientID      string      `db:"client_id" json:"-"`
+	Stage         SignUpFlow  `db:"sign_up_flow" json:"signUpStage"`
+	Blocked       bool        `db:"blocked" json:"-"`
+	FirebaseToken string      `json:"firebaseToken"`
 }
 
 type AuthStore interface {

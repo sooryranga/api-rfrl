@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"firebase.google.com/go/auth"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -13,13 +14,15 @@ type FireStoreClient struct {
 	ConferenceCodeRef *firestore.CollectionRef
 	UserRef           *firestore.CollectionRef
 	Client            *firestore.Client
+	Auth              *auth.Client
 }
 
-func NewFireStore(client *firestore.Client) *FireStoreClient {
+func NewFireStore(client *firestore.Client, auth *auth.Client) *FireStoreClient {
 	return &FireStoreClient{
 		UserRef:           client.Collection("users"),
 		ConferenceCodeRef: client.Collection("conferenceCode"),
 		Client:            client,
+		Auth:              auth,
 	}
 }
 
@@ -38,6 +41,11 @@ type Code struct {
 
 func (fs *FireStoreClient) userName(firstName string, lastName string) string {
 	return fmt.Sprintf("%s %s", firstName, lastName)
+}
+
+func (fs *FireStoreClient) CreateLoginToken(clientID string) (string, error) {
+	ctx := context.Background()
+	return fs.Auth.CustomToken(ctx, clientID)
 }
 
 func (fs *FireStoreClient) CreateClient(id string, photo string, firstName string, lastName string) error {
