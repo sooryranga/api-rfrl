@@ -55,6 +55,10 @@ func (cl *ClientUseCase) CreateClient(
 		email,
 		photo,
 		isTutor,
+		"",
+		"",
+		null.Int{},
+		"",
 	)
 	var err = new(error)
 	var tx *sqlx.Tx
@@ -87,12 +91,7 @@ func (cl *ClientUseCase) CreateClient(
 // UpdateClient use case to update a new client
 func (cl *ClientUseCase) UpdateClient(
 	id string,
-	firstName string,
-	lastName string,
-	about string,
-	email string,
-	photo string,
-	isTutor null.Bool,
+	params tutorme.UpdateClientPayload,
 ) (*tutorme.Client, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
@@ -102,12 +101,16 @@ func (cl *ClientUseCase) UpdateClient(
 	defer tutorme.HandleTransactions(tx, err)
 
 	client := tutorme.NewClient(
-		firstName,
-		lastName,
-		about,
-		email,
-		photo,
-		isTutor,
+		params.FirstName,
+		params.LastName,
+		params.About,
+		params.Email,
+		params.Photo,
+		params.IsTutor,
+		params.LinkedInProfile,
+		params.GithubProfile,
+		params.YearsOfExperience,
+		params.WorkTitle,
 	)
 
 	var updatedClient *tutorme.Client

@@ -195,6 +195,18 @@ func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Cl
 	if client.IsLookingForReferral.Valid {
 		query = query.Set("is_looking_for_referral", client.IsLookingForReferral)
 	}
+	if client.LinkedInProfile.Valid {
+		query = query.Set("linkedin_profile", client.LinkedInProfile)
+	}
+	if client.GithubProfile.Valid {
+		query = query.Set("github_profile", client.GithubProfile)
+	}
+	if client.YearsOfExperience.Valid {
+		query = query.Set("years_of_experience", client.YearsOfExperience)
+	}
+	if client.WorkTitle.Valid {
+		query = query.Set("work_title", client.WorkTitle)
+	}
 
 	sql, args, err := query.
 		Where(sq.Eq{"id": ID}).
