@@ -48,6 +48,10 @@ type Client struct {
 	VerifiedWorkEmail    null.Bool   `db:"verified_work_email" json:"verifiedWorkEmail"`
 	VerifiedEmail        null.Bool   `db:"verified_email" json:"verifiedEmail"`
 	IsLookingForReferral null.Bool   `db:"is_looking_for_referral" json:"isLookingForReferral"`
+	LinkedInProfile      null.String `db:"linkedin_profile" json:"linkedInProfile"`
+	GithubProfile        null.String `db:"github_profile" json:"githubProfile"`
+	YearsOfExperience    null.Int    `db:"years_of_experience" json:"yearsOfExperience"`
+	WorkTitle            null.String `db:"work_title" json:"workTitle"`
 	Education
 }
 
@@ -59,14 +63,22 @@ func NewClient(
 	email string,
 	photo string,
 	isTutor null.Bool,
+	linkedInProfile string,
+	githubProfile string,
+	yearsOfExperience null.Int,
+	workTitle string,
 ) *Client {
 	client := Client{
-		FirstName: null.NewString(firstName, firstName != ""),
-		LastName:  null.NewString(lastName, lastName != ""),
-		About:     null.NewString(about, about != ""),
-		Email:     null.NewString(email, email != ""),
-		Photo:     null.NewString(photo, photo != ""),
-		IsTutor:   isTutor,
+		FirstName:         null.NewString(firstName, firstName != ""),
+		LastName:          null.NewString(lastName, lastName != ""),
+		About:             null.NewString(about, about != ""),
+		Email:             null.NewString(email, email != ""),
+		Photo:             null.NewString(photo, photo != ""),
+		IsTutor:           isTutor,
+		LinkedInProfile:   null.NewString(linkedInProfile, linkedInProfile != ""),
+		GithubProfile:     null.NewString(githubProfile, githubProfile != ""),
+		YearsOfExperience: yearsOfExperience,
+		WorkTitle:         null.NewString(workTitle, workTitle != ""),
 	}
 
 	return &client
@@ -77,6 +89,19 @@ type GetClientsOptions struct {
 	CompanyIds               []int
 	WantingReferralCompanyId null.Int
 	LastTutor                null.String
+}
+
+type UpdateClientPayload struct {
+	FirstName         string
+	LastName          string
+	About             string
+	Email             string
+	Photo             string
+	IsTutor           null.Bool
+	LinkedInProfile   string
+	GithubProfile     string
+	YearsOfExperience null.Int
+	WorkTitle         string
 }
 
 type ClientStore interface {
@@ -98,7 +123,7 @@ type ClientStore interface {
 
 type ClientUseCase interface {
 	CreateClient(firstName string, lastName string, about string, email string, photo string, isTutor null.Bool) (*Client, error)
-	UpdateClient(id string, firstName string, lastName string, about string, email string, photo string, isTutor null.Bool) (*Client, error)
+	UpdateClient(id string, updateParams UpdateClientPayload) (*Client, error)
 	GetClient(id string) (*Client, error)
 	GetClients(options GetClientsOptions) (*[]Client, error)
 	CreateEmailVerification(clientID string, email string, emailType string) error

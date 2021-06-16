@@ -16,13 +16,17 @@ import (
 type (
 	// ClientPayload is the struct used to hold payload from /client
 	ClientPayload struct {
-		ID        string    `path:"id"`
-		Email     string    `json:"email" validate:"omitempty,email"`
-		FirstName string    `json:"firstName"`
-		LastName  string    `json:"lastName"`
-		Photo     string    `json:"photo"`
-		About     string    `json:"about"`
-		IsTutor   null.Bool `json:"isTutor"`
+		ID                string    `path:"id"`
+		Email             string    `json:"email" validate:"omitempty,email"`
+		FirstName         string    `json:"firstName"`
+		LastName          string    `json:"lastName"`
+		Photo             string    `json:"photo"`
+		About             string    `json:"about"`
+		IsTutor           null.Bool `json:"isTutor"`
+		LinkedInProfile   string    `json:"linkedInProfile"`
+		GithubProfile     string    `json:"githubProfile"`
+		YearsOfExperience null.Int  `json:"yearsOfExperience"`
+		WorkTitle         string    `json:"workTitle"`
 	}
 
 	// EducationPayload is the struct used to create education
@@ -128,14 +132,22 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Cannot update a user")
 	}
 
+	params := tutorme.UpdateClientPayload{
+		FirstName:         payload.FirstName,
+		LastName:          payload.LastName,
+		About:             payload.About,
+		Email:             payload.Email,
+		Photo:             payload.Photo,
+		IsTutor:           payload.IsTutor,
+		LinkedInProfile:   payload.LinkedInProfile,
+		GithubProfile:     payload.GithubProfile,
+		YearsOfExperience: payload.YearsOfExperience,
+		WorkTitle:         payload.WorkTitle,
+	}
+
 	client, err := cv.ClientUseCase.UpdateClient(
 		payload.ID,
-		payload.FirstName,
-		payload.LastName,
-		payload.About,
-		payload.Email,
-		payload.Photo,
-		payload.IsTutor,
+		params,
 	)
 
 	if err != nil {
