@@ -204,7 +204,7 @@ func (qs *QuestionStore) CreateQuestion(db tutorme.DB, question tutorme.Question
 	return &createdQuestion, err
 }
 
-func (qs *QuestionStore) UpdateQuestion(db tutorme.DB, clientID string, id int, title string, body string, tags []int) (*tutorme.Question, error) {
+func (qs *QuestionStore) UpdateQuestion(db tutorme.DB, clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*tutorme.Question, error) {
 	query := sq.Update("question")
 	if title != "" {
 		query = query.Set("title", title)
@@ -212,6 +212,10 @@ func (qs *QuestionStore) UpdateQuestion(db tutorme.DB, clientID string, id int, 
 
 	if body != "" {
 		query = query.Set("body", body)
+	}
+
+	if resolved.Valid {
+		query = query.Set("resolved", resolved)
 	}
 
 	sql, args, err := query.Suffix("RETURNING *").PlaceholderFormat(sq.Dollar).ToSql()
@@ -286,11 +290,15 @@ func (qs *QuestionStore) GetQuestion(db tutorme.DB, id int) (*tutorme.Question, 
 	return &question, nil
 }
 
-func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int) (*[]tutorme.Question, error) {
+func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int, resolved null.Bool) (*[]tutorme.Question, error) {
 	query := sq.Select("*").From("question")
 
 	if lastQuestion.Valid {
 		query = query.Where(sq.Lt{"id": lastQuestion})
+	}
+
+	if resolved.Valid {
+		query = query.Where(sq.Eq{"resolved": resolved})
 	}
 
 	sql, args, err := query.
@@ -340,12 +348,19 @@ func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int) (*[]
 	return &questions, err
 }
 
-const getQuestionsForClientSQL string = `
-SELECT * FROM question WHERE from_id = $1
-`
+func (qs *QuestionStore) GetQuestionsForClient(db tutorme.DB, clientID string, resolved null.Bool) (*[]tutorme.Question, error) {
+	query := sq.Select("*").From("question").Where(sq.Eq{"from_id": clientID})
 
-func (qs *QuestionStore) GetQuestionsForClient(db tutorme.DB, clientID string) (*[]tutorme.Question, error) {
-	rows, err := db.Queryx(getQuestionsForClientSQL, clientID)
+	if resolved.Valid {
+		query = query.Where(sq.Eq{"resolved": resolved})
+	}
+
+	sql, args, err := query.
+		OrderBy("id DESC").
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
 		return nil, err
