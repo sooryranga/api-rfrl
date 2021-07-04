@@ -1,6 +1,7 @@
 package views
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
@@ -9,7 +10,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -92,8 +93,12 @@ type ClientView struct {
 func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
 	claims, err := tutorme.GetClaims(c)
 
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	if !claims.Admin {
-		return echo.NewHTTPError(http.StatusBadRequest, "Cannot create a user")
+		return echo.NewHTTPError(http.StatusUnauthorized, "You need to be an admin to create a user")
 	}
 
 	payload := ClientPayload{}
@@ -112,7 +117,7 @@ func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusCreated, client)
@@ -128,8 +133,12 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 
 	claims, err := tutorme.GetClaims(c)
 
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	if !claims.Admin && claims.ClientID != payload.ID {
-		return echo.NewHTTPError(http.StatusBadRequest, "Cannot update a user")
+		return echo.NewHTTPError(http.StatusUnauthorized, "You cannot update this client")
 	}
 
 	params := tutorme.UpdateClientPayload{
@@ -151,7 +160,12 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		switch errors.Cause(err) {
+		case sql.ErrNoRows:
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		}
 	}
 
 	return c.JSON(http.StatusOK, client)
@@ -164,10 +178,15 @@ func (cv *ClientView) GetClientEndpoint(c echo.Context) error {
 	client, err := cv.ClientUseCase.GetClient(id)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		switch errors.Cause(err) {
+		case sql.ErrNoRows:
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		}
 	}
-	return c.JSON(http.StatusOK, client)
 
+	return c.JSON(http.StatusOK, client)
 }
 
 func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
@@ -195,7 +214,7 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 	clients, err := cv.ClientUseCase.GetClients(options)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, clients)
@@ -221,7 +240,7 @@ func (cv *ClientView) VerifyEmail(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -244,7 +263,6 @@ func (cv *ClientView) VerifyEmailPassCode(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid passcode")
 	}
 
-	log.Errorj(log.JSON{"VerifyEmailPayload": payload})
 	client, err := cv.ClientUseCase.VerifyEmail(
 		claims.ClientID,
 		payload.Email,
@@ -253,7 +271,7 @@ func (cv *ClientView) VerifyEmailPassCode(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, client)
@@ -350,7 +368,7 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 	events, err := cv.ClientUseCase.GetClientEvents(payload.ClientID, start, end, state)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, *events)
@@ -383,7 +401,7 @@ func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
 	err = cv.ClientUseCase.DeleteVerificationEmail(claims.ClientID, emailType)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -407,7 +425,7 @@ func (cv *ClientView) GetWantingReferralCompany(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	response := GetReferralCompanyResponse{
@@ -442,7 +460,7 @@ func (cv *ClientView) CreateWantingReferralCompany(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -485,14 +503,13 @@ func (cv *ClientView) CreateEducation(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	client, err := cv.ClientUseCase.GetClient(clientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
-
 	return c.JSON(http.StatusOK, client)
 }
