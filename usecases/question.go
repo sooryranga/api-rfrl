@@ -47,7 +47,7 @@ func (qu *QuestionUseCase) CreateQuestion(clientID string, title string, body st
 	return createdQuestion, nil
 }
 
-func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string, body string, tags []int) (*tutorme.Question, error) {
+func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*tutorme.Question, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
 
@@ -56,7 +56,7 @@ func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string,
 	defer tutorme.HandleTransactions(tx, err)
 
 	var updatedQuestion *tutorme.Question
-	updatedQuestion, *err = qu.QuestionStore.UpdateQuestion(tx, clientID, id, title, body, tags)
+	updatedQuestion, *err = qu.QuestionStore.UpdateQuestion(tx, clientID, id, title, body, tags, resolved)
 
 	if *err != nil {
 		return nil, *err
@@ -95,8 +95,8 @@ func (qu *QuestionUseCase) GetQuestion(id int) (*tutorme.Question, error) {
 	return question, err
 }
 
-func (qu *QuestionUseCase) GetQuestions(lastQuestion null.Int) (*[]tutorme.Question, error) {
-	questions, err := qu.QuestionStore.GetQuestions(qu.DB, lastQuestion)
+func (qu *QuestionUseCase) GetQuestions(lastQuestion null.Int, resolved null.Bool) (*[]tutorme.Question, error) {
+	questions, err := qu.QuestionStore.GetQuestions(qu.DB, lastQuestion, resolved)
 
 	if len(*questions) == 0 {
 		return questions, nil
@@ -132,8 +132,8 @@ func (qu *QuestionUseCase) GetQuestions(lastQuestion null.Int) (*[]tutorme.Quest
 	return questions, nil
 }
 
-func (qu *QuestionUseCase) GetQuestionsForClient(clientID string) (*[]tutorme.Question, error) {
-	questions, err := qu.QuestionStore.GetQuestionsForClient(qu.DB, clientID)
+func (qu *QuestionUseCase) GetQuestionsForClient(clientID string, resolved null.Bool) (*[]tutorme.Question, error) {
+	questions, err := qu.QuestionStore.GetQuestionsForClient(qu.DB, clientID, resolved)
 
 	if err != nil {
 		return nil, err
