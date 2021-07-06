@@ -177,7 +177,7 @@ func (cs *CompanyStore) GetCompanies(db tutorme.DB, active bool) (*[]tutorme.Com
 }
 
 const getCompanyIDFromEmailDomainQuery string = `
-SELECT id FROM company_email
+SELECT company_id FROM company_email
 WHERE email_domain = $1
 `
 

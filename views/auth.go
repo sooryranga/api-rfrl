@@ -251,7 +251,7 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	if err != nil {
 		switch errors.Cause(err) {
 		case sql.ErrNoRows:
-			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+			return echo.NewHTTPError(http.StatusNotFound, "Client doesn't exist in our records")
 		case bcrypt.ErrMismatchedHashAndPassword:
 			return echo.NewHTTPError(http.StatusNotFound, "Email and password do not match")
 		default:
