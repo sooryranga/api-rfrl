@@ -2,12 +2,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <style>
-    
-  </style>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
 </head>
-<body>
-  <p> <b> Hello You used this email to sign up for Tutorme!</b></p>
-  <p>Please use the following code to finish signing up - {{.VerifyCode}}</p>
+<body style="background-color: white;box-sizing: border-box;font-family: 'Roboto', sans-serif;margin: 0;padding: 0;color: #5A5A5A;">
+  <div style="text-align: center; height: 6rem;text-align: center">
+    <h1 id="logo" style="display: inline-block;color: #B86114;font-size: 5rem;margin: 2rem;"><a href="http://www.rfrl.ca/" style="color: inherit;text-decoration: inherit;">rfrl</a></h1>
+  </div>
+  <div id="content" style="text-align: center; padding-top: 4rem; padding-bottom: 10rem;">
+    <h2>{{.Heading}}</h2>
+    <p>{{.Description}}</p>
+    <div id="passcode" style="color:#B86114; font-size: 3rem; letter-spacing: 1rem; padding-top: 1rem;">
+      <p>{{.VerifyCode}}</p>
+    </div>
+  </div>
+  <div>
+    <p style="display: inline-block;color: #606c38;font-size: 0.9rem; width: 100%;">
+      <a href="http://www.rfrl.ca/" style="color: inherit;text-decoration: inherit;float:right;margin-right: 1rem"> Terms of Service </a>
+      <a href="http://www.rfrl.ca/" style="color: inherit;text-decoration: inherit;float:right;margin-right: 1rem">Privacy</a>
+    </p>
+  </div>
 </body>
 </html>
