@@ -140,7 +140,7 @@ func (cl *ClientUseCase) GetClients(options tutorme.GetClientsOptions) (*[]tutor
 
 func (cl *ClientUseCase) CreateEmailVerification(clientID string, email string, emailType string) error {
 
-	passcode, err := cl.emailer.SendEmailVerification(email)
+	passcode, err := cl.emailer.SendEmailVerification(email, emailType)
 
 	if err != nil {
 		return err
