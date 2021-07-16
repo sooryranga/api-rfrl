@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 )
@@ -20,7 +20,7 @@ type (
 )
 
 type TutorReviewView struct {
-	TutorReviewUseCase tutorme.TutorReviewUseCase
+	TutorReviewUseCase rfrl.TutorReviewUseCase
 }
 
 func (trv *TutorReviewView) CreateTutorReviewEndpoint(c echo.Context) error {
@@ -30,7 +30,7 @@ func (trv *TutorReviewView) CreateTutorReviewEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -62,7 +62,7 @@ func (trv *TutorReviewView) UpdateTutorReviewEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -90,7 +90,7 @@ func (trv *TutorReviewView) DeleteTutorReviewEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -156,7 +156,7 @@ func (trv *TutorReviewView) GetTutorReviewsAggregateEndpoint(c echo.Context) err
 }
 
 func (trv *TutorReviewView) GetPendingReviewsEndpoint(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

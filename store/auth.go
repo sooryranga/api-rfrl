@@ -3,7 +3,7 @@ package store
 import (
 	"errors"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -19,8 +19,8 @@ const getAuthFromClientID string = `
 SELECT * FROM auth WHERE client_id = $1
 `
 
-func (au *AuthStore) GetByClientID(db tutorme.DB, clientID string) (*tutorme.Auth, error) {
-	var auth tutorme.Auth
+func (au *AuthStore) GetByClientID(db rfrl.DB, clientID string) (*rfrl.Auth, error) {
+	var auth rfrl.Auth
 
 	row := db.QueryRowx(getAuthFromClientID, clientID)
 
@@ -36,7 +36,7 @@ SELECT EXISTS (
 )
 `
 
-func (au *AuthStore) CheckEmailAuthExists(db tutorme.DB, clientID string, email string) (bool, error) {
+func (au *AuthStore) CheckEmailAuthExists(db rfrl.DB, clientID string, email string) (bool, error) {
 	var exists null.Bool
 	err := db.QueryRowx(checkEmailExists, email, clientID).Scan(&exists)
 
@@ -52,7 +52,7 @@ SET sign_up_flow = $1
 WHERE client_id = $2
 `
 
-func (au *AuthStore) UpdateSignUpFlow(db tutorme.DB, clientID string, stage tutorme.SignUpFlow) error {
+func (au *AuthStore) UpdateSignUpFlow(db rfrl.DB, clientID string, stage rfrl.SignUpFlow) error {
 	_, err := db.Queryx(updateSignUpFlowQuery, stage, clientID)
 
 	return err
@@ -65,7 +65,7 @@ WHERE client_id = $2
 AND auth_type = 'email'
 	`
 
-func (au *AuthStore) UpdateAuthEmail(db tutorme.DB, clientID string, email string) error {
+func (au *AuthStore) UpdateAuthEmail(db rfrl.DB, clientID string, email string) error {
 	_, err := db.Queryx(updateEmail, email, clientID)
 
 	return err
@@ -79,10 +79,10 @@ LIMIT 1
 	`
 
 // GetByToken queries the database for token auth from providers
-func (au *AuthStore) GetByToken(db tutorme.DB, token string, authType string) (*tutorme.Client, *tutorme.Auth, error) {
+func (au *AuthStore) GetByToken(db rfrl.DB, token string, authType string) (*rfrl.Client, *rfrl.Auth, error) {
 	type getByTokenStruct struct {
-		tutorme.Client
-		tutorme.Auth
+		rfrl.Client
+		rfrl.Auth
 	}
 	var result getByTokenStruct
 	err := db.QueryRowx(getByToken, token, authType).StructScan(&result)
@@ -100,15 +100,15 @@ LIMIT 1
 	`
 
 // GetByEmail queries the database for email auth
-func (au *AuthStore) GetByEmail(db tutorme.DB, email string) (*tutorme.Client, *tutorme.Auth, error) {
+func (au *AuthStore) GetByEmail(db rfrl.DB, email string) (*rfrl.Client, *rfrl.Auth, error) {
 
 	type getByEmailStruct struct {
-		tutorme.Client
-		tutorme.Auth
+		rfrl.Client
+		rfrl.Auth
 	}
 	var result getByEmailStruct
 
-	row := db.QueryRowx(getByEmail, email, tutorme.EMAIL)
+	row := db.QueryRowx(getByEmail, email, rfrl.EMAIL)
 
 	err := row.StructScan(&result)
 
@@ -122,9 +122,9 @@ RETURNING *
 	`
 
 // CreateWithEmail creates auth row with email in db
-func (au *AuthStore) CreateWithEmail(db tutorme.DB, auth *tutorme.Auth, clientID string) (*tutorme.Auth, error) {
-	var createdAuth tutorme.Auth
-	row := db.QueryRowx(insertEmailAuth, auth.Email, auth.PasswordHash, tutorme.EMAIL, clientID)
+func (au *AuthStore) CreateWithEmail(db rfrl.DB, auth *rfrl.Auth, clientID string) (*rfrl.Auth, error) {
+	var createdAuth rfrl.Auth
+	row := db.QueryRowx(insertEmailAuth, auth.Email, auth.PasswordHash, rfrl.EMAIL, clientID)
 
 	err := row.StructScan(&createdAuth)
 
@@ -138,8 +138,8 @@ RETURNING *
 	`
 
 // CreateWithToken creates auth row with token in db
-func (au *AuthStore) CreateWithToken(db tutorme.DB, auth *tutorme.Auth, clientID string) (*tutorme.Auth, error) {
-	var createdAuth tutorme.Auth
+func (au *AuthStore) CreateWithToken(db rfrl.DB, auth *rfrl.Auth, clientID string) (*rfrl.Auth, error) {
+	var createdAuth rfrl.Auth
 	row := db.QueryRowx(insertToken, auth.Token, auth.AuthType, clientID)
 	err := row.StructScan(&createdAuth)
 
@@ -152,7 +152,7 @@ SET blocked = $1
 WHERE client_id = $2 
 `
 
-func (au *AuthStore) BlockClient(db tutorme.DB, clientID string, blocked bool) error {
+func (au *AuthStore) BlockClient(db rfrl.DB, clientID string, blocked bool) error {
 	_, err := db.Queryx(blockClientQuery, blocked, clientID)
 
 	return err

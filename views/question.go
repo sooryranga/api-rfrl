@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/guregu/null.v4"
@@ -21,7 +21,7 @@ type (
 )
 
 type QuestionView struct {
-	QuestionUseCase tutorme.QuestionUseCase
+	QuestionUseCase rfrl.QuestionUseCase
 }
 
 func (qv *QuestionView) CreateQuestionEndpoint(c echo.Context) error {
@@ -31,7 +31,7 @@ func (qv *QuestionView) CreateQuestionEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -58,7 +58,7 @@ func (qv QuestionView) UpdateQuestionEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -86,7 +86,7 @@ func (qv QuestionView) DeleteQuestionEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -172,7 +172,7 @@ func (qv QuestionView) ApplyToQuestionEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Question ID is not valid")
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

@@ -1,7 +1,7 @@
 package store
 
 import (
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -58,15 +58,15 @@ ORDER BY document_order.page
 )
 
 // GetDocument queries the database for document with id and client id
-func (dc *DocumentStore) GetDocument(db tutorme.DB, id int, clientID string) (*tutorme.Document, error) {
-	var m tutorme.Document
+func (dc *DocumentStore) GetDocument(db rfrl.DB, id int, clientID string) (*rfrl.Document, error) {
+	var m rfrl.Document
 	err := db.QueryRowx(getDocumentByID, id, clientID).StructScan(&m)
 
 	return &m, errors.Wrap(err, "getDocument")
 }
 
 // CreateDocument creates a new row for a document in the database
-func (dc *DocumentStore) CreateDocument(db tutorme.DB, doc *tutorme.Document) (*tutorme.Document, error) {
+func (dc *DocumentStore) CreateDocument(db rfrl.DB, doc *rfrl.Document) (*rfrl.Document, error) {
 	row := db.QueryRowx(
 		insertDocument,
 		doc.Src,
@@ -75,14 +75,14 @@ func (dc *DocumentStore) CreateDocument(db tutorme.DB, doc *tutorme.Document) (*
 		doc.ClientID,
 	)
 
-	var m tutorme.Document
+	var m rfrl.Document
 
 	err := row.StructScan(&m)
 	return &m, errors.Wrap(err, "CreateDocument")
 }
 
 // UpdateDocument updates a client in the database
-func (dc *DocumentStore) UpdateDocument(db tutorme.DB, ID int, doc *tutorme.Document) (*tutorme.Document, error) {
+func (dc *DocumentStore) UpdateDocument(db rfrl.DB, ID int, doc *rfrl.Document) (*rfrl.Document, error) {
 	query := sq.Update("document")
 	if doc.Description.Valid {
 		query = query.Set("description", doc.Description)
@@ -105,21 +105,21 @@ func (dc *DocumentStore) UpdateDocument(db tutorme.DB, ID int, doc *tutorme.Docu
 		args...,
 	)
 
-	var m tutorme.Document
+	var m rfrl.Document
 
 	err = row.StructScan(&m)
 	return &m, errors.Wrap(err, "UpdateDocument")
 }
 
 // DeleteDocument deletes a document in the database
-func (dc *DocumentStore) DeleteDocument(db tutorme.DB, ID int, clientID string) error {
+func (dc *DocumentStore) DeleteDocument(db rfrl.DB, ID int, clientID string) error {
 	_, err := db.Queryx(deleteDocument, ID, clientID)
 
 	return errors.Wrap(err, "DeleteDocument")
 }
 
 func (dc *DocumentStore) CheckDocumentsBelongToclients(
-	db tutorme.DB,
+	db rfrl.DB,
 	clientIDs []string,
 	documentIds []int,
 ) (bool, error) {
@@ -137,17 +137,17 @@ func (dc *DocumentStore) CheckDocumentsBelongToclients(
 	return count == len(documentIds), err
 }
 
-func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db tutorme.DB, ID int, clientID string) error {
+func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db rfrl.DB, ID int, clientID string) error {
 	rows, err := db.Queryx(deleteDocumentOrderWithDocumentID, ID)
 
 	if err != nil {
 		return err
 	}
 
-	docOrders := make([]tutorme.DocumentOrder, 0)
+	docOrders := make([]rfrl.DocumentOrder, 0)
 
 	for rows.Next() {
-		var docOrder tutorme.DocumentOrder
+		var docOrder rfrl.DocumentOrder
 		err = rows.StructScan(&docOrder)
 		if err != nil {
 			return err
@@ -188,11 +188,11 @@ func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db tutorme.DB, ID int, 
 }
 
 func createDocumentOrder(
-	db tutorme.DB,
+	db rfrl.DB,
 	documentIds []int,
 	refType string,
 	refID string,
-) ([]tutorme.Document, error) {
+) ([]rfrl.Document, error) {
 	query := sq.Insert("document_order").
 		Columns("ref_type", "ref_id", "document_id", "page")
 
@@ -217,20 +217,20 @@ func createDocumentOrder(
 }
 
 func (dc *DocumentStore) CreateDocumentOrder(
-	db tutorme.DB,
+	db rfrl.DB,
 	documentIds []int,
 	refType string,
 	refID string,
-) ([]tutorme.Document, error) {
+) ([]rfrl.Document, error) {
 	return createDocumentOrder(db, documentIds, refType, refID)
 }
 
 func (dc *DocumentStore) UpdateDocumentOrder(
-	db tutorme.DB,
+	db rfrl.DB,
 	documentIds []int,
 	refType string,
 	refID string,
-) ([]tutorme.Document, error) {
+) ([]rfrl.Document, error) {
 	_, err := db.Queryx(removeDocumentOrder, refType, refID)
 	if err != nil {
 		return nil, err
@@ -247,20 +247,20 @@ func (dc *DocumentStore) UpdateDocumentOrder(
 }
 
 func getDocumentOrder(
-	db tutorme.DB,
+	db rfrl.DB,
 	refType string,
 	refID string,
-) ([]tutorme.Document, error) {
+) ([]rfrl.Document, error) {
 	rows, err := db.Queryx(getDocumentOrderQuery, refType, refID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	docs := make([]tutorme.Document, 0)
+	docs := make([]rfrl.Document, 0)
 
 	for rows.Next() {
-		var doc tutorme.Document
+		var doc rfrl.Document
 		err = rows.StructScan(&doc)
 		if err != nil {
 			return nil, err
@@ -272,9 +272,9 @@ func getDocumentOrder(
 }
 
 func (dc *DocumentStore) GetDocumentOrder(
-	db tutorme.DB,
+	db rfrl.DB,
 	refType string,
 	refID string,
-) ([]tutorme.Document, error) {
+) ([]rfrl.Document, error) {
 	return getDocumentOrder(db, refType, refID)
 }

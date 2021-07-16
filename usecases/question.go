@@ -1,42 +1,42 @@
 package usecases
 
 import (
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
 )
 
 type QuestionUseCase struct {
 	DB            *sqlx.DB
-	ClientStore   tutorme.ClientStore
-	QuestionStore tutorme.QuestionStore
+	ClientStore   rfrl.ClientStore
+	QuestionStore rfrl.QuestionStore
 }
 
 func NewQuestionUsesCase(
 	db *sqlx.DB,
-	clientStore tutorme.ClientStore,
-	questionStore tutorme.QuestionStore,
+	clientStore rfrl.ClientStore,
+	questionStore rfrl.QuestionStore,
 ) *QuestionUseCase {
 	return &QuestionUseCase{db, clientStore, questionStore}
 }
 
-func (qu *QuestionUseCase) CreateQuestion(clientID string, title string, body string, tags []int) (*tutorme.Question, error) {
-	question := tutorme.NewQuestion(title, body, tags, clientID)
+func (qu *QuestionUseCase) CreateQuestion(clientID string, title string, body string, tags []int) (*rfrl.Question, error) {
+	question := rfrl.NewQuestion(title, body, tags, clientID)
 	var err = new(error)
 	var tx *sqlx.Tx
 
 	tx, *err = qu.DB.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
-	var createdQuestion *tutorme.Question
+	var createdQuestion *rfrl.Question
 	createdQuestion, *err = qu.QuestionStore.CreateQuestion(tx, question)
 
 	if *err != nil {
 		return nil, *err
 	}
 
-	var client *tutorme.Client
+	var client *rfrl.Client
 	client, *err = qu.ClientStore.GetClientFromID(qu.DB, createdQuestion.FromID)
 
 	if *err != nil {
@@ -47,22 +47,22 @@ func (qu *QuestionUseCase) CreateQuestion(clientID string, title string, body st
 	return createdQuestion, nil
 }
 
-func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*tutorme.Question, error) {
+func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*rfrl.Question, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
 
 	tx, *err = qu.DB.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
-	var updatedQuestion *tutorme.Question
+	var updatedQuestion *rfrl.Question
 	updatedQuestion, *err = qu.QuestionStore.UpdateQuestion(tx, clientID, id, title, body, tags, resolved)
 
 	if *err != nil {
 		return nil, *err
 	}
 
-	var client *tutorme.Client
+	var client *rfrl.Client
 	client, *err = qu.ClientStore.GetClientFromID(qu.DB, updatedQuestion.FromID)
 
 	if *err != nil {
@@ -77,7 +77,7 @@ func (qu *QuestionUseCase) DeleteQuestion(clientID string, id int) error {
 	return qu.QuestionStore.DeleteQuestion(qu.DB, id)
 }
 
-func (qu *QuestionUseCase) GetQuestion(id int) (*tutorme.Question, error) {
+func (qu *QuestionUseCase) GetQuestion(id int) (*rfrl.Question, error) {
 	question, err := qu.QuestionStore.GetQuestion(qu.DB, id)
 
 	if err != nil {
@@ -95,7 +95,7 @@ func (qu *QuestionUseCase) GetQuestion(id int) (*tutorme.Question, error) {
 	return question, err
 }
 
-func (qu *QuestionUseCase) GetQuestions(lastQuestion null.Int, resolved null.Bool) (*[]tutorme.Question, error) {
+func (qu *QuestionUseCase) GetQuestions(lastQuestion null.Int, resolved null.Bool) (*[]rfrl.Question, error) {
 	questions, err := qu.QuestionStore.GetQuestions(qu.DB, lastQuestion, resolved)
 
 	if len(*questions) == 0 {
@@ -118,7 +118,7 @@ func (qu *QuestionUseCase) GetQuestions(lastQuestion null.Int, resolved null.Boo
 		return nil, err
 	}
 
-	IDtoClient := make(map[string]*tutorme.Client)
+	IDtoClient := make(map[string]*rfrl.Client)
 
 	for i := 0; i < len(*clients); i++ {
 		client := (*clients)[i]
@@ -132,7 +132,7 @@ func (qu *QuestionUseCase) GetQuestions(lastQuestion null.Int, resolved null.Boo
 	return questions, nil
 }
 
-func (qu *QuestionUseCase) GetQuestionsForClient(clientID string, resolved null.Bool) (*[]tutorme.Question, error) {
+func (qu *QuestionUseCase) GetQuestionsForClient(clientID string, resolved null.Bool) (*[]rfrl.Question, error) {
 	questions, err := qu.QuestionStore.GetQuestionsForClient(qu.DB, clientID, resolved)
 
 	if err != nil {
@@ -159,7 +159,7 @@ func (qu *QuestionUseCase) ApplyToQuestion(clientID string, id int) error {
 
 	tx, *err = qu.DB.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	*err = qu.QuestionStore.ApplyToQuestion(tx, clientID, id)
 

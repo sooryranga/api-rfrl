@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator"
 	"github.com/jackc/pgconn"
@@ -41,7 +41,7 @@ type (
 	}
 
 	SignUpFlowPayload struct {
-		Stage tutorme.SignUpFlow `json:"stage"`
+		Stage rfrl.SignUpFlow `json:"stage"`
 	}
 
 	BlockClientPayload struct {
@@ -55,15 +55,15 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 	payload := sl.Current().Interface().(SignUpPayload)
 
 	switch payload.Type {
-	case tutorme.GOOGLE:
+	case rfrl.GOOGLE:
 		if len(payload.Token) == 0 {
 			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
 		}
-	case tutorme.LINKEDIN:
+	case rfrl.LINKEDIN:
 		if len(payload.Token) == 0 {
 			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
 		}
-	case tutorme.EMAIL:
+	case rfrl.EMAIL:
 		if len(payload.Email) == 0 {
 			sl.ReportError(payload.Email, "email", "Email", "validEmail", "")
 		}
@@ -81,15 +81,15 @@ func LoginPayloadValidation(sl validator.StructLevel) {
 	payload := sl.Current().Interface().(LoginPayload)
 
 	switch payload.Type {
-	case tutorme.GOOGLE:
+	case rfrl.GOOGLE:
 		if len(payload.Token) == 0 {
 			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
 		}
-	case tutorme.LINKEDIN:
+	case rfrl.LINKEDIN:
 		if len(payload.Token) == 0 {
 			sl.ReportError(payload.Token, "token", "Token", "validToken", "")
 		}
-	case tutorme.EMAIL:
+	case rfrl.EMAIL:
 		if len(payload.Email) == 0 {
 			sl.ReportError(payload.Email, "email", "Email", "validEmail", "")
 		}
@@ -102,7 +102,7 @@ func LoginPayloadValidation(sl validator.StructLevel) {
 }
 
 type AuthView struct {
-	AuthUseCases tutorme.AuthUseCase
+	AuthUseCases rfrl.AuthUseCase
 	Key          rsa.PrivateKey
 }
 
@@ -117,12 +117,12 @@ func (av *AuthView) Signup(c echo.Context) error {
 	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	var newClient *tutorme.Client
-	var auth *tutorme.Auth
+	var newClient *rfrl.Client
+	var auth *rfrl.Auth
 	var err error
 
 	switch payload.Type {
-	case tutorme.GOOGLE:
+	case rfrl.GOOGLE:
 		newClient, auth, err = av.AuthUseCases.SignupGoogle(
 			payload.Token,
 			payload.Email,
@@ -132,7 +132,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 			payload.About,
 			payload.IsTutor,
 		)
-	case tutorme.LINKEDIN:
+	case rfrl.LINKEDIN:
 		newClient, auth, err = av.AuthUseCases.SignupLinkedIn(
 			payload.Token,
 			payload.Email,
@@ -142,7 +142,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 			payload.About,
 			payload.IsTutor,
 		)
-	case tutorme.EMAIL:
+	case rfrl.EMAIL:
 		newClient, auth, err = av.AuthUseCases.SignupEmail(
 			payload.Password,
 			payload.Token,
@@ -167,10 +167,10 @@ func (av *AuthView) Signup(c echo.Context) error {
 			}
 		}
 
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
-	claims := &tutorme.JWTClaims{
+	claims := &rfrl.JWTClaims{
 		newClient.ID,
 		newClient.Email.String,
 		newClient.IsAdmin.Bool,
@@ -182,7 +182,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 	token, err := av.AuthUseCases.GenerateToken(claims, &av.Key)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -193,7 +193,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 }
 
 func (av *AuthView) AuthorizedLogin(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -206,11 +206,11 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 		case sql.ErrNoRows:
 			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 		}
 	}
 
-	newClaims := &tutorme.JWTClaims{
+	newClaims := &rfrl.JWTClaims{
 		existingClient.ID,
 		existingClient.Email.String,
 		existingClient.IsAdmin.Bool,
@@ -222,7 +222,7 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	token, err := av.AuthUseCases.GenerateToken(newClaims, &av.Key)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -233,16 +233,16 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 }
 
 func (av *AuthView) login(c echo.Context, payload loginFields) error {
-	var existingClient *tutorme.Client
-	var auth *tutorme.Auth
+	var existingClient *rfrl.Client
+	var auth *rfrl.Auth
 	var err error
 
 	switch payload.Type {
-	case tutorme.GOOGLE:
+	case rfrl.GOOGLE:
 		existingClient, auth, err = av.AuthUseCases.LoginGoogle(payload.Token)
-	case tutorme.LINKEDIN:
+	case rfrl.LINKEDIN:
 		existingClient, auth, err = av.AuthUseCases.LoginLinkedIn(payload.Token)
-	case tutorme.EMAIL:
+	case rfrl.EMAIL:
 		existingClient, auth, err = av.AuthUseCases.LoginEmail(payload.Email, payload.Password)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
@@ -255,11 +255,11 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 		case bcrypt.ErrMismatchedHashAndPassword:
 			return echo.NewHTTPError(http.StatusNotFound, "Email and password do not match")
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 		}
 	}
 
-	claims := &tutorme.JWTClaims{
+	claims := &rfrl.JWTClaims{
 		existingClient.ID,
 		existingClient.Email.String,
 		existingClient.IsAdmin.Bool,
@@ -271,7 +271,7 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	token, err := av.AuthUseCases.GenerateToken(claims, &av.Key)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -297,7 +297,7 @@ func (av *AuthView) Login(c echo.Context) error {
 }
 
 func (av *AuthView) UpdateSignUpFlow(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -312,14 +312,14 @@ func (av *AuthView) UpdateSignUpFlow(c echo.Context) error {
 	err = av.AuthUseCases.UpdateSignUpFlow(claims.ClientID, payload.Stage)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.NoContent(http.StatusOK)
 }
 
 func (av *AuthView) BlockClient(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -349,7 +349,7 @@ func (av *AuthView) BlockClient(c echo.Context) error {
 		case sql.ErrNoRows:
 			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
 		default:
-			return echo.NewHTTPError(http.StatusBadRequest, tutorme.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusBadRequest, rfrl.GetStatusInternalServerError(err))
 		}
 	}
 

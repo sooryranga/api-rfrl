@@ -1,4 +1,4 @@
-module github.com/Arun4rangan/api-tutorme
+module github.com/Arun4rangan/api-rfrl
 
 go 1.16
 

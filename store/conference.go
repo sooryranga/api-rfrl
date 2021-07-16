@@ -3,7 +3,7 @@ package store
 import (
 	"database/sql"
 
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 )
 
@@ -24,8 +24,8 @@ VALUES ($1, null)
 RETURNING *
 `
 
-func (cs *ConferenceStore) GetOrCreateConference(db tutorme.DB, sessionID int) (*tutorme.Conference, error) {
-	var conference tutorme.Conference
+func (cs *ConferenceStore) GetOrCreateConference(db rfrl.DB, sessionID int) (*rfrl.Conference, error) {
+	var conference rfrl.Conference
 	err := db.QueryRowx(selectConferenceQuery, sessionID).StructScan(&conference)
 
 	if err != nil && err == sql.ErrNoRows {
@@ -47,8 +47,8 @@ SET latest_code = $1
 WHERE session_id = $2
 `
 
-func (cs *ConferenceStore) CreateNewCode(db tutorme.DB, sessionID int, rawCode string) (*tutorme.Code, error) {
-	var code tutorme.Code
+func (cs *ConferenceStore) CreateNewCode(db rfrl.DB, sessionID int, rawCode string) (*rfrl.Code, error) {
+	var code rfrl.Code
 	row := db.QueryRowx(createCodeQuery, rawCode)
 
 	err := row.StructScan(&code)
@@ -62,7 +62,7 @@ func (cs *ConferenceStore) CreateNewCode(db tutorme.DB, sessionID int, rawCode s
 	return &code, err
 }
 
-func (cs *ConferenceStore) UpdateCode(db tutorme.DB, id int, code tutorme.Code) (*tutorme.Code, error) {
+func (cs *ConferenceStore) UpdateCode(db rfrl.DB, id int, code rfrl.Code) (*rfrl.Code, error) {
 	query := sq.Update("conference_code")
 
 	if code.Code.Valid {
@@ -88,7 +88,7 @@ func (cs *ConferenceStore) UpdateCode(db tutorme.DB, id int, code tutorme.Code) 
 		args...,
 	)
 
-	var c tutorme.Code
+	var c rfrl.Code
 
 	err = row.StructScan(&c)
 
