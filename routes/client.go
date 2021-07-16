@@ -3,23 +3,23 @@ package routes
 import (
 	"crypto/rsa"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
-	"github.com/Arun4rangan/api-tutorme/views"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/Arun4rangan/api-rfrl/views"
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 // RegisterClientRoutes register client routes
-func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, clientUseCase tutorme.ClientUseCase) {
+func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, clientUseCase rfrl.ClientUseCase) {
 	clientView := views.ClientView{
 		ClientUseCase: clientUseCase,
 	}
 	r := e.Group("/client")
 	r.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	validate.RegisterStructValidation(views.ClientPayloadValidation, views.ClientPayload{})
@@ -40,8 +40,8 @@ func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.P
 	clientsR := e.Group("/clients")
 	clientsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	clientsR.GET("/", clientView.GetClientsEndpoint)
@@ -49,8 +49,8 @@ func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.P
 	clientEventsR := e.Group("/client/:clientID/events")
 	clientEventsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 	clientEventsR.GET("/", clientView.GetClientEventsEndpoint)
 }

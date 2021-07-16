@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/labstack/echo/v4"
@@ -53,20 +53,20 @@ type (
 )
 
 type SessionView struct {
-	SessionUseCase     tutorme.SessionUseCase
-	TutorReviewUseCase tutorme.TutorReviewUseCase
+	SessionUseCase     rfrl.SessionUseCase
+	TutorReviewUseCase rfrl.TutorReviewUseCase
 }
 
 func (sv *SessionView) CreateSessionEndpoint(c echo.Context) error {
 	payload := SessionPayload{
-		State: tutorme.PENDING,
+		State: rfrl.PENDING,
 	}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -94,7 +94,7 @@ func (sv *SessionView) UpdateSessionEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -135,7 +135,7 @@ func (sv *SessionView) DeleteSessionEndpoint(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not valid").Error())
 	}
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -157,7 +157,7 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not a valid").Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -199,7 +199,7 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -217,7 +217,7 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	event := tutorme.NewEvent(start, end, payload.Title)
+	event := rfrl.NewEvent(start, end, payload.Title)
 
 	event, err = sv.SessionUseCase.CreateSessionEvent(claims.ClientID, payload.SessionID, *event)
 
@@ -231,7 +231,7 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("sessionID"))
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -319,7 +319,7 @@ func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Session ID passed in is not a valid").Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -348,13 +348,13 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 	roomID := c.QueryParam("roomId")
 	state := c.QueryParam("state")
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	sessions := &([]tutorme.Session{})
+	sessions := &([]rfrl.Session{})
 	sessionIDs := make([]int, 0)
 
 	if roomID != "" {
@@ -417,7 +417,7 @@ func (sv *SessionView) CreateClientActionOnSessionEvent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -436,7 +436,7 @@ func (sv *SessionView) CreateClientActionOnSessionEvent(c echo.Context) error {
 	}
 
 	if allClientsResponded {
-		_, err = sv.SessionUseCase.UpdateSession(payload.SessionID, claims.ClientID, tutorme.SCHEDULED)
+		_, err = sv.SessionUseCase.UpdateSession(payload.SessionID, claims.ClientID, rfrl.SCHEDULED)
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -453,7 +453,7 @@ func (sv *SessionView) GetSessionRelatedEventsEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -480,7 +480,7 @@ func (sv *SessionView) GetSessionRelatedEventsEndpoint(c echo.Context) error {
 
 	var state null.String
 	if payload.State == "" {
-		state = null.NewString(tutorme.SCHEDULED, true)
+		state = null.NewString(rfrl.SCHEDULED, true)
 	} else {
 		state = null.NewString(payload.State, true)
 	}

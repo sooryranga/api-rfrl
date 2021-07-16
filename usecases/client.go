@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
 )
@@ -13,21 +13,21 @@ import (
 // ClientUseCase holds all business related functions for client
 type ClientUseCase struct {
 	db           *sqlx.DB
-	clientStore  tutorme.ClientStore
-	emailer      tutorme.EmailerUseCase
-	authStore    tutorme.AuthStore
-	fireStore    tutorme.FireStoreClient
-	companyStore tutorme.CompanyStore
+	clientStore  rfrl.ClientStore
+	emailer      rfrl.EmailerUseCase
+	authStore    rfrl.AuthStore
+	fireStore    rfrl.FireStoreClient
+	companyStore rfrl.CompanyStore
 }
 
 // NewClientUseCase creates new ClientUseCase
 func NewClientUseCase(
 	db sqlx.DB,
-	clientStore tutorme.ClientStore,
-	authStore tutorme.AuthStore,
-	emailer tutorme.EmailerUseCase,
-	fireStore tutorme.FireStoreClient,
-	companyStore tutorme.CompanyStore,
+	clientStore rfrl.ClientStore,
+	authStore rfrl.AuthStore,
+	emailer rfrl.EmailerUseCase,
+	fireStore rfrl.FireStoreClient,
+	companyStore rfrl.CompanyStore,
 ) *ClientUseCase {
 	return &ClientUseCase{
 		&db,
@@ -47,8 +47,8 @@ func (cl *ClientUseCase) CreateClient(
 	email string,
 	photo string,
 	isTutor null.Bool,
-) (*tutorme.Client, error) {
-	client := tutorme.NewClient(
+) (*rfrl.Client, error) {
+	client := rfrl.NewClient(
 		firstName,
 		lastName,
 		about,
@@ -65,13 +65,13 @@ func (cl *ClientUseCase) CreateClient(
 
 	tx, *err = cl.db.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	if *err != nil {
 		return nil, *err
 	}
 
-	var createdClient *tutorme.Client
+	var createdClient *rfrl.Client
 	createdClient, *err = cl.clientStore.CreateClient(cl.db, client)
 
 	if *err != nil {
@@ -91,16 +91,16 @@ func (cl *ClientUseCase) CreateClient(
 // UpdateClient use case to update a new client
 func (cl *ClientUseCase) UpdateClient(
 	id string,
-	params tutorme.UpdateClientPayload,
-) (*tutorme.Client, error) {
+	params rfrl.UpdateClientPayload,
+) (*rfrl.Client, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
 
 	tx, *err = cl.db.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
-	client := tutorme.NewClient(
+	client := rfrl.NewClient(
 		params.FirstName,
 		params.LastName,
 		params.About,
@@ -113,7 +113,7 @@ func (cl *ClientUseCase) UpdateClient(
 		params.WorkTitle,
 	)
 
-	var updatedClient *tutorme.Client
+	var updatedClient *rfrl.Client
 	updatedClient, *err = cl.clientStore.UpdateClient(cl.db, id, client)
 
 	if *err != nil {
@@ -130,11 +130,11 @@ func (cl *ClientUseCase) UpdateClient(
 }
 
 // GetClient use case to get existing client
-func (cl *ClientUseCase) GetClient(id string) (*tutorme.Client, error) {
+func (cl *ClientUseCase) GetClient(id string) (*rfrl.Client, error) {
 	return cl.clientStore.GetClientFromID(cl.db, id)
 }
 
-func (cl *ClientUseCase) GetClients(options tutorme.GetClientsOptions) (*[]tutorme.Client, error) {
+func (cl *ClientUseCase) GetClients(options rfrl.GetClientsOptions) (*[]rfrl.Client, error) {
 	return cl.clientStore.GetClients(cl.db, options)
 }
 
@@ -146,7 +146,7 @@ func (cl *ClientUseCase) CreateEmailVerification(clientID string, email string, 
 		return err
 	}
 
-	if emailType == tutorme.UserEmail {
+	if emailType == rfrl.UserEmail {
 		exists, err := cl.authStore.CheckEmailAuthExists(cl.db, clientID, email)
 
 		if err != nil {
@@ -161,21 +161,21 @@ func (cl *ClientUseCase) CreateEmailVerification(clientID string, email string, 
 	return cl.clientStore.CreateEmailVerification(cl.db, clientID, email, emailType, passcode)
 }
 
-func (cl *ClientUseCase) verifyUserEmail(tx *sqlx.Tx, clientID string, email string) (*tutorme.Client, error) {
+func (cl *ClientUseCase) verifyUserEmail(tx *sqlx.Tx, clientID string, email string) (*rfrl.Client, error) {
 	err := cl.authStore.UpdateAuthEmail(tx, clientID, email)
 
 	if err != nil {
 		return nil, err
 	}
 
-	client := tutorme.Client{Email: null.NewString(email, true), VerifiedEmail: null.NewBool(true, true)}
+	client := rfrl.Client{Email: null.NewString(email, true), VerifiedEmail: null.NewBool(true, true)}
 
 	updatedClient, err := cl.clientStore.UpdateClient(tx, clientID, &client)
 
 	return updatedClient, err
 }
 
-func (cl *ClientUseCase) verifyWorkEmail(tx *sqlx.Tx, clientID string, email string) (*tutorme.Client, error) {
+func (cl *ClientUseCase) verifyWorkEmail(tx *sqlx.Tx, clientID string, email string) (*rfrl.Client, error) {
 	at := strings.LastIndex(email, "@")
 	_, domain := email[:at], email[at+1:]
 
@@ -191,7 +191,7 @@ func (cl *ClientUseCase) verifyWorkEmail(tx *sqlx.Tx, clientID string, email str
 		return nil, err
 	}
 
-	client := tutorme.Client{
+	client := rfrl.Client{
 		WorkEmail:         null.NewString(email, true),
 		VerifiedWorkEmail: null.NewBool(true, true),
 		CompanyID:         companyID,
@@ -202,13 +202,13 @@ func (cl *ClientUseCase) verifyWorkEmail(tx *sqlx.Tx, clientID string, email str
 	return updatedClient, err
 }
 
-func (cl *ClientUseCase) VerifyEmail(clientID string, email string, emailType string, passCode string) (*tutorme.Client, error) {
+func (cl *ClientUseCase) VerifyEmail(clientID string, email string, emailType string, passCode string) (*rfrl.Client, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
 
 	tx, *err = cl.db.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	*err = cl.clientStore.VerifyEmail(tx, clientID, email, emailType, passCode)
 
@@ -216,10 +216,10 @@ func (cl *ClientUseCase) VerifyEmail(clientID string, email string, emailType st
 		return nil, *err
 	}
 
-	var updatedClient *tutorme.Client
-	if emailType == tutorme.WorkEmail {
+	var updatedClient *rfrl.Client
+	if emailType == rfrl.WorkEmail {
 		updatedClient, *err = cl.verifyWorkEmail(tx, clientID, email)
-	} else if emailType == tutorme.UserEmail {
+	} else if emailType == rfrl.UserEmail {
 		updatedClient, *err = cl.verifyUserEmail(tx, clientID, email)
 	}
 
@@ -238,12 +238,12 @@ func (cl *ClientUseCase) DeleteVerificationEmail(clientID string, emailType stri
 	return cl.clientStore.DeleteVerificationEmail(cl.db, clientID, emailType)
 }
 
-func (cl *ClientUseCase) GetClientEvents(clientID string, start null.Time, end null.Time, state null.String) (*[]tutorme.Event, error) {
+func (cl *ClientUseCase) GetClientEvents(clientID string, start null.Time, end null.Time, state null.String) (*[]rfrl.Event, error) {
 	return cl.clientStore.GetRelatedEventsByClientIDs(cl.db, []string{clientID}, start, end, state)
 }
 
 func (cl *ClientUseCase) CreateOrUpdateClientEducation(clientID string, institution string, degree string, fieldOfStudy string, startYear int, endYear int) error {
-	education := tutorme.NewEducation(institution, degree, fieldOfStudy, startYear, endYear)
+	education := rfrl.NewEducation(institution, degree, fieldOfStudy, startYear, endYear)
 	err := cl.clientStore.CreateOrUpdateClientEducation(cl.db, clientID, education)
 
 	return err
@@ -259,9 +259,9 @@ func (cl *ClientUseCase) CreateClientWantingCompanyReferrals(clientID string, ac
 
 	tx, *err = cl.db.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
-	client := tutorme.Client{}
+	client := rfrl.Client{}
 	client.IsLookingForReferral = null.NewBool(active, true)
 	_, *err = cl.clientStore.UpdateClient(cl.db, clientID, &client)
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -17,35 +17,35 @@ import (
 // AuthUseCase holds all business related functions for auth
 type AuthUseCase struct {
 	db          *sqlx.DB
-	authStore   tutorme.AuthStore
-	clientStore tutorme.ClientStore
-	fireStore   tutorme.FireStoreClient
+	authStore   rfrl.AuthStore
+	clientStore rfrl.ClientStore
+	fireStore   rfrl.FireStoreClient
 }
 
 // NewAuthUseCase creates new AuthUseCase
 func NewAuthUseCase(
 	db sqlx.DB,
-	authStore tutorme.AuthStore,
-	clientStore tutorme.ClientStore,
-	fireStore tutorme.FireStoreClient,
+	authStore rfrl.AuthStore,
+	clientStore rfrl.ClientStore,
+	fireStore rfrl.FireStoreClient,
 ) *AuthUseCase {
 	return &AuthUseCase{&db, authStore, clientStore, fireStore}
 }
 
 // SignupWithToken allows user to sign up with token from google or linkedin auth
-func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.Auth) (*tutorme.Client, *tutorme.Auth, error) {
+func (au *AuthUseCase) SignupWithToken(newClient *rfrl.Client, auth *rfrl.Auth) (*rfrl.Client, *rfrl.Auth, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
 
 	tx, *err = au.db.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	if *err != nil {
 		return nil, nil, *err
 	}
 
-	var createdClient *tutorme.Client
+	var createdClient *rfrl.Client
 
 	createdClient, *err = au.clientStore.CreateClient(tx, newClient)
 
@@ -53,7 +53,7 @@ func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.
 		return nil, nil, *err
 	}
 
-	var createdAuth *tutorme.Auth
+	var createdAuth *rfrl.Auth
 	createdAuth, *err = au.authStore.CreateWithToken(tx, auth, createdClient.ID)
 
 	if *err != nil {
@@ -87,11 +87,11 @@ func (au *AuthUseCase) SignupGoogle(
 	photo string,
 	about string,
 	isTutor null.Bool,
-) (*tutorme.Client, *tutorme.Auth, error) {
+) (*rfrl.Client, *rfrl.Auth, error) {
 
-	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor, "", "", null.Int{}, "")
-	auth := tutorme.Auth{
-		AuthType: null.NewString(tutorme.GOOGLE, true),
+	newClient := rfrl.NewClient(firstName, lastName, about, email, photo, isTutor, "", "", null.Int{}, "")
+	auth := rfrl.Auth{
+		AuthType: null.NewString(rfrl.GOOGLE, true),
 		Token:    null.StringFrom(token),
 	}
 
@@ -107,12 +107,12 @@ func (au *AuthUseCase) SignupLinkedIn(
 	photo string,
 	about string,
 	isTutor null.Bool,
-) (*tutorme.Client, *tutorme.Auth, error) {
+) (*rfrl.Client, *rfrl.Auth, error) {
 
-	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor, "", "", null.Int{}, "")
+	newClient := rfrl.NewClient(firstName, lastName, about, email, photo, isTutor, "", "", null.Int{}, "")
 
-	auth := tutorme.Auth{
-		AuthType: null.NewString(tutorme.LINKEDIN, true),
+	auth := rfrl.Auth{
+		AuthType: null.NewString(rfrl.LINKEDIN, true),
 		Token:    null.StringFrom(token),
 	}
 
@@ -129,15 +129,15 @@ func (au *AuthUseCase) SignupEmail(
 	photo string,
 	about string,
 	isTutor null.Bool,
-) (*tutorme.Client, *tutorme.Auth, error) {
+) (*rfrl.Client, *rfrl.Auth, error) {
 	hash, hashError := hashAndSalt([]byte(password))
 
 	if hashError != nil {
 		return nil, nil, hashError
 	}
 
-	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor, "", "", null.Int{}, "")
-	auth := tutorme.Auth{
+	newClient := rfrl.NewClient(firstName, lastName, about, email, photo, isTutor, "", "", null.Int{}, "")
+	auth := rfrl.Auth{
 		Email:        null.StringFrom(email),
 		PasswordHash: hash,
 	}
@@ -147,13 +147,13 @@ func (au *AuthUseCase) SignupEmail(
 
 	tx, *err = au.db.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	if *err != nil {
 		return nil, nil, *err
 	}
 
-	var createdClient *tutorme.Client
+	var createdClient *rfrl.Client
 
 	createdClient, *err = au.clientStore.CreateClient(tx, newClient)
 
@@ -161,7 +161,7 @@ func (au *AuthUseCase) SignupEmail(
 		return nil, nil, *err
 	}
 
-	var createdAuth *tutorme.Auth
+	var createdAuth *rfrl.Auth
 	createdAuth, *err = au.authStore.CreateWithEmail(tx, &auth, createdClient.ID)
 
 	if *err != nil {
@@ -187,7 +187,7 @@ func (au *AuthUseCase) SignupEmail(
 }
 
 // LoginEmail allows user to login with email by checking password hash against the has the passed in
-func (au *AuthUseCase) LoginEmail(email string, password string) (*tutorme.Client, *tutorme.Auth, error) {
+func (au *AuthUseCase) LoginEmail(email string, password string) (*rfrl.Client, *rfrl.Auth, error) {
 	c, auth, err := au.authStore.GetByEmail(au.db, email)
 
 	if err != nil {
@@ -209,7 +209,7 @@ func (au *AuthUseCase) LoginEmail(email string, password string) (*tutorme.Clien
 	return c, auth, err
 }
 
-func (au *AuthUseCase) LoginWithJWT(clientID string) (*tutorme.Client, *tutorme.Auth, error) {
+func (au *AuthUseCase) LoginWithJWT(clientID string) (*rfrl.Client, *rfrl.Auth, error) {
 	c, err := au.clientStore.GetClientFromID(au.db, clientID)
 
 	if err != nil {
@@ -232,8 +232,8 @@ func (au *AuthUseCase) LoginWithJWT(clientID string) (*tutorme.Client, *tutorme.
 }
 
 // LoginGoogle allow user to login with their google oauth token
-func (au *AuthUseCase) LoginGoogle(token string) (*tutorme.Client, *tutorme.Auth, error) {
-	cl, a, err := au.authStore.GetByToken(au.db, token, tutorme.GOOGLE)
+func (au *AuthUseCase) LoginGoogle(token string) (*rfrl.Client, *rfrl.Auth, error) {
+	cl, a, err := au.authStore.GetByToken(au.db, token, rfrl.GOOGLE)
 
 	if err != nil {
 		return cl, a, err
@@ -244,8 +244,8 @@ func (au *AuthUseCase) LoginGoogle(token string) (*tutorme.Client, *tutorme.Auth
 }
 
 // LoginLinkedIn allow user to login with their linkedin
-func (au *AuthUseCase) LoginLinkedIn(token string) (*tutorme.Client, *tutorme.Auth, error) {
-	cl, a, err := au.authStore.GetByToken(au.db, token, tutorme.LINKEDIN)
+func (au *AuthUseCase) LoginLinkedIn(token string) (*rfrl.Client, *rfrl.Auth, error) {
+	cl, a, err := au.authStore.GetByToken(au.db, token, rfrl.LINKEDIN)
 
 	if err != nil {
 		return cl, a, err
@@ -273,7 +273,7 @@ func hashAndSalt(pwd []byte) ([]byte, error) {
 }
 
 // GenerateToken creates token
-func (au *AuthUseCase) GenerateToken(claims *tutorme.JWTClaims, signingKey *rsa.PrivateKey) (string, error) {
+func (au *AuthUseCase) GenerateToken(claims *rfrl.JWTClaims, signingKey *rsa.PrivateKey) (string, error) {
 	// Create token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 
@@ -286,7 +286,7 @@ func (au *AuthUseCase) GenerateToken(claims *tutorme.JWTClaims, signingKey *rsa.
 	return t, nil
 }
 
-func (au *AuthUseCase) UpdateSignUpFlow(clientID string, stage tutorme.SignUpFlow) error {
+func (au *AuthUseCase) UpdateSignUpFlow(clientID string, stage rfrl.SignUpFlow) error {
 	return au.authStore.UpdateSignUpFlow(au.db, clientID, stage)
 }
 

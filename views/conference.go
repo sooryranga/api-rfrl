@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
@@ -35,8 +35,8 @@ type (
 )
 
 type ConferenceView struct {
-	SessionUseCase    tutorme.SessionUseCase
-	ConferenceUseCase tutorme.ConferenceUseCase
+	SessionUseCase    rfrl.SessionUseCase
+	ConferenceUseCase rfrl.ConferenceUseCase
 }
 
 func checkOrigin(r *http.Request) bool {
@@ -70,14 +70,14 @@ func (cv *ConferenceView) ConnectToSessionSimplePeerClients(c echo.Context) erro
 		return nil
 	}
 
-	ws.SetReadLimit(tutorme.MaxMessageSize)
-	ws.SetReadDeadline(time.Now().Add(tutorme.PongWait))
-	ws.SetPongHandler(func(string) error { ws.SetReadDeadline(time.Now().Add(tutorme.PongWait)); return nil })
+	ws.SetReadLimit(rfrl.MaxMessageSize)
+	ws.SetReadDeadline(time.Now().Add(rfrl.PongWait))
+	ws.SetPongHandler(func(string) error { ws.SetReadDeadline(time.Now().Add(rfrl.PongWait)); return nil })
 
 	conferenceID := c.Param("conferenceID")
 
 	if _, err := uuid.Parse(conferenceID); err != nil {
-		websocketError := tutorme.WebsocketError{Error: errors.Wrap(err, "Conference ID is not valid").Error()}
+		websocketError := rfrl.WebsocketError{Error: errors.Wrap(err, "Conference ID is not valid").Error()}
 		rawError, _ := json.Marshal(websocketError)
 		closeWebSocketWithError(ws, string(rawError))
 		return nil
@@ -91,7 +91,7 @@ func (cv *ConferenceView) ConnectToSessionSimplePeerClients(c echo.Context) erro
 		return nil
 	}
 
-	cv.ConferenceUseCase.Serve(ws, conferenceID, tutorme.SIMPLEPEER)
+	cv.ConferenceUseCase.Serve(ws, conferenceID, rfrl.SIMPLEPEER)
 
 	return nil
 }
@@ -104,14 +104,14 @@ func (cv *ConferenceView) ConnectToSessionYJSClients(c echo.Context) error {
 		return nil
 	}
 
-	ws.SetReadLimit(tutorme.MaxMessageSize)
-	ws.SetReadDeadline(time.Now().Add(tutorme.PongWait))
-	ws.SetPongHandler(func(string) error { ws.SetReadDeadline(time.Now().Add(tutorme.PongWait)); return nil })
+	ws.SetReadLimit(rfrl.MaxMessageSize)
+	ws.SetReadDeadline(time.Now().Add(rfrl.PongWait))
+	ws.SetPongHandler(func(string) error { ws.SetReadDeadline(time.Now().Add(rfrl.PongWait)); return nil })
 
 	conferenceID := c.Param("conferenceID")
 
 	if _, err := uuid.Parse(conferenceID); err != nil {
-		websocketError := tutorme.WebsocketError{Error: errors.Wrap(err, "Conference ID is not valid").Error()}
+		websocketError := rfrl.WebsocketError{Error: errors.Wrap(err, "Conference ID is not valid").Error()}
 		rawError, _ := json.Marshal(websocketError)
 		closeWebSocketWithError(ws, string(rawError))
 		return nil
@@ -125,7 +125,7 @@ func (cv *ConferenceView) ConnectToSessionYJSClients(c echo.Context) error {
 		return nil
 	}
 
-	cv.ConferenceUseCase.Serve(ws, conferenceID, tutorme.YJS)
+	cv.ConferenceUseCase.Serve(ws, conferenceID, rfrl.YJS)
 
 	return nil
 }
@@ -137,7 +137,7 @@ func (cv *ConferenceView) SubmitCode(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	_, ok := tutorme.CodeLanguageToTopic[payload.Language]
+	_, ok := rfrl.CodeLanguageToTopic[payload.Language]
 
 	if !ok {
 		return echo.NewHTTPError(
@@ -146,7 +146,7 @@ func (cv *ConferenceView) SubmitCode(c echo.Context) error {
 		)
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

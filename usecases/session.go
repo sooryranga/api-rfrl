@@ -1,7 +1,7 @@
 package usecases
 
 import (
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/gommon/log"
@@ -12,11 +12,11 @@ import (
 // SessionUseCase holds all business related functions for session
 type SessionUseCase struct {
 	DB           *sqlx.DB
-	SessionStore tutorme.SessionStore
-	ClientStore  tutorme.ClientStore
+	SessionStore rfrl.SessionStore
+	ClientStore  rfrl.ClientStore
 }
 
-func NewSessionUseCase(db sqlx.DB, sessionStore tutorme.SessionStore, clientStore tutorme.ClientStore) *SessionUseCase {
+func NewSessionUseCase(db sqlx.DB, sessionStore rfrl.SessionStore, clientStore rfrl.ClientStore) *SessionUseCase {
 	return &SessionUseCase{&db, sessionStore, clientStore}
 }
 
@@ -26,14 +26,14 @@ func (su *SessionUseCase) CreateSession(
 	roomID string,
 	clients []string,
 	state string,
-) (*tutorme.Session, error) {
-	session := tutorme.NewSession(tutorID, updatedBy, roomID, state)
+) (*rfrl.Session, error) {
+	session := rfrl.NewSession(tutorID, updatedBy, roomID, state)
 	var err = new(error)
 	var tx *sqlx.Tx
 
 	tx, *err = su.DB.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	if *err != nil {
 		return nil, *err
@@ -45,7 +45,7 @@ func (su *SessionUseCase) CreateSession(
 		return nil, *err
 	}
 
-	cl := &([]tutorme.Client{})
+	cl := &([]rfrl.Client{})
 
 	cl, *err = su.SessionStore.CreateSessionClients(tx, session.ID, clients)
 
@@ -70,15 +70,15 @@ func (su SessionUseCase) UpdateSession(
 	ID int,
 	updatedBy string,
 	state string,
-) (*tutorme.Session, error) {
+) (*rfrl.Session, error) {
 	var err = new(error)
 	var tx *sqlx.Tx
 
 	tx, *err = su.DB.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
-	var session, updatedSession *tutorme.Session
+	var session, updatedSession *rfrl.Session
 
 	session, *err = su.SessionStore.GetSessionByIDForUpdate(tx, updatedBy, ID)
 
@@ -87,7 +87,7 @@ func (su SessionUseCase) UpdateSession(
 	}
 
 	conferenceID := null.NewString("", false)
-	if state == tutorme.SCHEDULED {
+	if state == rfrl.SCHEDULED {
 		var newUUID uuid.UUID
 		newUUID, *err = uuid.NewV4()
 		if *err != nil {
@@ -108,7 +108,7 @@ func (su SessionUseCase) UpdateSession(
 	return updatedSession, nil
 }
 
-func (su SessionUseCase) GetSessionByID(clientID string, ID int) (*tutorme.Session, error) {
+func (su SessionUseCase) GetSessionByID(clientID string, ID int) (*rfrl.Session, error) {
 	session, err := su.SessionStore.GetSessionByID(su.DB, clientID, ID)
 
 	if err != nil {
@@ -118,7 +118,7 @@ func (su SessionUseCase) GetSessionByID(clientID string, ID int) (*tutorme.Sessi
 	return session, nil
 }
 
-func (su SessionUseCase) GetSessionByRoomId(clientID string, roomID string, state string) (*[]tutorme.Session, error) {
+func (su SessionUseCase) GetSessionByRoomId(clientID string, roomID string, state string) (*[]rfrl.Session, error) {
 	sessions, err := su.SessionStore.GetSessionByRoomID(su.DB, clientID, roomID, state)
 
 	if err != nil {
@@ -128,13 +128,13 @@ func (su SessionUseCase) GetSessionByRoomId(clientID string, roomID string, stat
 	return sessions, nil
 }
 
-func (su SessionUseCase) GetSessionByClientID(clientID string, state string) (*[]tutorme.Session, error) {
+func (su SessionUseCase) GetSessionByClientID(clientID string, state string) (*[]rfrl.Session, error) {
 	return su.SessionStore.GetSessionByClientID(su.DB, clientID, state)
 }
 
-func canDeleteSession(clientID string, session tutorme.Session) error {
+func canDeleteSession(clientID string, session rfrl.Session) error {
 	log.Errorj(log.JSON{"clientid": clientID, "session": session})
-	if session.State == tutorme.PENDING && session.UpdatedBy == clientID {
+	if session.State == rfrl.PENDING && session.UpdatedBy == clientID {
 		return nil
 	}
 
@@ -161,17 +161,17 @@ func (su SessionUseCase) DeleteSession(clientID string, ID int) error {
 	return su.SessionStore.DeleteSession(su.DB, ID)
 }
 
-func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutorme.Event) (*tutorme.Event, error) {
+func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event rfrl.Event) (*rfrl.Event, error) {
 	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
 	var err = new(error)
 	var tx *sqlx.Tx
-	var session *tutorme.Session
+	var session *rfrl.Session
 	var isOverLapping bool
-	insertedEvents := &([]tutorme.Event{})
+	insertedEvents := &([]rfrl.Event{})
 
 	tx, *err = su.DB.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	session, *err = su.SessionStore.GetSessionByID(tx, clientID, ID)
 
@@ -179,7 +179,7 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 		return nil, *err
 	}
 
-	if session.State == tutorme.SCHEDULED {
+	if session.State == rfrl.SCHEDULED {
 		*err = errors.New("Cannot change tutor event after scheduled")
 		return nil, *err
 	}
@@ -204,7 +204,7 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 		return nil, *err
 	}
 
-	isOverLapping, *err = su.ClientStore.CheckOverlapingEventsByClientIDs(tx, clientIDs, &[]tutorme.Event{event})
+	isOverLapping, *err = su.ClientStore.CheckOverlapingEventsByClientIDs(tx, clientIDs, &[]rfrl.Event{event})
 
 	if *err != nil {
 		return nil, *err
@@ -215,7 +215,7 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 		return nil, *err
 	}
 
-	insertedEvents, *err = su.SessionStore.CreateSessionEvents(tx, []tutorme.Event{event})
+	insertedEvents, *err = su.SessionStore.CreateSessionEvents(tx, []rfrl.Event{event})
 
 	if *err != nil {
 		return nil, *err
@@ -280,7 +280,7 @@ func (su SessionUseCase) GetSessionRelatedEvents(
 	start null.Time,
 	end null.Time,
 	state null.String,
-) (*[]tutorme.Event, error) {
+) (*[]rfrl.Event, error) {
 	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
 	session, err := su.SessionStore.GetSessionByID(su.DB, clientID, sessionID)
 
@@ -304,12 +304,12 @@ func (su SessionUseCase) GetSessionRelatedEvents(
 	return su.ClientStore.GetRelatedEventsByClientIDs(su.DB, clientIds, start, end, state)
 }
 
-func (su SessionUseCase) GetSessionEventByID(sessionID int, ID int) (*tutorme.Event, error) {
+func (su SessionUseCase) GetSessionEventByID(sessionID int, ID int) (*rfrl.Event, error) {
 	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
 	return su.SessionStore.GetSessionEventByID(su.DB, sessionID, ID)
 }
 
-func (su SessionUseCase) GetSessionsEvent(sessionIDs []int) (map[int]*tutorme.Event, error) {
+func (su SessionUseCase) GetSessionsEvent(sessionIDs []int) (map[int]*rfrl.Event, error) {
 	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
 	return su.SessionStore.GetSessionsEvent(su.DB, sessionIDs)
 }
@@ -318,6 +318,6 @@ func (su SessionUseCase) CheckSessionsIsForClient(clientID string, sessionIDs []
 	return su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, sessionIDs)
 }
 
-func (su SessionUseCase) GetSessionFromConferenceID(conferenceID string) (*tutorme.Session, error) {
+func (su SessionUseCase) GetSessionFromConferenceID(conferenceID string) (*rfrl.Session, error) {
 	return su.SessionStore.GetSessionFromConferenceID(su.DB, conferenceID)
 }

@@ -3,21 +3,21 @@ package routes
 import (
 	"crypto/rsa"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
-	"github.com/Arun4rangan/api-tutorme/views"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/Arun4rangan/api-rfrl/views"
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, tutorReviewUseCase tutorme.TutorReviewUseCase) {
+func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, tutorReviewUseCase rfrl.TutorReviewUseCase) {
 	tutorReviewView := views.TutorReviewView{TutorReviewUseCase: tutorReviewUseCase}
 
 	tutorReviewR := e.Group("/tutor-review")
 	tutorReviewR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	tutorReviewR.POST("/", tutorReviewView.CreateTutorReviewEndpoint)
@@ -28,8 +28,8 @@ func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *
 	tutorReviewsR := e.Group("/tutor-reviews")
 	tutorReviewsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	tutorReviewsR.GET("/:tutorID/", tutorReviewView.GetTutorReviewsEndpoint)
@@ -37,8 +37,8 @@ func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *
 	tutorReviewsAggregateR := e.Group("/tutor-reviews-aggregate")
 	tutorReviewsAggregateR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	tutorReviewsAggregateR.GET("/:tutorID/", tutorReviewView.GetTutorReviewsAggregateEndpoint)
@@ -46,8 +46,8 @@ func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *
 	pendingReviewsR := e.Group("/pending-tutor-reviews")
 	pendingReviewsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	pendingReviewsR.GET("/", tutorReviewView.GetPendingReviewsEndpoint)

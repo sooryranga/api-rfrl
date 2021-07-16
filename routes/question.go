@@ -3,21 +3,21 @@ package routes
 import (
 	"crypto/rsa"
 
-	"github.com/Arun4rangan/api-tutorme/tutorme"
-	"github.com/Arun4rangan/api-tutorme/views"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/Arun4rangan/api-rfrl/views"
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func RegisterQuestionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, questionUseCase tutorme.QuestionUseCase) {
+func RegisterQuestionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, questionUseCase rfrl.QuestionUseCase) {
 	questionViews := views.QuestionView{QuestionUseCase: questionUseCase}
 
 	questionR := e.Group("/question")
 	questionR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	questionR.POST("/", questionViews.CreateQuestionEndpoint)
@@ -28,8 +28,8 @@ func RegisterQuestionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa
 	questionsR := e.Group("/questions")
 	questionsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	questionsR.GET("/", questionViews.GetQuestionsEndpoint)
@@ -38,8 +38,8 @@ func RegisterQuestionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa
 	applyToQuestionR := e.Group("/question/:questionID/apply")
 	applyToQuestionR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 	applyToQuestionR.POST("/", questionViews.ApplyToQuestionEndpoint)
 }

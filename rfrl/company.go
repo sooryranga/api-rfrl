@@ -1,4 +1,4 @@
-package tutorme
+package rfrl
 
 import "gopkg.in/guregu/null.v4"
 

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/guregu/null.v4"
 )
@@ -35,7 +35,7 @@ type (
 )
 
 type CompanyView struct {
-	CompanyUseCase tutorme.CompanyUseCase
+	CompanyUseCase rfrl.CompanyUseCase
 }
 
 func (comv *CompanyView) GetCompany(c echo.Context) error {
@@ -65,7 +65,7 @@ func (comv *CompanyView) CreateCompanyView(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -101,7 +101,7 @@ func (comv *CompanyView) UpdateCompanyView(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -128,7 +128,7 @@ func (comv *CompanyView) UpdateCompanyView(c echo.Context) error {
 }
 
 func (comv *CompanyView) GetCompanyEmailsView(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -165,7 +165,7 @@ func (comv *CompanyView) UpdateCompanyEmailView(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -196,7 +196,7 @@ func (comv *CompanyView) GetCompanies(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -222,7 +222,7 @@ func (comv *CompanyView) GetCompanyEmailView(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "you need to pass in company email")
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

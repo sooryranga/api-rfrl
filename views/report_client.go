@@ -3,7 +3,7 @@ package views
 import (
 	"net/http"
 
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
@@ -20,7 +20,7 @@ type (
 )
 
 type ReportClientView struct {
-	ReportClientUseCase tutorme.ReportClientUseCase
+	ReportClientUseCase rfrl.ReportClientUseCase
 }
 
 func (r *ReportClientView) CreateReport(c echo.Context) error {
@@ -38,13 +38,13 @@ func (r *ReportClientView) CreateReport(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Accused is not a valid uuid")
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	ReportClient := tutorme.NewReportClient(
+	ReportClient := rfrl.NewReportClient(
 		claims.ClientID,
 		payload.Accused,
 		payload.Cause,
@@ -78,7 +78,7 @@ func (r *ReportClientView) DeleteReport(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Accused is not a valid uuid")
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -88,7 +88,7 @@ func (r *ReportClientView) DeleteReport(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "You are not authorized for this view")
 	}
 
-	report := tutorme.NewReportClient(
+	report := rfrl.NewReportClient(
 		payload.Reporter,
 		payload.Accused,
 		"",
@@ -104,7 +104,7 @@ func (r *ReportClientView) DeleteReport(c echo.Context) error {
 }
 
 func (r *ReportClientView) GetReports(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

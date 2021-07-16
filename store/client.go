@@ -3,7 +3,7 @@ package store
 import (
 	"database/sql"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/gommon/log"
@@ -30,7 +30,7 @@ WHERE client.id = $1
 `
 )
 
-func (cl *ClientStore) GetClients(db tutorme.DB, options tutorme.GetClientsOptions) (*[]tutorme.Client, error) {
+func (cl *ClientStore) GetClients(db rfrl.DB, options rfrl.GetClientsOptions) (*[]rfrl.Client, error) {
 	query := sq.Select("client.*").From("client")
 
 	if options.IsTutor.Valid {
@@ -55,7 +55,7 @@ func (cl *ClientStore) GetClients(db tutorme.DB, options tutorme.GetClientsOptio
 		Limit(20).
 		PlaceholderFormat(sq.Dollar).ToSql()
 
-	clients := make([]tutorme.Client, 0)
+	clients := make([]rfrl.Client, 0)
 
 	if err != nil {
 		return &clients, err
@@ -68,7 +68,7 @@ func (cl *ClientStore) GetClients(db tutorme.DB, options tutorme.GetClientsOptio
 	}
 
 	for rows.Next() {
-		var client tutorme.Client
+		var client rfrl.Client
 
 		err := rows.StructScan(&client)
 
@@ -83,8 +83,8 @@ func (cl *ClientStore) GetClients(db tutorme.DB, options tutorme.GetClientsOptio
 }
 
 // GetClientFromID queries the database for client with id
-func (cl *ClientStore) GetClientFromID(db tutorme.DB, id string) (*tutorme.Client, error) {
-	var m tutorme.Client
+func (cl *ClientStore) GetClientFromID(db rfrl.DB, id string) (*rfrl.Client, error) {
+	var m rfrl.Client
 	err := db.QueryRowx(getClientByIDSQL, id).StructScan(&m)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (cl *ClientStore) GetClientFromID(db tutorme.DB, id string) (*tutorme.Clien
 }
 
 // GetClientFromIDs queries the database for client with ids
-func getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
+func getClientFromIDs(db rfrl.DB, ids []string) (*[]rfrl.Client, error) {
 	query, args, err := sqlx.In(getClientByIDsSQL, ids)
 
 	if err != nil {
@@ -102,10 +102,10 @@ func getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
 	query = db.Rebind(query)
 	rows, err := db.Queryx(query, args...)
 
-	clients := make([]tutorme.Client, 0)
+	clients := make([]rfrl.Client, 0)
 
 	for rows.Next() {
-		var c tutorme.Client
+		var c rfrl.Client
 		err := rows.StructScan(&c)
 		if err != nil {
 			return nil, err
@@ -117,12 +117,12 @@ func getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
 	return &clients, err
 }
 
-func (cl *ClientStore) GetClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
+func (cl *ClientStore) GetClientFromIDs(db rfrl.DB, ids []string) (*[]rfrl.Client, error) {
 	return getClientFromIDs(db, ids)
 }
 
 // CreateClient creates a new row for a client in the database
-func (cl *ClientStore) CreateClient(db tutorme.DB, client *tutorme.Client) (*tutorme.Client, error) {
+func (cl *ClientStore) CreateClient(db rfrl.DB, client *rfrl.Client) (*rfrl.Client, error) {
 	columns := []string{"first_name", "last_name", "about", "email", "photo"}
 	values := make([]interface{}, 0)
 	values = append(values,
@@ -156,14 +156,14 @@ func (cl *ClientStore) CreateClient(db tutorme.DB, client *tutorme.Client) (*tut
 		args...,
 	)
 
-	var m tutorme.Client
+	var m rfrl.Client
 
 	err = row.StructScan(&m)
 	return &m, errors.Wrap(err, "CreateClient")
 }
 
 // UpdateClient updates a client in the database
-func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Client) (*tutorme.Client, error) {
+func (cl *ClientStore) UpdateClient(db rfrl.DB, ID string, client *rfrl.Client) (*rfrl.Client, error) {
 	query := sq.Update("client")
 	if client.FirstName.Valid {
 		query = query.Set("first_name", client.FirstName)
@@ -223,7 +223,7 @@ func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Cl
 		args...,
 	)
 
-	var m tutorme.Client
+	var m rfrl.Client
 
 	err = row.StructScan(&m)
 	return &m, err
@@ -238,7 +238,7 @@ SET email = $2, pass_code = $4
 `
 
 func (cl *ClientStore) CreateEmailVerification(
-	db tutorme.DB,
+	db rfrl.DB,
 	clientID string,
 	email string,
 	emailType string,
@@ -264,7 +264,7 @@ const deleteVerifyEmailFromId string = `
 `
 
 func (cl *ClientStore) VerifyEmail(
-	db tutorme.DB,
+	db rfrl.DB,
 	clientID string,
 	email string,
 	emailType string,
@@ -296,7 +296,7 @@ SELECT email FROM email_verification
 WHERE client_id = $1 AND email_type = $2
 `
 
-func (cl *ClientStore) GetVerificationEmail(db tutorme.DB, clientID string, emailType string) (string, error) {
+func (cl *ClientStore) GetVerificationEmail(db rfrl.DB, clientID string, emailType string) (string, error) {
 	var email null.String
 	err := db.QueryRowx(getVerificationEmailQuery, clientID, emailType).Scan(&email)
 
@@ -319,19 +319,19 @@ DELETE FROM email_verification
 WHERE client_id = $1 AND email_type = $2
 `
 
-func (cl *ClientStore) DeleteVerificationEmail(db tutorme.DB, clientID string, emailType string) error {
+func (cl *ClientStore) DeleteVerificationEmail(db rfrl.DB, clientID string, emailType string) error {
 	_, err := db.Queryx(deleteVerificationEmail, clientID, emailType)
 
 	return err
 }
 
 func (cl ClientStore) GetRelatedEventsByClientIDs(
-	db tutorme.DB,
+	db rfrl.DB,
 	clientIDs []string,
 	start null.Time,
 	end null.Time,
 	state null.String,
-) (*[]tutorme.Event, error) {
+) (*[]rfrl.Event, error) {
 	sessionQuery := getSessionEventsRelatedToClientsQuery(clientIDs)
 
 	if start.Valid {
@@ -346,7 +346,7 @@ func (cl ClientStore) GetRelatedEventsByClientIDs(
 		sessionQuery = sessionQuery.Where(sq.Eq{"tutor_session.state": state})
 	}
 
-	events := make([]tutorme.Event, 0)
+	events := make([]rfrl.Event, 0)
 	sql, args, err := sessionQuery.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
@@ -360,7 +360,7 @@ func (cl ClientStore) GetRelatedEventsByClientIDs(
 	}
 
 	for rows.Next() {
-		var event tutorme.Event
+		var event rfrl.Event
 
 		err = rows.StructScan(&event)
 
@@ -393,7 +393,7 @@ func (cl ClientStore) GetRelatedEventsByClientIDs(
 	}
 
 	for rows.Next() {
-		var event tutorme.Event
+		var event rfrl.Event
 
 		err = rows.StructScan(&event)
 
@@ -421,9 +421,9 @@ func getEventsRelatedToClientsQuery(clientIDs []string) sq.SelectBuilder {
 		Where(sq.Eq{"client_event.client_id": clientIDs})
 }
 
-func checkOverlapingSessionEvents(db tutorme.DB, clientIDs []string, events *[]tutorme.Event) (bool, error) {
+func checkOverlapingSessionEvents(db rfrl.DB, clientIDs []string, events *[]rfrl.Event) (bool, error) {
 	query := getSessionEventsRelatedToClientsQuery(clientIDs).
-		Where(sq.Eq{"tutor_session.state": tutorme.SCHEDULED}).
+		Where(sq.Eq{"tutor_session.state": rfrl.SCHEDULED}).
 		Prefix("SELECT EXISTS(")
 
 	query = filterInclusiveDateRange(query, events)
@@ -442,7 +442,7 @@ func checkOverlapingSessionEvents(db tutorme.DB, clientIDs []string, events *[]t
 	return m, err
 }
 
-func checkOverlapingClientEvents(db tutorme.DB, clientIDs []string, events *[]tutorme.Event) (bool, error) {
+func checkOverlapingClientEvents(db rfrl.DB, clientIDs []string, events *[]rfrl.Event) (bool, error) {
 	query := getEventsRelatedToClientsQuery(clientIDs).
 		Prefix("SELECT EXISTS(")
 
@@ -462,7 +462,7 @@ func checkOverlapingClientEvents(db tutorme.DB, clientIDs []string, events *[]tu
 	return m, err
 }
 
-func (cl ClientStore) CheckOverlapingEventsByClientIDs(db tutorme.DB, clientIds []string, events *[]tutorme.Event) (bool, error) {
+func (cl ClientStore) CheckOverlapingEventsByClientIDs(db rfrl.DB, clientIds []string, events *[]rfrl.Event) (bool, error) {
 	clientOverlap, err := checkOverlapingClientEvents(db, clientIds, events)
 
 	if err != nil {
@@ -482,7 +482,7 @@ func (cl ClientStore) CheckOverlapingEventsByClientIDs(db tutorme.DB, clientIds 
 	return clientOverlap || sessionOverlap, nil
 }
 
-func (cl ClientStore) CreateOrUpdateClientEducation(db tutorme.DB, clientID string, education tutorme.Education) error {
+func (cl ClientStore) CreateOrUpdateClientEducation(db rfrl.DB, clientID string, education rfrl.Education) error {
 	query := sq.Update("client")
 
 	if education.Institution.Valid {
@@ -522,7 +522,7 @@ const deleteClientWantingCompanyReferralsSQuery string = `
 DELETE FROM client_wanting_company_referral WHERE client_id = $1
 `
 
-func (cl ClientStore) CreateClientWantingCompanyReferrals(db tutorme.DB, clientID string, companyIDs []int) error {
+func (cl ClientStore) CreateClientWantingCompanyReferrals(db rfrl.DB, clientID string, companyIDs []int) error {
 	_, err := db.Queryx(deleteClientWantingCompanyReferralsSQuery, clientID)
 
 	if err != nil {
@@ -555,7 +555,7 @@ const getClientWantingCompanyReferralsQuery string = `
 SELECT company_id FROM client_wanting_company_referral WHERE client_id = $1
 `
 
-func (cl ClientStore) GetClientWantingCompanyReferrals(db tutorme.DB, clientID string) ([]int, error) {
+func (cl ClientStore) GetClientWantingCompanyReferrals(db rfrl.DB, clientID string) ([]int, error) {
 	companyIDs := make([]int, 0)
 
 	rows, err := db.Queryx(getClientWantingCompanyReferralsQuery, clientID)
