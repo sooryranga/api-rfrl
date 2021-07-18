@@ -38,6 +38,10 @@ services:
       - database
       - pubsub
     environment:
+      - DB_USER=rfrl
+      - INSTANCE_CONNECTION_NAME=database
+      - DB_NAME=rfrl
+      - DB_SSL_MODE=disable
       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
       - POSTGRES_URI=postgres://rfrl:__PASSWORD__@database:5432/rfrl?sslmode=disable
       - RSA_FILE=/run/secrets/rsa
