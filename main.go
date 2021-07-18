@@ -3,11 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	firebase "firebase.google.com/go"
@@ -23,9 +21,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"google.golang.org/api/option"
-
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 
 // Validator for echo
@@ -39,44 +34,26 @@ func (v *Validator) Validate(i interface{}) error {
 }
 
 func getPostgresURI() string {
-	postgresURI := os.Getenv("POSTGRES_URI")
-	strByte, err := ioutil.ReadFile(os.Getenv("POSTGRES_PASSWORD_FILE"))
+	var (
+		dbUser                 = os.Getenv("DB_USER")                  // e.g. 'my-db-user'
+		dbPwd                  = os.Getenv("DB_PASS")                  // e.g. 'my-db-password'
+		instanceConnectionName = os.Getenv("INSTANCE_CONNECTION_NAME") // e.g. 'project:region:instance'
+		dbName                 = os.Getenv("DB_NAME")                  // e.g. 'my-database'
+		sslMode                = os.Getenv("DB_SSL_MODE")
+	)
 
-	if err == nil {
-		password := string(strByte)
-		search := "__PASSWORD__"
-		postgresURI = strings.Replace(postgresURI, search, password, 1)
-	}
-	return postgresURI
-}
+	if dbPwd == "" {
+		strByte, err := ioutil.ReadFile(os.Getenv("POSTGRES_PASSWORD_FILE"))
 
-func accessSecretVersion(w io.Writer, name string) error {
-	// name := "projects/my-project/secrets/my-secret/versions/5"
-	// name := "projects/my-project/secrets/my-secret/versions/latest"
-
-	// Create the client.
-	ctx := context.Background()
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create secretmanager client: %v", err)
-	}
-	defer client.Close()
-
-	// Build the request.
-	req := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: name,
+		if err != nil {
+			panic(fmt.Sprintf("%v", err))
+		}
+		dbPwd = string(strByte)
 	}
 
-	// Call the API.
-	result, err := client.AccessSecretVersion(ctx, req)
-	if err != nil {
-		return fmt.Errorf("failed to access secret version: %v", err)
-	}
+	dbURI := fmt.Sprintf("user=%s password=%s database=%s host=%s sslmode=%s", dbUser, dbPwd, dbName, instanceConnectionName, sslMode)
 
-	// WARNING: Do not print the secret in a production environment - this snippet
-	// is showing how to access the secret material.
-	fmt.Fprintf(w, "Plaintext: %s\n", string(result.Payload.Data))
-	return nil
+	return dbURI
 }
 
 func getFirebaseApp() *firebase.App {
