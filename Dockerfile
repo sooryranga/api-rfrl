@@ -1,42 +1,37 @@
-#
-# 1. Build Container
-#
-FROM golang:1.16.2 AS build
+FROM golang:alpine AS builder
 
+# Set necessary environmet variables needed for our image
 ENV GO111MODULE=on \
+    CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64
 
-# First add modules list to better utilize caching
-COPY go.sum go.mod /app/
+# Move to working directory /build
+WORKDIR /build
 
-WORKDIR /app
-
-# Download dependencies
+# Copy and download dependency using go mod
+COPY go.mod .
+COPY go.sum .
 RUN go mod download
 
-COPY . /app
+# Copy the code into the container
+COPY . .
 
-# Build components.
-# Put built binaries and runtime resources in /app dir ready to be copied over or used.
-RUN go install -race -installsuffix cgo -ldflags="-w -s" && \
-    mkdir -p /app && \
-    cp -r $GOPATH/bin/api-rfrl /app/
+# Build the application
+RUN go build -o main .
 
-#
-# 2. Runtime Container
-#
-FROM alpine
+# Move to /dist directory as the place for resulting binary folder
+WORKDIR /dist
 
-ENV PATH="/app:${PATH}"
+# Copy binary from build to main folder
+RUN cp /build/main .
 
-# See http://stackoverflow.com/questions/34729748/installed-go-binary-not-found-in-path-on-alpine-linux-docker
-RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
+# Build a small image
+FROM scratch
 
-WORKDIR /app
-
-COPY --from=build /app /app/
+COPY --from=builder /dist/main /
 
 EXPOSE 8010
 
-CMD ["./api-rfrl"]
+# Command to run
+CMD ["/main"]
