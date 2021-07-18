@@ -26,7 +26,7 @@ To migrate up:
 ## Create id_rsa
 
 `openssl genrsa -out ./id_rsa 4096`
-`openssl rsa -in ./cert/id_rsa -pubout -out cert/id_rsa.pub`
+`openssl rsa -in ./id_rsa -pubout -out ./id_rsa.pub`
 
 ## Delete all images
 

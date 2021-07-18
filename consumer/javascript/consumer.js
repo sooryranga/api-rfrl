@@ -104,7 +104,7 @@ async function start({
 
 (async ()=>{
   await start({
-    projectId: process.env?.PUBSUB_PROJECT_ID,
+    projectId: process.env?.GOOGLE_CLOUD_PROJECT,
     topicName: 'javascript_topic',
     subscriptionName: 'javascript_topic_consumer',
   });

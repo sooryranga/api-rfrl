@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,6 +23,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"google.golang.org/api/option"
+
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 
 // Validator for echo
@@ -46,8 +50,58 @@ func getPostgresURI() string {
 	return postgresURI
 }
 
+func accessSecretVersion(w io.Writer, name string) error {
+	// name := "projects/my-project/secrets/my-secret/versions/5"
+	// name := "projects/my-project/secrets/my-secret/versions/latest"
+
+	// Create the client.
+	ctx := context.Background()
+	client, err := secretmanager.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create secretmanager client: %v", err)
+	}
+	defer client.Close()
+
+	// Build the request.
+	req := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: name,
+	}
+
+	// Call the API.
+	result, err := client.AccessSecretVersion(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to access secret version: %v", err)
+	}
+
+	// WARNING: Do not print the secret in a production environment - this snippet
+	// is showing how to access the secret material.
+	fmt.Fprintf(w, "Plaintext: %s\n", string(result.Payload.Data))
+	return nil
+}
+
+func getFirebaseApp() *firebase.App {
+	ctx := context.Background()
+	var app *firebase.App
+	var err error
+
+	if rfrl.IsProduction() {
+		fmt.Println("IsProduction")
+		conf := &firebase.Config{ProjectID: getGoogleProjectID()}
+		app, err = firebase.NewApp(ctx, conf)
+	} else {
+		sa := option.WithCredentialsFile(os.Getenv("FIREBASE_AUTH_FILE"))
+		app, err = firebase.NewApp(ctx, nil, sa)
+	}
+
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+
+	return app
+}
+
 func getGoogleProjectID() string {
-	projectID := os.Getenv("PUBSUB_PROJECT_ID")
+	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
 
 	return projectID
 }
@@ -71,14 +125,8 @@ func main() {
 		panic(fmt.Sprintf("%v", err))
 	}
 
-	//firestore
 	ctx := context.Background()
-	sa := option.WithCredentialsFile(os.Getenv("FIREBASE_AUTH_FILE"))
-	app, err := firebase.NewApp(ctx, nil, sa)
-
-	if err != nil {
-		panic(fmt.Sprintf("%v", err))
-	}
+	app := getFirebaseApp()
 
 	firebaseAuth, err := app.Auth(ctx)
 
