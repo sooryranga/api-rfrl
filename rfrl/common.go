@@ -12,7 +12,7 @@ const (
 	productionInternalError = "Something went wrong!"
 )
 
-func getBackendType() string {
+func GetBackendType() string {
 	version, isSet := os.LookupEnv("BACKEND_TYPE")
 
 	if !isSet {
@@ -22,8 +22,12 @@ func getBackendType() string {
 	return version
 }
 
+func IsProduction() bool {
+	return GetBackendType() == production
+}
+
 func GetStatusInternalServerError(err error) string {
-	backendType := getBackendType()
+	backendType := GetBackendType()
 
 	switch backendType {
 	case production:
