@@ -204,7 +204,7 @@ func main() {
 	e.Logger.SetLevel(log.DEBUG)
 
 	s := &http.Server{
-		Addr:         string(":8010"),
+		Addr:         string(":8080"),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
