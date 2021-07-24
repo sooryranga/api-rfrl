@@ -52,7 +52,7 @@ func (dv *DocumentView) CreateDocumentEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, document)
@@ -157,7 +157,7 @@ func (dv *DocumentView) CreateDocumentOrderEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, listOfDocuments)
@@ -185,7 +185,7 @@ func (dv *DocumentView) UpdateDocumentOrderEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, listOfDocuments)
@@ -212,7 +212,7 @@ func (dv *DocumentView) GetDocumentOrderEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, listOfDocuments)
