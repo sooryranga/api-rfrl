@@ -3,8 +3,6 @@ package usecases
 import (
 	"crypto/rsa"
 	"database/sql"
-	"fmt"
-	"log"
 
 	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	jwt "github.com/dgrijalva/jwt-go"
@@ -39,11 +37,11 @@ func (au *AuthUseCase) SignupWithToken(newClient *rfrl.Client, auth *rfrl.Auth) 
 
 	tx, *err = au.db.Beginx()
 
-	defer rfrl.HandleTransactions(tx, err)
-
 	if *err != nil {
-		return nil, nil, *err
+		return nil, nil, errors.Wrap(*err, "SignupWithToken")
 	}
+
+	defer rfrl.HandleTransactions(tx, err)
 
 	var createdClient *rfrl.Client
 
@@ -133,7 +131,7 @@ func (au *AuthUseCase) SignupEmail(
 	hash, hashError := hashAndSalt([]byte(password))
 
 	if hashError != nil {
-		return nil, nil, hashError
+		return nil, nil, errors.Wrap(hashError, "SignupEmail")
 	}
 
 	newClient := rfrl.NewClient(firstName, lastName, about, email, photo, isTutor, "", "", null.Int{}, "")
@@ -147,11 +145,11 @@ func (au *AuthUseCase) SignupEmail(
 
 	tx, *err = au.db.Beginx()
 
-	defer rfrl.HandleTransactions(tx, err)
-
 	if *err != nil {
-		return nil, nil, *err
+		return nil, nil, errors.Wrap(*err, "SignupWithToken")
 	}
+
+	defer rfrl.HandleTransactions(tx, err)
 
 	var createdClient *rfrl.Client
 
@@ -191,7 +189,7 @@ func (au *AuthUseCase) LoginEmail(email string, password string) (*rfrl.Client, 
 	c, auth, err := au.authStore.GetByEmail(au.db, email)
 
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "GetByEmail")
+		return nil, nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword(
@@ -200,7 +198,7 @@ func (au *AuthUseCase) LoginEmail(email string, password string) (*rfrl.Client, 
 	)
 
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "CompareHashAndPassword")
+		return nil, nil, errors.Wrap(err, "LoginEmail")
 	}
 
 	firebaseToken, err := au.fireStore.CreateLoginToken(c.ID)
@@ -214,7 +212,7 @@ func (au *AuthUseCase) LoginWithJWT(clientID string) (*rfrl.Client, *rfrl.Auth, 
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil, errors.Wrap(err, fmt.Sprintf("Client not found with %s", clientID))
+			return nil, nil, errors.Wrap(err, "LoginWithJWT")
 		}
 		return nil, nil, errors.Wrap(err, "LoginWithJWT")
 	}
@@ -264,8 +262,7 @@ func hashAndSalt(pwd []byte) ([]byte, error) {
 	// than the MinCost (4)
 	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.DefaultCost)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, errors.Wrap(err, "hashAndSalt")
 	}
 	// GenerateFromPassword returns a byte slice so we need to
 	// convert the bytes to a string and return it
@@ -280,7 +277,7 @@ func (au *AuthUseCase) GenerateToken(claims *rfrl.JWTClaims, signingKey *rsa.Pri
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString(signingKey)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "GenerateToken")
 	}
 
 	return t, nil

@@ -64,7 +64,7 @@ func (d *SignUpFlow) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &signUpFlowString)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "UnmarshalJSON")
 	}
 
 	n, ok := signUpFlowReadableToValue[signUpFlowString]
@@ -124,10 +124,11 @@ func GetVerifyingKey() (*rsa.PublicKey, error) {
 	keyData, err := ioutil.ReadFile(publicRsaFileLoc)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetVerifyingKey")
 	}
 
-	return jwt.ParseRSAPublicKeyFromPEM(keyData)
+	key, err := jwt.ParseRSAPublicKeyFromPEM(keyData)
+	return key, errors.Wrap(err, "GetVerifyingKey")
 }
 
 // GetSigningKey generate private key from id_rsa
@@ -136,10 +137,12 @@ func GetSigningKey() (*rsa.PrivateKey, error) {
 	keyData, err := ioutil.ReadFile(rsaFileLoc)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSigningKey")
 	}
 
-	return jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+
+	return key, errors.Wrap(err, "GetSigningKey")
 }
 
 // Auth model
