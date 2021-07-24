@@ -12,6 +12,7 @@ import (
 	"time"
 
 	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/pkg/errors"
 	"gopkg.in/gomail.v2"
 )
 
@@ -33,13 +34,13 @@ func (em *EmailerUseCase) SendEmailVerification(email string, emailType string) 
 
 	htmlText, err := ioutil.ReadFile(htmlPath)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "SendEmailVerification")
 	}
 
 	t, err = t.Parse(string(htmlText))
 
 	if err != nil {
-		return s, err
+		return s, errors.Wrap(err, "SendEmailVerification")
 	}
 
 	var tpl bytes.Buffer
@@ -62,7 +63,7 @@ func (em *EmailerUseCase) SendEmailVerification(email string, emailType string) 
 		})
 
 	if err != nil {
-		return s, err
+		return s, errors.Wrap(err, "SendEmailVerification")
 	}
 
 	m := gomail.NewMessage()
@@ -79,7 +80,7 @@ func (em *EmailerUseCase) SendEmailVerification(email string, emailType string) 
 	)
 
 	if err := d.DialAndSend(m); err != nil {
-		return s, err
+		return s, errors.Wrap(err, "SendEmailVerification")
 	}
 
 	return s, nil

@@ -33,6 +33,10 @@ func (su *SessionUseCase) CreateSession(
 
 	tx, *err = su.DB.Beginx()
 
+	if *err != nil {
+		return nil, errors.Wrap(*err, "CreateSession")
+	}
+
 	defer rfrl.HandleTransactions(tx, err)
 
 	if *err != nil {
@@ -75,6 +79,10 @@ func (su SessionUseCase) UpdateSession(
 	var tx *sqlx.Tx
 
 	tx, *err = su.DB.Beginx()
+
+	if *err != nil {
+		return nil, errors.Wrap(*err, "UpdateSession")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 
@@ -170,6 +178,10 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event rfrl.
 	insertedEvents := &([]rfrl.Event{})
 
 	tx, *err = su.DB.Beginx()
+
+	if *err != nil {
+		return nil, errors.Wrap(*err, "CreateSessionEvent")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 

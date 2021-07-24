@@ -51,11 +51,12 @@ func (dc *DocumentUseCase) DeleteDocument(
 	var tx *sqlx.Tx
 
 	tx, *err = dc.db.Beginx()
-	defer rfrl.HandleTransactions(tx, err)
 
 	if *err != nil {
-		return *err
+		return errors.Wrap(*err, "DeleteDocument")
 	}
+
+	defer rfrl.HandleTransactions(tx, err)
 
 	*err = dc.documentStore.RemoveAndRenumberDocumentsOrder(tx, ID, clientID)
 
@@ -65,7 +66,7 @@ func (dc *DocumentUseCase) DeleteDocument(
 
 	*err = dc.documentStore.DeleteDocument(tx, ID, clientID)
 
-	if err != nil {
+	if *err != nil {
 		return *err
 	}
 
@@ -191,6 +192,7 @@ func (dc *DocumentUseCase) checkclientIsAbleToViewDocument(
 		return true, nil
 	}
 	if refType == rfrl.SessionRef {
+		//TODO: Need to figure out how to handle checkclientIsAbleToViewDocument
 		// clientIDs, err := session.GetclientsIdForSession(h.db, refID)
 
 		// for i := 0; i < len(clientIDs); i += 1 {
@@ -213,6 +215,7 @@ func (dc *DocumentUseCase) checkclientIsInRef(
 		return refID == clientID, nil
 	}
 	if refType == rfrl.SessionRef {
+		//TODO: Need to figure out how to handle checkclientIsAbleToViewDocument
 		// clientIDs, err := session.GetclientsIdForSession(h.db, refID)
 
 		// for i := 0; i < len(clientIDs); i += 1 {
