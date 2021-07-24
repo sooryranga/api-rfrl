@@ -5,6 +5,7 @@ import (
 
 	"github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/pkg/errors"
 )
 
 type ConferenceStore struct{}
@@ -32,7 +33,7 @@ func (cs *ConferenceStore) GetOrCreateConference(db rfrl.DB, sessionID int) (*rf
 		err = db.QueryRowx(createConferenceQuery, sessionID).StructScan(&conference)
 	}
 
-	return &conference, err
+	return &conference, errors.Wrap(err, "GetOrCreateConference")
 }
 
 const createCodeQuery = `
@@ -54,12 +55,12 @@ func (cs *ConferenceStore) CreateNewCode(db rfrl.DB, sessionID int, rawCode stri
 	err := row.StructScan(&code)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "CreateNewCode")
 	}
 
 	_, err = db.Queryx(updateCodeConferenceQuery, sessionID, code.ID)
 
-	return &code, err
+	return &code, errors.Wrap(err, "CreateNewCode")
 }
 
 func (cs *ConferenceStore) UpdateCode(db rfrl.DB, id int, code rfrl.Code) (*rfrl.Code, error) {
@@ -80,7 +81,7 @@ func (cs *ConferenceStore) UpdateCode(db rfrl.DB, id int, code rfrl.Code) (*rfrl
 		ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateCode")
 	}
 
 	row := db.QueryRowx(
@@ -92,5 +93,5 @@ func (cs *ConferenceStore) UpdateCode(db rfrl.DB, id int, code rfrl.Code) (*rfrl
 
 	err = row.StructScan(&c)
 
-	return &c, err
+	return &c, errors.Wrap(err, "UpdateCode")
 }
