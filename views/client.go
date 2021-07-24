@@ -10,7 +10,6 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
@@ -95,7 +94,7 @@ func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin {
@@ -105,7 +104,7 @@ func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
 	payload := ClientPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateClientEndpoint - Bind"))
 	}
 
 	client, err := cv.ClientUseCase.CreateClient(
@@ -118,7 +117,7 @@ func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, client)
@@ -129,13 +128,13 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 	payload := ClientPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(errors.Wrap(err, "UpdateClientEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin && claims.ClientID != payload.ID {
@@ -163,9 +162,9 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 	if err != nil {
 		switch errors.Cause(err) {
 		case sql.ErrNoRows:
-			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found").SetInternal(err)
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 	}
 
@@ -181,9 +180,9 @@ func (cv *ClientView) GetClientEndpoint(c echo.Context) error {
 	if err != nil {
 		switch errors.Cause(err) {
 		case sql.ErrNoRows:
-			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found").SetInternal(err)
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 	}
 
@@ -194,7 +193,7 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 	payload := GetClientsEndpointPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetClientsEndpoint - Bind"))
 	}
 
 	if payload.IsTutor.Valid && payload.IsTutor.Bool && payload.WantingReferralCompanyId.Valid {
@@ -215,7 +214,7 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 	clients, err := cv.ClientUseCase.GetClients(options)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, clients)
@@ -225,13 +224,13 @@ func (cv *ClientView) VerifyEmail(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	payload := VerifyEmailPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "VerifyEmail - Bind"))
 	}
 
 	err = cv.ClientUseCase.CreateEmailVerification(
@@ -239,11 +238,9 @@ func (cv *ClientView) VerifyEmail(c echo.Context) error {
 		payload.Email,
 		payload.Type,
 	)
-	log.Errorj(log.JSON{
-		"err": err,
-	})
+
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -253,13 +250,13 @@ func (cv *ClientView) VerifyEmailPassCode(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	payload := VerifyEmailPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "VerifyEmailPassCode - err"))
 	}
 
 	if len(payload.PassCode) != 6 {
@@ -274,7 +271,7 @@ func (cv *ClientView) VerifyEmailPassCode(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, client)
@@ -284,7 +281,7 @@ func (cv *ClientView) GetVerificationEmails(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	emailType := c.QueryParam("type")
@@ -309,9 +306,9 @@ func (cv *ClientView) GetVerificationEmails(c echo.Context) error {
 
 	if err != nil {
 		if err.Error() == "Could not find verification email" {
-			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+			return echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
 		}
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	type GetVerificationEmailsResponse struct {
@@ -329,7 +326,7 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 	payload := GetClientEventsEndpointEndpointPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetClientEventsEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
@@ -339,14 +336,14 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 	}
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	var start null.Time
 	if payload.StartTime != "" {
 		parsedStart, err := time.Parse(time.RFC3339, payload.StartTime)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetClientEventsEndpoint - time.Parse"))
 		}
 
 		start = null.NewTime(parsedStart, true)
@@ -356,7 +353,7 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 	if payload.EndTime != "" {
 		parsedEnd, err := time.Parse(time.RFC3339, payload.EndTime)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetClientEventsEndpoint - time.Parse"))
 		}
 		end = null.NewTime(parsedEnd, true)
 	}
@@ -371,7 +368,7 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 	events, err := cv.ClientUseCase.GetClientEvents(payload.ClientID, start, end, state)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		return echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, *events)
@@ -381,7 +378,7 @@ func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	emailType := c.QueryParam("type")
@@ -404,7 +401,7 @@ func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
 	err = cv.ClientUseCase.DeleteVerificationEmail(claims.ClientID, emailType)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -414,7 +411,7 @@ func (cv *ClientView) GetWantingReferralCompany(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	clientID := c.Param("clientID")
@@ -428,7 +425,7 @@ func (cv *ClientView) GetWantingReferralCompany(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		return echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
 	}
 
 	response := GetReferralCompanyResponse{
@@ -441,7 +438,7 @@ func (cv *ClientView) CreateWantingReferralCompany(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	clientID := c.Param("clientID")
@@ -453,7 +450,7 @@ func (cv *ClientView) CreateWantingReferralCompany(c echo.Context) error {
 	payload := ClientCompanyReferralPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateWantingReferralCompany - Bind"))
 	}
 
 	err = cv.ClientUseCase.CreateClientWantingCompanyReferrals(
@@ -463,7 +460,7 @@ func (cv *ClientView) CreateWantingReferralCompany(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -473,7 +470,7 @@ func (cv *ClientView) CreateEducation(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	clientID := c.Param("clientID")
@@ -485,7 +482,7 @@ func (cv *ClientView) CreateEducation(c echo.Context) error {
 	payload := EducationPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateEducation - Bind"))
 	}
 
 	if payload.StartYear < 1950 || payload.StartYear > time.Now().Year()+5 {
@@ -506,13 +503,13 @@ func (cv *ClientView) CreateEducation(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	client, err := cv.ClientUseCase.GetClient(clientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 	return c.JSON(http.StatusOK, client)
 }
