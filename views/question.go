@@ -7,6 +7,7 @@ import (
 	"github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -28,13 +29,13 @@ func (qv *QuestionView) CreateQuestionEndpoint(c echo.Context) error {
 	payload := QuestionPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateQuestionEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	question, err := qv.QuestionUseCase.CreateQuestion(
@@ -45,7 +46,7 @@ func (qv *QuestionView) CreateQuestionEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, question)
@@ -55,13 +56,13 @@ func (qv QuestionView) UpdateQuestionEndpoint(c echo.Context) error {
 	payload := QuestionPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateQuestionEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	question, err := qv.QuestionUseCase.UpdateQuestion(
@@ -74,7 +75,7 @@ func (qv QuestionView) UpdateQuestionEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 	return c.JSON(http.StatusOK, question)
 }
@@ -83,18 +84,18 @@ func (qv QuestionView) DeleteQuestionEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "DeleteQuestionEndpoint - Atoi"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	err = qv.QuestionUseCase.DeleteQuestion(claims.ClientID, ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -103,13 +104,13 @@ func (qv QuestionView) GetQuestionEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetQuestionEndpoint - err"))
 	}
 
 	question, err := qv.QuestionUseCase.GetQuestion(ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, question)
@@ -122,7 +123,7 @@ func (qv QuestionView) GetQuestionsEndpoint(c echo.Context) error {
 	if lastQuestionParam != "" {
 		i, err := strconv.Atoi(lastQuestionParam)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetQuestionsEndpoint - Atoi"))
 		}
 		lastQuestion = null.IntFrom(int64(i))
 	}
@@ -131,13 +132,13 @@ func (qv QuestionView) GetQuestionsEndpoint(c echo.Context) error {
 	err := resolved.UnmarshalText([]byte(c.QueryParam("withCompany")))
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetQuestionsEndpoint - UnmarshalText"))
 	}
 
 	questions, err := qv.QuestionUseCase.GetQuestions(lastQuestion, resolved)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 	return c.JSON(http.StatusOK, questions)
 }
@@ -146,20 +147,20 @@ func (qv QuestionView) GetQuestionsFromClientEndpoint(c echo.Context) error {
 	clientID := c.Param("id")
 
 	if _, err := uuid.Parse(clientID); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetQuestionsFromClientEndpoint - Parse"))
 	}
 
 	resolved := null.Bool{}
 	err := resolved.UnmarshalText([]byte(c.QueryParam("withCompany")))
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetQuestionsFromClientEndpoint - UnmarshalText"))
 	}
 
 	questions, err := qv.QuestionUseCase.GetQuestionsForClient(clientID, resolved)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, questions)
@@ -169,19 +170,19 @@ func (qv QuestionView) ApplyToQuestionEndpoint(c echo.Context) error {
 	questionID, err := strconv.Atoi(c.Param("questionID"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Question ID is not valid")
+		return echo.NewHTTPError(http.StatusBadRequest, "Question ID is not valid").SetInternal(errors.Wrap(err, "ApplyToQuestionEndpoint - Atoi"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	err = qv.QuestionUseCase.ApplyToQuestion(claims.ClientID, questionID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
