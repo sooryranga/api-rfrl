@@ -6,6 +6,7 @@ import (
 
 	"github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -42,13 +43,13 @@ func (comv *CompanyView) GetCompany(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be empty")
+		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be empty").SetInternal(errors.Wrap(err, "GetCompany - Atoi"))
 	}
 
 	company, err := comv.CompanyUseCase.GetCompany(id)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, company)
@@ -58,17 +59,17 @@ func (comv *CompanyView) CreateCompanyView(c echo.Context) error {
 	payload := CreateCompanyViewPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateCompanyView - Bind"))
 	}
 
 	if err := c.Validate(payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateCompanyView - Validate"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin {
@@ -84,7 +85,7 @@ func (comv *CompanyView) CreateCompanyView(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, company)
@@ -94,17 +95,17 @@ func (comv *CompanyView) UpdateCompanyView(c echo.Context) error {
 	payload := UpdateCompanyViewPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateCompanyView - Bind"))
 	}
 
 	if err := c.Validate(payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateCompanyView - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin {
@@ -121,7 +122,7 @@ func (comv *CompanyView) UpdateCompanyView(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, company)
@@ -131,7 +132,7 @@ func (comv *CompanyView) GetCompanyEmailsView(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin {
@@ -142,13 +143,13 @@ func (comv *CompanyView) GetCompanyEmailsView(c echo.Context) error {
 	err = withCompany.UnmarshalText([]byte(c.QueryParam("withCompany")))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetCompanyEmailsView - UnmarshalText"))
 	}
 
 	companyEmails, err := comv.CompanyUseCase.GetCompanyEmails(withCompany)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, companyEmails)
@@ -158,17 +159,17 @@ func (comv *CompanyView) UpdateCompanyEmailView(c echo.Context) error {
 	payload := UpdateCompanyEmailViewPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateCompanyEmailView - Bind"))
 	}
 
 	if err := c.Validate(payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateCompanyEmailView - Validate"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin {
@@ -182,7 +183,7 @@ func (comv *CompanyView) UpdateCompanyEmailView(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -193,13 +194,13 @@ func (comv *CompanyView) GetCompanies(c echo.Context) error {
 	err := active.UnmarshalText([]byte(c.QueryParam("active")))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetCompanies - UnmarshalText"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin && active.Valid && !active.Bool {
@@ -209,7 +210,7 @@ func (comv *CompanyView) GetCompanies(c echo.Context) error {
 	companies, err := comv.CompanyUseCase.GetCompanies(active.Bool)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, companies)
@@ -225,7 +226,7 @@ func (comv *CompanyView) GetCompanyEmailView(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin {
@@ -233,6 +234,10 @@ func (comv *CompanyView) GetCompanyEmailView(c echo.Context) error {
 	}
 
 	company, err := comv.CompanyUseCase.GetCompanyEmail(companyEmail)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+	}
 
 	return c.JSON(http.StatusOK, company)
 }

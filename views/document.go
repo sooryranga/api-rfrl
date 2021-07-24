@@ -35,13 +35,13 @@ func (dv *DocumentView) CreateDocumentEndpoint(c echo.Context) error {
 	payload := DocumentPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateDocumentEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	document, err := dv.DocumentUseCase.CreateDocument(
@@ -52,7 +52,7 @@ func (dv *DocumentView) CreateDocumentEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, document)
@@ -63,13 +63,13 @@ func (dv *DocumentView) UpdateDocumentEndpoint(c echo.Context) error {
 	payload := DocumentPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateDocumentEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	client, err := dv.DocumentUseCase.UpdateDocument(
@@ -81,7 +81,7 @@ func (dv *DocumentView) UpdateDocumentEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, client)
@@ -91,18 +91,18 @@ func (dv *DocumentView) UpdateDocumentEndpoint(c echo.Context) error {
 func (dv *DocumentView) DeleteDocumentEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed is not valid integer"))
+		return echo.NewHTTPError(http.StatusBadRequest, "ID passed is not valid integer").SetInternal(errors.Wrap(err, "DeleteDocumentEndpoint - Atoi"))
 	}
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	err = dv.DocumentUseCase.DeleteDocument(claims.ClientID, ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -117,13 +117,13 @@ func (dv *DocumentView) GetDocumentEndpoint(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	client, err := dv.DocumentUseCase.GetDocument(ID, claims.ClientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 	return c.JSON(http.StatusOK, client)
 }
@@ -133,13 +133,13 @@ func (dv *DocumentView) CreateDocumentOrderEndpoint(c echo.Context) error {
 	payload := DocumentOrderPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateDocumentOrderEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if payload.RefType == "user" && claims.ClientID != payload.RefID {
@@ -157,7 +157,7 @@ func (dv *DocumentView) CreateDocumentOrderEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, listOfDocuments)
@@ -168,13 +168,13 @@ func (dv *DocumentView) UpdateDocumentOrderEndpoint(c echo.Context) error {
 	payload := DocumentOrderPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateDocumentOrderEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	listOfDocuments, err := dv.DocumentUseCase.UpdateDocumentOrder(
@@ -185,7 +185,7 @@ func (dv *DocumentView) UpdateDocumentOrderEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, listOfDocuments)
@@ -196,13 +196,13 @@ func (dv *DocumentView) GetDocumentOrderEndpoint(c echo.Context) error {
 	payload := DocumentOrderPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetDocumentOrderEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	listOfDocuments, err := dv.DocumentUseCase.GetDocumentOrder(
@@ -212,7 +212,7 @@ func (dv *DocumentView) GetDocumentOrderEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, listOfDocuments)

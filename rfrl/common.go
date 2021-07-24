@@ -1,6 +1,10 @@
 package rfrl
 
-import "os"
+import (
+	"os"
+
+	"github.com/pkg/errors"
+)
 
 const (
 	production = "production"
@@ -26,13 +30,13 @@ func IsProduction() bool {
 	return GetBackendType() == production
 }
 
-func GetStatusInternalServerError(err error) string {
+func GetStatusInternalServerError(err error) error {
 	backendType := GetBackendType()
 
 	switch backendType {
 	case production:
-		return productionInternalError
+		return errors.New(productionInternalError)
 	default:
-		return err.Error()
+		return err
 	}
 }
