@@ -97,7 +97,7 @@ func (dc *DocumentStore) UpdateDocument(db rfrl.DB, ID int, doc *rfrl.Document) 
 		ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateDocument")
 	}
 
 	row := db.QueryRowx(
@@ -126,7 +126,7 @@ func (dc *DocumentStore) CheckDocumentsBelongToclients(
 	query, args, err := sqlx.In(checkDocumentsBelongToclients, documentIds, clientIDs)
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "CheckDocumentsBelongToclients")
 	}
 	query = db.Rebind(query)
 	row := db.QueryRowx(query, args...)
@@ -134,14 +134,14 @@ func (dc *DocumentStore) CheckDocumentsBelongToclients(
 	var count int
 	err = row.Scan(&count)
 
-	return count == len(documentIds), err
+	return count == len(documentIds), errors.Wrap(err, "CheckDocumentsBelongToclients")
 }
 
 func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db rfrl.DB, ID int, clientID string) error {
 	rows, err := db.Queryx(deleteDocumentOrderWithDocumentID, ID)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "RemoveAndRenumberDocumentsOrder")
 	}
 
 	docOrders := make([]rfrl.DocumentOrder, 0)
@@ -150,7 +150,7 @@ func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db rfrl.DB, ID int, cli
 		var docOrder rfrl.DocumentOrder
 		err = rows.StructScan(&docOrder)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "RemoveAndRenumberDocumentsOrder")
 		}
 		docOrders = append(docOrders, docOrder)
 	}
@@ -176,7 +176,7 @@ func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db rfrl.DB, ID int, cli
 		ToSql()
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "RemoveAndRenumberDocumentsOrder")
 	}
 
 	_, err = db.Queryx(
@@ -184,7 +184,7 @@ func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db rfrl.DB, ID int, cli
 		args...,
 	)
 
-	return err
+	return errors.Wrap(err, "RemoveAndRenumberDocumentsOrder")
 }
 
 func createDocumentOrder(
@@ -205,13 +205,17 @@ func createDocumentOrder(
 		ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "createDocumentOrder")
 	}
 
 	_, err = db.Queryx(
 		sql,
 		args...,
 	)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "createDocumentOrder")
+	}
 
 	return getDocumentOrder(db, refType, refID)
 }
@@ -233,7 +237,7 @@ func (dc *DocumentStore) UpdateDocumentOrder(
 ) ([]rfrl.Document, error) {
 	_, err := db.Queryx(removeDocumentOrder, refType, refID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateDocumentOrder")
 	}
 
 	docs, err := createDocumentOrder(
@@ -243,7 +247,7 @@ func (dc *DocumentStore) UpdateDocumentOrder(
 		refID,
 	)
 
-	return docs, err
+	return docs, errors.Wrap(err, "UpdateDocumentOrder")
 }
 
 func getDocumentOrder(
@@ -254,7 +258,7 @@ func getDocumentOrder(
 	rows, err := db.Queryx(getDocumentOrderQuery, refType, refID)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getDocumentOrder")
 	}
 
 	docs := make([]rfrl.Document, 0)
@@ -263,12 +267,12 @@ func getDocumentOrder(
 		var doc rfrl.Document
 		err = rows.StructScan(&doc)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getDocumentOrder")
 		}
 		docs = append(docs, doc)
 	}
 
-	return docs, err
+	return docs, errors.Wrap(err, "getDocumentOrder")
 }
 
 func (dc *DocumentStore) GetDocumentOrder(

@@ -4,6 +4,7 @@ import (
 	"github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -21,7 +22,7 @@ func createTagsForQuestion(db rfrl.DB, questionID int, tagIDs []int) error {
 	_, err := db.Queryx(deleteTagsForQuestion, questionID)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "createTagsForQuestion")
 	}
 
 	query := sq.Insert("question_tags").Columns("question_id", "tag_id")
@@ -32,9 +33,13 @@ func createTagsForQuestion(db rfrl.DB, questionID int, tagIDs []int) error {
 
 	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
+	if err != nil {
+		return errors.Wrap(err, "createTagsForQuestion")
+	}
+
 	_, err = db.Queryx(sql, args...)
 
-	return err
+	return errors.Wrap(err, "createTagsForQuestion")
 }
 
 const getTagsSQL string = `
@@ -44,19 +49,26 @@ SELECT * FROM tags WHERE id IN (?)
 func getTags(db rfrl.DB, tagIDs []int) (*[]rfrl.Tags, error) {
 	query, args, err := sqlx.In(getTagsSQL, tagIDs)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getTags")
 	}
 	query = db.Rebind(query)
+
 	rows, err := db.Queryx(query, args...)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "getTags")
+	}
 
 	tags := make([]rfrl.Tags, 0)
 
 	for rows.Next() {
 		var tag rfrl.Tags
 		err = rows.StructScan(&tag)
+
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getTags")
 		}
+
 		tags = append(tags, tag)
 	}
 	return &tags, nil
@@ -72,7 +84,7 @@ func getTagsForQuestion(db rfrl.DB, questionID int) (*[]rfrl.Tags, error) {
 	rows, err := db.Queryx(getTagsForQuestionSQL, questionID)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getTagsForQuestion")
 	}
 
 	tags := make([]rfrl.Tags, 0)
@@ -81,7 +93,7 @@ func getTagsForQuestion(db rfrl.DB, questionID int) (*[]rfrl.Tags, error) {
 		var tag rfrl.Tags
 		err = rows.StructScan(&tag)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getTagsForQuestion")
 		}
 		tags = append(tags, tag)
 	}
@@ -113,20 +125,20 @@ func getTagsForMultipleQuestions(db rfrl.DB, questionIDs []int) (*map[int][]rfrl
 
 	query, args, err := sqlx.In(getTagIDsForMultipleQuestionsSQL, questionIDs)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getTagsForMultipleQuestions")
 	}
 	query = db.Rebind(query)
 	rows, err := db.Queryx(query, args...)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getTagsForMultipleQuestions")
 	}
 
 	for rows.Next() {
 		var result getTagsForMultipleQuestionsStruct
 		err = rows.StructScan(&result)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getTagsForMultipleQuestions")
 		}
 		TagsIDtoQuestionID[result.TagID] = append(
 			TagsIDtoQuestionID[result.TagID],
@@ -142,21 +154,21 @@ func getTagsForMultipleQuestions(db rfrl.DB, questionIDs []int) (*map[int][]rfrl
 	query, args, err = sqlx.In(getTagsFromIDsSQL, tagIDs)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getTagsForMultipleQuestions")
 	}
 	query = db.Rebind(query)
 
 	rows, err = db.Queryx(query, args...)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getTagsForMultipleQuestions")
 	}
 
 	for rows.Next() {
 		var tag rfrl.Tags
 		err = rows.StructScan(&tag)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getTagsForMultipleQuestions")
 		}
 		for _, questionID := range TagsIDtoQuestionID[tag.ID] {
 			questionIDToTags[questionID] = append(questionIDToTags[questionID], tag)
@@ -178,30 +190,34 @@ func (qs *QuestionStore) CreateQuestion(db rfrl.DB, question rfrl.Question) (*rf
 		Suffix("RETURNING *").PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "CreateQuestion")
 	}
 
 	row := db.QueryRowx(sql, args...)
 	var createdQuestion rfrl.Question
 	err = row.StructScan(&createdQuestion)
 
+	if err != nil {
+		return nil, errors.Wrap(err, "CreateQuestion")
+	}
+
 	if len(question.TagIDs) > 0 {
 		err = createTagsForQuestion(db, createdQuestion.ID, question.TagIDs)
 
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "CreateQuestion")
 		}
 
 		tags, err := getTags(db, question.TagIDs)
 
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "CreateQuestion")
 		}
 
 		createdQuestion.Tags = *tags
 	}
 
-	return &createdQuestion, err
+	return &createdQuestion, nil
 }
 
 func (qs *QuestionStore) UpdateQuestion(db rfrl.DB, clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*rfrl.Question, error) {
@@ -221,7 +237,7 @@ func (qs *QuestionStore) UpdateQuestion(db rfrl.DB, clientID string, id int, tit
 	sql, args, err := query.Suffix("RETURNING *").PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateQuestion")
 	}
 
 	row := db.QueryRowx(sql, args...)
@@ -230,29 +246,29 @@ func (qs *QuestionStore) UpdateQuestion(db rfrl.DB, clientID string, id int, tit
 	err = row.StructScan(&updatedQuestion)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateQuestion")
 	}
 
 	if len(tags) > 0 {
 		err = createTagsForQuestion(db, id, tags)
 
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "UpdateQuestion")
 		}
 		tags, err := getTags(db, tags)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "UpdateQuestion")
 		}
 		updatedQuestion.Tags = *tags
 	} else {
 		tags, err := getTagsForQuestion(db, updatedQuestion.ID)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "UpdateQuestion")
 		}
 		updatedQuestion.Tags = *tags
 	}
 
-	return &updatedQuestion, err
+	return &updatedQuestion, nil
 }
 
 const deleteQuestionSQL string = `
@@ -262,7 +278,7 @@ DELETE FROM question WHERE id = $1
 func (qs *QuestionStore) DeleteQuestion(db rfrl.DB, id int) error {
 	_, err := db.Queryx(deleteQuestionSQL, id)
 
-	return err
+	return errors.Wrap(err, "DeleteQuestion")
 }
 
 const getQuestionFromIDSQL string = `
@@ -276,13 +292,13 @@ func (qs *QuestionStore) GetQuestion(db rfrl.DB, id int) (*rfrl.Question, error)
 	err := row.StructScan(&question)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetQuestion")
 	}
 
 	tags, err := getTags(db, question.TagIDs)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetQuestion")
 	}
 
 	question.Tags = *tags
@@ -308,13 +324,13 @@ func (qs *QuestionStore) GetQuestions(db rfrl.DB, lastQuestion null.Int, resolve
 		ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetQuestions")
 	}
 
 	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetQuestions")
 	}
 
 	idToQuestion := make(map[int]*rfrl.Question)
@@ -323,9 +339,11 @@ func (qs *QuestionStore) GetQuestions(db rfrl.DB, lastQuestion null.Int, resolve
 	for rows.Next() {
 		var question rfrl.Question
 		err = rows.StructScan(&question)
+
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "GetQuestions")
 		}
+
 		idToQuestion[question.ID] = &question
 		questionIds = append(questionIds, question.ID)
 	}
@@ -333,7 +351,7 @@ func (qs *QuestionStore) GetQuestions(db rfrl.DB, lastQuestion null.Int, resolve
 	questionTag, err := getTagsForMultipleQuestions(db, questionIds)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetQuestions")
 	}
 
 	questions := make([]rfrl.Question, 0, len(questionIds))
@@ -345,7 +363,7 @@ func (qs *QuestionStore) GetQuestions(db rfrl.DB, lastQuestion null.Int, resolve
 		questions = append(questions, *question)
 	}
 
-	return &questions, err
+	return &questions, nil
 }
 
 func (qs *QuestionStore) GetQuestionsForClient(db rfrl.DB, clientID string, resolved null.Bool) (*[]rfrl.Question, error) {
@@ -360,10 +378,14 @@ func (qs *QuestionStore) GetQuestionsForClient(db rfrl.DB, clientID string, reso
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 
+	if err != nil {
+		return nil, errors.Wrap(err, "GetQuestionsForClient")
+	}
+
 	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetQuestionsForClient")
 	}
 
 	idToQuestion := make(map[int]*rfrl.Question)
@@ -373,7 +395,7 @@ func (qs *QuestionStore) GetQuestionsForClient(db rfrl.DB, clientID string, reso
 		var question rfrl.Question
 		err = rows.StructScan(&question)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "GetQuestionsForClient")
 		}
 		idToQuestion[question.ID] = &question
 		questionIds = append(questionIds, question.ID)
@@ -382,7 +404,7 @@ func (qs *QuestionStore) GetQuestionsForClient(db rfrl.DB, clientID string, reso
 	questionTag, err := getTagsForMultipleQuestions(db, questionIds)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetQuestionsForClient")
 	}
 
 	questions := make([]rfrl.Question, 0, len(questionIds))
@@ -394,7 +416,7 @@ func (qs *QuestionStore) GetQuestionsForClient(db rfrl.DB, clientID string, reso
 		questions = append(questions, *question)
 	}
 
-	return &questions, err
+	return &questions, errors.Wrap(err, "GetQuestionsForClient")
 }
 
 const insertQuestionApplicants string = `
@@ -412,10 +434,10 @@ func (qs *QuestionStore) ApplyToQuestion(db rfrl.DB, clientID string, id int) er
 	_, err := db.Queryx(insertQuestionApplicants, clientID, id)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "ApplyToQuestion")
 	}
 
 	_, err = db.Queryx(updateApplicantsOnQuestion, id)
 
-	return err
+	return errors.Wrap(err, "ApplyToQuestion")
 }

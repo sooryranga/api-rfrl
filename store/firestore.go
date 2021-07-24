@@ -7,6 +7,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"firebase.google.com/go/auth"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -58,7 +59,7 @@ func (fs *FireStoreClient) CreateClient(id string, photo string, firstName strin
 		UserName: userName,
 		Avatar:   photo,
 	})
-	return err
+	return errors.Wrap(err, "CreateClient")
 }
 
 func (fs *FireStoreClient) CreateCode(sessionID int, codeID int) error {
@@ -72,7 +73,7 @@ func (fs *FireStoreClient) CreateCode(sessionID int, codeID int) error {
 		Stdin:     "run",
 	})
 
-	return err
+	return errors.Wrap(err, "CreateCode")
 }
 
 func (fs *FireStoreClient) UpdateCode(sessionID int, codeID int, result string) error {
@@ -84,7 +85,7 @@ func (fs *FireStoreClient) UpdateCode(sessionID int, codeID int, result string) 
 		[]firestore.Update{{Path: "stdout", Value: result}},
 	)
 
-	return err
+	return errors.Wrap(err, "UpdateCode")
 }
 
 func (fs *FireStoreClient) UpdateClient(id string, photo null.String, firstName null.String, lastName null.String) error {
@@ -108,5 +109,5 @@ func (fs *FireStoreClient) UpdateClient(id string, photo null.String, firstName 
 		ctx,
 		updates,
 	)
-	return err
+	return errors.Wrap(err, "UpdateClient")
 }
