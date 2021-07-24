@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/pkg/errors"
 )
 
 type ConferencePublisher struct {
@@ -32,12 +33,12 @@ func (cp *ConferencePublisher) PublishCode(sessionID int, codeID int, rawCode st
 	codeInJSON, err := json.Marshal(code)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "PublishCode")
 	}
 
 	topic := rfrl.CodeLanguageToTopic[language]
 
 	err = cp.Publisher.Publish(topic, codeInJSON)
 
-	return err
+	return errors.Wrap(err, "PublishCode")
 }
