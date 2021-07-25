@@ -211,7 +211,7 @@ func (au *AuthUseCase) LoginWithJWT(clientID string) (*rfrl.Client, *rfrl.Auth, 
 	c, err := au.clientStore.GetClientFromID(au.db, clientID)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Cause(err) == sql.ErrNoRows {
 			return nil, nil, errors.Wrap(err, "LoginWithJWT")
 		}
 		return nil, nil, errors.Wrap(err, "LoginWithJWT")

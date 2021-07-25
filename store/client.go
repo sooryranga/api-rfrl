@@ -305,13 +305,13 @@ func (cl *ClientStore) GetVerificationEmail(db rfrl.DB, clientID string, emailTy
 	err := db.QueryRowx(getVerificationEmailQuery, clientID, emailType).Scan(&email)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Cause(err) == sql.ErrNoRows {
 			return "", errors.New("Could not find verification email")
 		}
 		return "", errors.Wrap(err, "GetVerificationEmail")
 	}
 
-	if email.Valid == false {
+	if !email.Valid {
 		return "", errors.New("Could not find verification email")
 	}
 
