@@ -185,7 +185,7 @@ func (cl *ClientUseCase) verifyWorkEmail(tx *sqlx.Tx, clientID string, email str
 
 	companyID, err := cl.companyStore.GetCompanyIDFromEmailDomain(tx, domain)
 
-	if err == sql.ErrNoRows {
+	if errors.Cause(err) == sql.ErrNoRows {
 		err = cl.companyStore.CreateCompanyEmailDomain(tx, domain)
 
 		if err != nil {
