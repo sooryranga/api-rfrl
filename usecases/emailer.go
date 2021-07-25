@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"path"
-	"path/filepath"
-	"runtime"
 	"text/template"
 	"time"
 
@@ -28,9 +27,8 @@ func (em *EmailerUseCase) SendEmailVerification(email string, emailType string) 
 
 	t := template.New("verify-html.html")
 
-	_, b, _, _ := runtime.Caller(0)
-	appDir := filepath.Dir(path.Join(path.Dir(b)))
-	htmlPath := path.Join(appDir, "/assets/verify-email.html")
+	assetsPath := os.Getenv("ASSETS_FOLDER")
+	htmlPath := path.Join(assetsPath, "/verify-email.html")
 
 	htmlText, err := ioutil.ReadFile(htmlPath)
 	if err != nil {
