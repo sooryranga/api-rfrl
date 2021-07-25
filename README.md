@@ -8,6 +8,10 @@ sq : `sq.Select("*").From("auth").Where(sq.And{sq.Eq{"auth.token": token}, sq.Eq
 
 psql: `psql "postgres://rfrl:secretpassword1@localhost:5432/rfrl?sslmode=disable"`
 
+## Env
+
+`ASSETS_FOLDER` : outline where the assets folder is.
+
 ## Logging
 
 ```
