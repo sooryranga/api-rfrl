@@ -3,7 +3,7 @@ services:
   javascriptconsumer:
     build:
       context: .
-      dockerfile: Dockerfile.consumer.javascript
+      dockerfile: consumer/javascript/Dockerfile
     depends_on:
       pubsub:
         condition: service_healthy
