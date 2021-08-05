@@ -3,6 +3,7 @@
     "@google-cloud/pubsub": "^2.11.0",
     "axios": "^0.21.1",
     "axios-retry": "^3.1.9",
+    "express": "^4.17.1",
     "vm2": "^3.9.3"
   }
 }
