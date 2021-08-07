@@ -19,6 +19,7 @@ services:
       - API_KEY=9ab270da-307a-40a7-be5c-12285f24161e
       - API_HOST=http://backend:8080
       - JAVASCRIPT_TOPIC=javascript_topic
+      - JAVASCRIPT_CONSUMER_URL=http://javascriptconsumer
     volumes:
       - ./consumer/javascript/app.js:/app/app.js
       - ./consumer/javascript/index.js:/app/index.js

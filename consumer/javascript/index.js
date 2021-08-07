@@ -10,7 +10,7 @@ const createTopicSubscription = async ()=>{
   const subscriptionName = "js-consumer"
   const topicName = process.env.JAVASCRIPT_TOPIC
 
-  var pushEndpoint = (process.env.BACKEND_TYPE === 'dev')? `http://javascriptconsumer:${PORT}`: process.env.JAVASCRIPT_CONSUMER_URL
+  var pushEndpoint = (process.env.BACKEND_TYPE === 'dev')? `${JAVASCRIPT_CONSUMER_URL}:${PORT}`: process.env.JAVASCRIPT_CONSUMER_URL
 
   const options = {
     pushConfig: {
