@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 )
@@ -171,4 +172,30 @@ func (trv *TutorReviewView) GetPendingReviewsEndpoint(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, pendingReviewForClient)
+}
+
+func (trv *TutorReviewView) DeletePendingReviewEndpoint(c echo.Context) error {
+	tutorID := c.Param("tutorID")
+
+	if tutorID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Tutor ID is not passed in")
+	}
+
+	if _, err := uuid.Parse(tutorID); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Tutor ID is not a valid uuid").SetInternal(errors.Wrap(err, "DeletePendingReviewEndpoint - uuid.Parse"))
+	}
+
+	claims, err := rfrl.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+
+	err = trv.TutorReviewUseCase.DeletePendingReview(claims.ClientID, tutorID)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+
+	return c.NoContent(http.StatusOK)
 }
