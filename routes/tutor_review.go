@@ -51,5 +51,5 @@ func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *
 	}))
 
 	pendingReviewsR.GET("/", tutorReviewView.GetPendingReviewsEndpoint)
-
+	pendingReviewsR.DELETE("/:tutorID/", tutorReviewView.DeletePendingReviewEndpoint)
 }
