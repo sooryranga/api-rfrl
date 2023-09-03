@@ -26,6 +26,6 @@ container:
 	docker build -t api-tutorme .
 
 run-container:
-	docker run --rm -it -p 8010:8010 api-tutorme 
+	docker run --rm -it -p 8010:8010 -v ${ROOT}/id_rsa:/app/id_rsa api-tutorme 
 
 .PHONY: build run build-static test container
