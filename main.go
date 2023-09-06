@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"time"
@@ -44,15 +45,22 @@ func readEnv(cfg *Config) {
 }
 
 func main() {
+	port := flag.String("port", ":8010", "Server listener port")
+	serverName := flag.String("name", "Server1", "Server Name")
+	flag.Parse()
+
+	fmt.Printf("my port: \"%v\"\n", string(*port))
+
 	//Config
 	var cfg Config
 	readEnv(&cfg)
-	fmt.Printf("%+v", cfg)
+	fmt.Printf("CONFIG : %+v", cfg)
 
 	// Validator
 	validate := validator.New()
 
 	validate.RegisterStructValidation(auth.LoginPayloadValidation, auth.LoginPayload{})
+	validate.RegisterStructValidation(auth.SignUpPayloadValidation, auth.SignUpPayload{})
 
 	e := echo.New()
 
@@ -68,14 +76,14 @@ func main() {
 	e.Validator = &Validator{validator: validate}
 
 	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
+		return c.String(http.StatusOK, fmt.Sprintf("Hello from %v", string(*serverName)))
 	})
 
 	e.POST("/login", auth.Login)
 	e.Logger.SetLevel(log.DEBUG)
 
 	s := &http.Server{
-		Addr:         ":8010",
+		Addr:         string(*port),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
