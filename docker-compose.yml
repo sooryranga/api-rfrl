@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  backend:
+    build: .
+    secrets:
+      - db-password
+    depends_on:
+      - db
+    ports:
+      - 8010:8010
+
+  db:
+    image: postgres
+    restart: always
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=tutorme
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+
+volumes:
+  db-data:
+secrets:
+  db-password:
+    file: db/password.txt
+  rsa:
+    file: id_rsa
