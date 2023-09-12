@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -159,13 +158,10 @@ func (h *Handler) Signup(c echo.Context) error {
 	}
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			fmt.Println("ErrNoRows")
-		}
+		c.Logger().Error(err)
+
 		var pgErr *pgconn.PgError
-		fmt.Printf("%v", errors.As(err, &pgErr))
 		if errors.As(err, &pgErr) {
-			c.Logger().Error(pgErr)
 			if pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 				return echo.NewHTTPError(
 					http.StatusInternalServerError,
