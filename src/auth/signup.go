@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,7 +9,10 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -141,21 +145,37 @@ func (h *Handler) Signup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	var token string
-	var error error
+	var err error
 
 	switch payload.Type {
 	case GOOGLE:
-		token, error = h.signupGoogle(payload)
+		token, err = h.signupGoogle(payload)
 	case LINKEDIN:
-		token, error = h.signupLinkedIn(payload)
+		token, err = h.signupLinkedIn(payload)
 	case EMAIL:
-		token, error = h.signupEmail(payload)
+		token, err = h.signupEmail(payload)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}
 
-	if error != nil {
-		panic(fmt.Sprintf("%v", error))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("ErrNoRows")
+		}
+		var pgErr *pgconn.PgError
+		fmt.Printf("%v", errors.As(err, &pgErr))
+		if errors.As(err, &pgErr) {
+			c.Logger().Error(pgErr)
+			if pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+				return echo.NewHTTPError(
+					http.StatusInternalServerError,
+					fmt.Sprintf("User is already signed up with %s", payload.Type),
+				)
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
+		}
+
+		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong")
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
