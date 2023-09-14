@@ -45,6 +45,8 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 			sl.ReportError(payload.Email, "password", "Password", "validPassworrd", "")
 		}
 	}
+
+	// plus can do more, even with different tag than "fnameorlname"
 }
 
 // Signup endpoint

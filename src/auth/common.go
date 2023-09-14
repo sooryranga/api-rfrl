@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"io/ioutil"
 	"log"
+	"os"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
@@ -25,7 +26,7 @@ func NewHandler(au Store, key *rsa.PrivateKey) *Handler {
 
 // JWTClaims are custom claims extending default ones.
 type JWTClaims struct {
-	Email string `json:"email"`
+	ID    string `json:"email"`
 	Admin bool   `json:"admin"`
 	jwt.StandardClaims
 }
@@ -56,7 +57,8 @@ func hashAndSalt(pwd []byte) ([]byte, error) {
 
 // GetVerifyingKey generate public key from id_rsa.pub
 func GetVerifyingKey() (*rsa.PublicKey, error) {
-	keyData, err := ioutil.ReadFile("./id_rsa.pub")
+	publicRsaFileLoc := os.Getenv("PUBLIC_RSA_FILE")
+	keyData, err := ioutil.ReadFile(publicRsaFileLoc)
 
 	if err != nil {
 		return nil, err
@@ -67,7 +69,8 @@ func GetVerifyingKey() (*rsa.PublicKey, error) {
 
 // GetSigningKey generate private key from id_rsa
 func GetSigningKey() (*rsa.PrivateKey, error) {
-	keyData, err := ioutil.ReadFile("./id_rsa")
+	rsaFileLoc := os.Getenv("RSA_FILE")
+	keyData, err := ioutil.ReadFile(rsaFileLoc)
 
 	if err != nil {
 		return nil, err
