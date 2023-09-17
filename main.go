@@ -73,8 +73,7 @@ func main() {
 	// Body Limit Middleware
 	e.Use(middleware.BodyLimit("10M"))
 
-	au := auth.NewStore(db)
-	authHandler := auth.NewHandler(*au, signingKey)
+	authHandler := auth.NewHandler(db, signingKey)
 	authHandler.Register(e, validate)
 
 	e.Validator = &Validator{validator: validate}

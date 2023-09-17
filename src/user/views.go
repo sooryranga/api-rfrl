@@ -19,7 +19,7 @@ type (
 		About     string `json:"about"`
 	}
 
-	// EducationPayload is the struct used to create education
+	// EducationPaylod is the struct used to create education
 	EducationPaylod struct {
 		Institution     string `json:"institution"`
 		Degree          string `json:"degree"`
@@ -31,7 +31,7 @@ type (
 )
 
 // UserPayloadValidation validates user inputs
-func UserPayloadValidation(sl validator.StructLevel) {
+func userPayloadValidation(sl validator.StructLevel) {
 
 	payload := sl.Current().Interface().(UserPayload)
 
@@ -45,18 +45,62 @@ func UserPayloadValidation(sl validator.StructLevel) {
 	// plus can do more, even with different tag than "fnameorlname"
 }
 
-func (h *Handler) CreateUser(c echo.Context) error {
+// CreateUserEndpoint view is an endpoint used to create user
+func (h *Handler) CreateUserEndpoint(c echo.Context) error {
 	payload := UserPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
+	user, err := h.createUser(
+		payload.FirstName,
+		payload.LastName,
+		payload.About,
+		payload.Email,
+		payload.Photo,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, user)
 }
 
-func (h *Handler) UpdateUser(c echo.Context) error {
+// UpdateUserEndpoint view is an endpoint uused to create user
+func (h *Handler) UpdateUserEndpoint(c echo.Context) error {
 	payload := UserPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
+	user, err := h.updateUser(
+		payload.ID,
+		payload.FirstName,
+		payload.LastName,
+		payload.About,
+		payload.Email,
+		payload.Photo,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, user)
+}
+
+// GetUserEndpoint view is an endpoint uused to create user
+func (h *Handler) GetUserEndpoint(c echo.Context) error {
+	id := c.Param("id")
+
+	user, err := h.getUser(id)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	return c.JSON(http.StatusOK, user)
+
 }
