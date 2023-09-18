@@ -3,7 +3,10 @@ package auth
 import (
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/Arun4rangan/api-tutorme/src/client"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -25,7 +28,7 @@ type (
 	}
 )
 
-// SignUpPayloadValidation validates user inputs
+// SignUpPayloadValidation validates client inputs
 func SignUpPayloadValidation(sl validator.StructLevel) {
 
 	payload := sl.Current().Interface().(SignUpPayload)
@@ -62,16 +65,38 @@ func (h *Handler) Signup(c echo.Context) error {
 	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	var token string
+	var newClient *client.Client
 	var err error
 
 	switch payload.Type {
 	case GOOGLE:
-		token, err = h.signupGoogle(payload.Token)
+		newClient, err = h.signupGoogle(
+			payload.Token,
+			payload.Email,
+			payload.FirstName,
+			payload.LastName,
+			payload.Photo,
+			payload.About,
+		)
 	case LINKEDIN:
-		token, err = h.signupLinkedIn(payload.Token)
+		newClient, err = h.signupLinkedIn(
+			payload.Token,
+			payload.Email,
+			payload.FirstName,
+			payload.LastName,
+			payload.Photo,
+			payload.About,
+		)
 	case EMAIL:
-		token, err = h.signupEmail(payload.Email, payload.Password)
+		newClient, err = h.signupEmail(
+			payload.Password,
+			payload.Token,
+			payload.Email,
+			payload.FirstName,
+			payload.LastName,
+			payload.Photo,
+			payload.About,
+		)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}
@@ -84,7 +109,7 @@ func (h *Handler) Signup(c echo.Context) error {
 			if pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 				return echo.NewHTTPError(
 					http.StatusInternalServerError,
-					fmt.Sprintf("User is already signed up with %s", payload.Type),
+					fmt.Sprintf("Client is already signed up with %s", payload.Type),
 				)
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
@@ -93,8 +118,24 @@ func (h *Handler) Signup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong")
 	}
 
+	claims := &JWTClaims{
+		newClient.ID,
+		newClient.Email.String,
+		true,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		},
+	}
+
+	token, err := h.GenerateToken(claims)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong")
+	}
+
 	return c.JSON(http.StatusOK, echo.Map{
-		"token": token,
+		"token":  token,
+		"client": newClient,
 	})
 }
 
@@ -108,7 +149,7 @@ type (
 	}
 )
 
-// LoginPayloadValidation validates user inputs
+// LoginPayloadValidation validates client inputs
 func LoginPayloadValidation(sl validator.StructLevel) {
 
 	payload := sl.Current().Interface().(LoginPayload)
@@ -134,7 +175,7 @@ func LoginPayloadValidation(sl validator.StructLevel) {
 	// plus can do more, even with different tag than "fnameorlname"
 }
 
-// Login is used to login an user
+// Login is used to login an client
 func (h *Handler) Login(c echo.Context) error {
 	payload := LoginPayload{}
 
@@ -150,11 +191,11 @@ func (h *Handler) Login(c echo.Context) error {
 
 	switch payload.Type {
 	case GOOGLE:
-		token, err = h.loginGoogle(payload.Token)
+		existingClient, err = h.loginGoogle(payload.Token)
 	case LINKEDIN:
-		token, err = h.loginLinkedIn(payload.Token)
+		existingClient, err = h.loginLinkedIn(payload.Token)
 	case EMAIL:
-		token, err = h.loginEmail(payload.Email, payload.Password)
+		existingClient, err = h.loginEmail(payload.Email, payload.Password)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}
@@ -167,8 +208,19 @@ func (h *Handler) Login(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
 		}
 
-		return echo.NewHTTPError(http.StatusInternalServerError, "User or password is not correct")
+		return echo.NewHTTPError(http.StatusInternalServerError, "Client or password is not correct")
 	}
+
+	claims := &JWTClaims{
+		existingClient.ID,
+		existingClient.Email.String,
+		true,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		},
+	}
+
+	token, err := h.GenerateToken(claims)
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"token": token,
