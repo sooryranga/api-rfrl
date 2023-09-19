@@ -47,24 +47,28 @@ func CreateClient(db db.DB, client *Client) (*Client, error) {
 
 // UpdateClient updates a client in the database
 func UpdateClient(db db.DB, ID string, client *Client) (*Client, error) {
-	updateQuery := sq.Update("client")
+	query := sq.Update("client")
 	if client.FirstName.Valid {
-		updateQuery.Set("first_name", client.FirstName)
+		query = query.Set("first_name", client.FirstName)
 	}
 	if client.LastName.Valid {
-		updateQuery.Set("last_name", client.LastName)
+		query = query.Set("last_name", client.LastName)
 	}
 	if client.About.Valid {
-		updateQuery.Set("about", client.About)
+		query = query.Set("about", client.About)
 	}
 	if client.Photo.Valid {
-		updateQuery.Set("photo", client.Photo)
+		query = query.Set("photo", client.Photo)
 	}
 	if client.Email.Valid {
-		updateQuery.Set("email", client.Email)
+		query = query.Set("email", client.Email)
 	}
 
-	sql, args, err := updateQuery.Where("id", ID).Suffix("RETURNING *").ToSql()
+	sql, args, err := query.
+		Where(sq.Eq{"id": ID}).
+		Suffix("RETURNING *").
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
 
 	if err != nil {
 		return nil, err
