@@ -186,7 +186,7 @@ func (h *Handler) Login(c echo.Context) error {
 	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	var token string
+	var existingClient *client.Client
 	var err error
 
 	switch payload.Type {
@@ -223,6 +223,7 @@ func (h *Handler) Login(c echo.Context) error {
 	token, err := h.GenerateToken(claims)
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"token": token,
+		"token":  token,
+		"client": existingClient,
 	})
 }

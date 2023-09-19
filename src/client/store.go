@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/Arun4rangan/api-tutorme/src/db"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -40,8 +41,8 @@ func CreateClient(db db.DB, client *Client) (*Client, error) {
 
 	var m Client
 
-	err := row.Scan(&m)
-	return &m, err
+	err := row.StructScan(&m)
+	return &m, errors.Wrap(err, "CreateClient")
 }
 
 // UpdateClient updates a client in the database
@@ -76,6 +77,6 @@ func UpdateClient(db db.DB, ID string, client *Client) (*Client, error) {
 
 	var m Client
 
-	err = row.Scan(&m)
+	err = row.StructScan(&m)
 	return &m, err
 }
