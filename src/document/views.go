@@ -8,15 +8,15 @@ import (
 )
 
 type (
-	// ClientPayload is the struct used to hold payload from /client
+	// DocumentPayload is the struct used to hold payload from /document
 	DocumentPayload struct {
-		ID          string `path:"id"`
+		ID          int    `path:"id"`
 		Src         string `json:"src" validate:"required,url"`
 		Name        string `json:"name" validate:"required,gte=0,lte=100"`
 		description string `json:"description" validate:"omitempty,base64"`
 	}
 
-	// EducationPaylod is the struct used to create education
+	// DocumentOrderPayload is the struct used to hold payload from /document-order
 	DocumentOrderPayload struct {
 		RefType     string `json:"ref_type" validate:"required,oneof= user session"`
 		RefID       string `json:"ref_id" validate:"gte=0,base64"`
@@ -34,7 +34,7 @@ func (h *Handler) CreateDocumentEndpoint(c echo.Context) error {
 
 	claims := auth.GetClaims(c)
 
-	client, err := h.createDocument(
+	document, err := h.createDocument(
 		claims.UserID,
 		payload.Src,
 		payload.Name,
@@ -45,7 +45,7 @@ func (h *Handler) CreateDocumentEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, client)
+	return c.JSON(http.StatusCreated, document)
 }
 
 // UpdateDocumentEndpoint view is an endpoint used to update document
@@ -111,18 +111,25 @@ func (h *Handler) CreateDocumentOrderEndpoint(c echo.Context) error {
 
 	claims := auth.GetClaims(c)
 
-	order, err := h.createDocumentOrder(
+	if payload.RefType == "user" && claims.UserID != payload.RefID {
+		return echo.NewHTTPError(
+			http.StatusUnauthorized, 
+			"You are unauthorized to create this document-order"
+		)
+	}
+
+	listOfDocuments, err := h.createDocumentOrder(
 		claims.UserID,
 		payload.DocumentIDs,
+		payload.RefType,
 		payload.RefID,
-		payload.DocumentIDs,
 	)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, order)
+	return c.JSON(http.StatusCreated, listOfDocuments)
 }
 
 // UpdateDocumentOrderEndpoint is used to update document order
@@ -135,11 +142,11 @@ func (h *Handler) UpdateDocumentOrderEndpoint(c echo.Context) error {
 
 	claims := auth.GetClaims(c)
 
-	listOfDocuments, err := h.createDocumentOrder(
+	listOfDocuments, err := h.updateDocumentOrder(
 		claims.UserID,
 		payload.DocumentIDs,
 		payload.RefID,
-		payload.DocumentIDs,
+		payload.RefType,
 	)
 
 	if err != nil {
@@ -161,9 +168,8 @@ func (h *Handler) GetDocumentOrderEndpoint(c echo.Context) error {
 
 	listOfDocuments, err := h.getDocumentOrder(
 		claims.UserID,
-		payload.DocumentIDs,
+		payload.RefType,
 		payload.RefID,
-		payload.DocumentIDs,
 	)
 
 	if err != nil {

@@ -1,4 +1,4 @@
-package client
+package document
 
 import (
 	"database/sql"
@@ -13,7 +13,7 @@ type Document struct {
 	Src         string         `db:"src" json:"src" mapstructure:"src"`
 	Name        string         `db:"name" json:"name" mapstructure:"name"`
 	Description sql.NullString `db:"description" json:"description" mapstructure:"description"`
-	UserId      string         `db:"user_id"`
+	UserID      string         `db:"user_id"`
 }
 
 type DocumentOrder struct {
@@ -26,12 +26,12 @@ type DocumentOrder struct {
 
 // NewDocument creates new client model struct
 func NewDocument(
+	userID string,
 	src string,
 	name string,
 	description string,
-	userId string,
 ) *Document {
-	document := Document{Name: name, Src: src, UserId: userId}
+	document := Document{Name: name, Src: src, UserID: userID}
 	if description != "" {
 		document.Description = sql.NullString{String: description, Valid: true}
 	}
