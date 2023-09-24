@@ -28,9 +28,9 @@ func NewHandler(db *sqlx.DB, key *rsa.PrivateKey) *Handler {
 
 // JWTClaims are custom claims extending default ones.
 type JWTClaims struct {
-	UserID string `json:"id"`
-	Email  string `json:"email"`
-	Admin  bool   `json:"admin"`
+	ClientID string `json:"id"`
+	Email    string `json:"email"`
+	Admin    bool   `json:"admin"`
 	jwt.StandardClaims
 }
 
@@ -82,9 +82,9 @@ func GetSigningKey() (*rsa.PrivateKey, error) {
 	return jwt.ParseRSAPrivateKeyFromPEM(keyData)
 }
 
-func GetClaims(c echo.Context) JWTClaims {
+func GetClaims(c echo.Context) *JWTClaims {
 	user := c.Get("user").(*jwt.Token)
-	return user.Claims.(JWTClaims)
+	return user.Claims.(*JWTClaims)
 }
 
 // GenerateToken creates token

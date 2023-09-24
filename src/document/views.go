@@ -2,9 +2,11 @@ package document
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/Arun4rangan/api-tutorme/src/auth"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -35,7 +37,7 @@ func (h *Handler) CreateDocumentEndpoint(c echo.Context) error {
 	claims := auth.GetClaims(c)
 
 	document, err := h.createDocument(
-		claims.UserID,
+		claims.ClientID,
 		payload.Src,
 		payload.Name,
 		payload.description,
@@ -59,7 +61,7 @@ func (h *Handler) UpdateDocumentEndpoint(c echo.Context) error {
 	claims := auth.GetClaims(c)
 
 	client, err := h.updateDocument(
-		claims.UserID,
+		claims.ClientID,
 		payload.ID,
 		payload.Src,
 		payload.Name,
@@ -75,25 +77,30 @@ func (h *Handler) UpdateDocumentEndpoint(c echo.Context) error {
 
 // DeleteDocumentEndpoint view is an endpoint to delete document
 func (h *Handler) DeleteDocumentEndpoint(c echo.Context) error {
-	id := c.Param("id")
+	ID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed is not valid integer"))
+	}
 	claims := auth.GetClaims(c)
 
-	err := h.deleteDocument(id, claims.UserID)
+	err = h.deleteDocument(claims.ClientID, ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return c.JSON(http.StatusOK, client)
+	return c.NoContent(http.StatusOK)
 }
 
 // GetDocumentEndpoint view is an endpoint used to get document
 func (h *Handler) GetDocumentEndpoint(c echo.Context) error {
-	id := c.Param("id")
-
+	ID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed is not valid integer"))
+	}
 	claims := auth.GetClaims(c)
 
-	client, err := h.getDocuument(id, claims.UserID)
+	client, err := h.getDocument(ID, claims.ClientID)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -111,15 +118,15 @@ func (h *Handler) CreateDocumentOrderEndpoint(c echo.Context) error {
 
 	claims := auth.GetClaims(c)
 
-	if payload.RefType == "user" && claims.UserID != payload.RefID {
+	if payload.RefType == "user" && claims.ClientID != payload.RefID {
 		return echo.NewHTTPError(
-			http.StatusUnauthorized, 
-			"You are unauthorized to create this document-order"
+			http.StatusUnauthorized,
+			"You are unauthorized to create this document-order",
 		)
 	}
 
 	listOfDocuments, err := h.createDocumentOrder(
-		claims.UserID,
+		claims.ClientID,
 		payload.DocumentIDs,
 		payload.RefType,
 		payload.RefID,
@@ -143,7 +150,7 @@ func (h *Handler) UpdateDocumentOrderEndpoint(c echo.Context) error {
 	claims := auth.GetClaims(c)
 
 	listOfDocuments, err := h.updateDocumentOrder(
-		claims.UserID,
+		claims.ClientID,
 		payload.DocumentIDs,
 		payload.RefID,
 		payload.RefType,
@@ -167,7 +174,7 @@ func (h *Handler) GetDocumentOrderEndpoint(c echo.Context) error {
 	claims := auth.GetClaims(c)
 
 	listOfDocuments, err := h.getDocumentOrder(
-		claims.UserID,
+		claims.ClientID,
 		payload.RefType,
 		payload.RefID,
 	)
