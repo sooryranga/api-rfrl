@@ -1,8 +1,9 @@
-package client
+package views
 
 import (
 	"net/http"
 
+	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -31,7 +32,7 @@ type (
 )
 
 // ClientPayloadValidation validates client inputs
-func clientPayloadValidation(sl validator.StructLevel) {
+func ClientPayloadValidation(sl validator.StructLevel) {
 
 	payload := sl.Current().Interface().(ClientPayload)
 
@@ -45,15 +46,19 @@ func clientPayloadValidation(sl validator.StructLevel) {
 	// plus can do more, even with different tag than "fnameorlname"
 }
 
+type ClientView struct {
+	ClientUseCase tutorme.ClientUseCase
+}
+
 // CreateClientEndpoint view is an endpoint used to create client
-func (h *Handler) CreateClientEndpoint(c echo.Context) error {
+func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
 	payload := ClientPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	client, err := h.createClient(
+	client, err := cv.ClientUseCase.CreateClient(
 		payload.FirstName,
 		payload.LastName,
 		payload.About,
@@ -69,14 +74,14 @@ func (h *Handler) CreateClientEndpoint(c echo.Context) error {
 }
 
 // UpdateClientEndpoint view is an endpoint uused to create client
-func (h *Handler) UpdateClientEndpoint(c echo.Context) error {
+func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 	payload := ClientPayload{}
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	client, err := h.updateClient(
+	client, err := cv.ClientUseCase.UpdateClient(
 		payload.ID,
 		payload.FirstName,
 		payload.LastName,
@@ -93,10 +98,10 @@ func (h *Handler) UpdateClientEndpoint(c echo.Context) error {
 }
 
 // GetClientEndpoint view is an endpoint uused to create client
-func (h *Handler) GetClientEndpoint(c echo.Context) error {
+func (cv *ClientView) GetClientEndpoint(c echo.Context) error {
 	id := c.Param("id")
 
-	client, err := h.getClient(id)
+	client, err := cv.ClientUseCase.GetClient(id)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
