@@ -19,7 +19,7 @@ func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.P
 	r.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
 		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        tutorme.JWTClaims{},
+		Claims:        &tutorme.JWTClaims{},
 	}))
 
 	validate.RegisterStructValidation(views.ClientPayloadValidation, views.ClientPayload{})
