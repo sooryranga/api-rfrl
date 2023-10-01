@@ -3,6 +3,7 @@ package store
 import (
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -15,11 +16,15 @@ func NewClientStore() *ClientStore {
 }
 
 const (
-	getClientByID string = `
+	getClientByIDSQL string = `
 SELECT * FROM client
 WHERE client.id = $1
 	`
-	insertClient string = `
+	getClientByIDsSQL string = `
+	SELECT * FROM client
+	WHERE client.id IN (?)
+`
+	insertClientSQL string = `
 INSERT INTO client (first_name, last_name, about, email, photo)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *
@@ -34,6 +39,31 @@ func (cl *ClientStore) GetClientFromID(db tutorme.DB, id string) (*tutorme.Clien
 		return nil, err
 	}
 	return &m, nil
+}
+
+// GetClientFromIDs queries the database for client with ids
+func (cl *ClientStore) getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
+	query, args, err := sqlx.In(getClientByIDsSQL, ids)
+
+	if err != nil {
+		return nil, err
+	}
+	query = db.Rebind(query)
+	rows, err := db.Queryx(query, args...)
+
+	var clients []tutorme.Client
+
+	for rows.Next() {
+		var c tutorme.Client
+		err := rows.StructScan(&c)
+		if err != nil {
+			return nil, err
+		}
+
+		clients = append(clients, c)
+	}
+
+	return &clients, err
 }
 
 // CreateClient creates a new row for a client in the database
