@@ -34,7 +34,7 @@ RETURNING *
 // GetClientFromID queries the database for client with id
 func (cl *ClientStore) GetClientFromID(db tutorme.DB, id string) (*tutorme.Client, error) {
 	var m tutorme.Client
-	err := db.QueryRowx(getClientByID, id).StructScan(&m)
+	err := db.QueryRowx(getClientByIDSQL, id).StructScan(&m)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (cl *ClientStore) GetClientFromID(db tutorme.DB, id string) (*tutorme.Clien
 }
 
 // GetClientFromIDs queries the database for client with ids
-func (cl *ClientStore) getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
+func getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
 	query, args, err := sqlx.In(getClientByIDsSQL, ids)
 
 	if err != nil {
@@ -69,7 +69,7 @@ func (cl *ClientStore) getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme
 // CreateClient creates a new row for a client in the database
 func (cl *ClientStore) CreateClient(db tutorme.DB, client *tutorme.Client) (*tutorme.Client, error) {
 	row := db.QueryRowx(
-		insertClient,
+		insertClientSQL,
 		client.FirstName,
 		client.LastName,
 		client.About,
