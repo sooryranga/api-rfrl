@@ -1,6 +1,8 @@
 package usecases
 
 import (
+	"database/sql"
+
 	"github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -71,7 +73,7 @@ func (su SessionUseCase) UpdateSession(
 
 	//TODO: Add logic on what should be updated
 
-	updatedSession, err := su.SessionStore.UpdateSession(su.DB, id, by, state)
+	updatedSession, err := su.SessionStore.UpdateSession(su.DB, id, by, state, sql.NullInt64{Valid: false})
 
 	if err != nil {
 		if rb := tx.Rollback(); rb != nil {
@@ -102,7 +104,7 @@ func (su SessionUseCase) GetSessionByID(clientID string, id int, roomID *string,
 	return session, nil
 }
 
-func (su SessionUseCase) GetSessionWithRoomId(clientID string, roomID string, state string) (*[]tutorme.Session, error) {
+func (su SessionUseCase) GetSessionByRoomId(clientID string, roomID string, state string) (*[]tutorme.Session, error) {
 	sessions, err := su.SessionStore.GetSessionByRoomID(su.DB, roomID, state)
 
 	if err != nil {
@@ -127,7 +129,7 @@ func (su SessionUseCase) GetSessionWithRoomId(clientID string, roomID string, st
 	return sessions, nil
 }
 
-func (su SessionUseCase) GetSessionWithClientID(clientID string, state string) (*[]tutorme.Session, error) {
+func (su SessionUseCase) GetSessionByClientID(clientID string, state string) (*[]tutorme.Session, error) {
 	return su.SessionStore.GetSessionByClientID(su.DB, clientID, state)
 }
 
@@ -170,4 +172,85 @@ func (su SessionUseCase) CreateSessionEvents(clientID string, ID int, events *[]
 	insertedEvents, err := su.SessionStore.CreateSessionEvents(su.DB, *events)
 
 	return insertedEvents, err
+}
+
+func (su SessionUseCase) DeleteSessionEvents(clientID string, ID int, eventIDs []int) error {
+	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
+	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{ID})
+
+	if err != nil {
+		return err
+	}
+
+	if !forClient {
+		return errors.New("Session does not belong to client")
+	}
+
+	err = su.SessionStore.DeleteSessionEvents(su.DB, eventIDs, ID)
+
+	return err
+}
+
+func (su SessionUseCase) SelectEvent(clientID string, sessionID int, eventIDs []int) (*tutorme.Session, error) {
+	session, err := su.SessionStore.GetSessionByID(su.DB, sessionID)
+
+	if err != nil {
+		return session, err
+	}
+
+	forClient := false
+
+	for i := 0; i < len(session.Clients); i++ {
+		if session.Clients[i].ID == clientID {
+			forClient = true
+		}
+	}
+
+	if !forClient {
+		return session, errors.New("Session does not belong to client")
+	}
+
+	EventCount, err := su.SessionStore.CreateEventClient(su.DB, sessionID, clientID, eventIDs)
+	targetEventID := -1
+	for i := 0; i < len(EventCount); i++ {
+		if EventCount[i].Count == len(session.Clients)-1 {
+			targetEventID = EventCount[i].EventID
+			break
+		}
+	}
+
+	if targetEventID != -1 {
+		return su.SessionStore.UpdateSession(
+			su.DB,
+			sessionID,
+			clientID,
+			tutorme.SCHEDULED,
+			sql.NullInt64{
+				Int64: int64(targetEventID),
+				Valid: true,
+			},
+		)
+	}
+	return session, err
+}
+
+func (su SessionUseCase) UnselectEvent(clientID string, sessionID int, eventIDs []int) error {
+	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{sessionID})
+
+	if err != nil {
+		return err
+	}
+
+	if !forClient {
+		return errors.New("Session does not belong to client")
+	}
+
+	session, err := su.SessionStore.GetSessionByID(su.DB, sessionID)
+
+	if session.State == tutorme.SCHEDULED {
+		return errors.New("Can't unselect an event thats already scheduled")
+	}
+
+	err = su.SessionStore.DeleteEventClient(su.DB, sessionID, clientID, eventIDs)
+	return err
 }

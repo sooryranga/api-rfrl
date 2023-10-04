@@ -6,14 +6,15 @@ import (
 )
 
 type Session struct {
-	ID        int       `db:"id" json:"id"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-	TutorID   string    `db:"tutor_id" json:"tutor_id"`
-	By        string    `db:"by" json:"by"`
-	RoomID    string    `db:"room_id" json:"room_id"`
-	Clients   []Client  `json:"clients"`
-	State     string    `db:"state" json:"state"`
+	ID              int           `db:"id" json:"id"`
+	CreatedAt       time.Time     `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time     `db:"updated_at" json:"updated_at"`
+	TutorID         string        `db:"tutor_id" json:"tutor_id"`
+	By              string        `db:"by" json:"by"`
+	RoomID          string        `db:"room_id" json:"room_id"`
+	Clients         []Client      `json:"clients"`
+	State           string        `db:"state" json:"state"`
+	TargetedEventID sql.NullInt64 `db:"target_event_id" json:"target_event_id"`
 }
 
 type Event struct {
@@ -25,6 +26,10 @@ type Event struct {
 	Title     sql.NullString `db:"title" json:"title"`
 	SessionId int            `db:"session`
 }
+
+const (
+	SCHEDULED string = "scheduled"
+)
 
 // NewSession creates new Session
 func NewSession(
@@ -60,10 +65,30 @@ type SessionStore interface {
 	CheckSessionsIsForClient(db DB, client string, sessionIDs []int) (bool, error)
 	CheckOverlapingEvents(db DB, ID int, events *[]Event) (bool, error)
 	DeleteSession(db DB, ID int) error
-	UpdateSession(db DB, id int, by string, state string) (*Session, error)
+	UpdateSession(db DB, id int, by string, state string, targetEventID sql.NullInt64) (*Session, error)
 	CreateSession(db DB, session *Session) (*Session, error)
 	CreateSessionClients(db DB, sessionID int, clientIDs []string) (*[]Client, error)
 	CreateSessionEvents(db DB, events []Event) (*[]Event, error)
 	GetSessionEventFromClientIDs(db DB, clientIds []string, state bool) (*[]Event, error)
-	DeleteSessionEvents(db DB, IDs []int) error
+	DeleteSessionEvents(db DB, eventIds []int, sessionID int) error
+	DeleteEventClient(db DB, sessionID int, clientID string, eventIDs []int) error
+	CreateEventClient(db DB, sessionID int, clientID string, eventIDs []int) ([]CreateEventClientStoreResult, error)
+}
+
+type CreateEventClientStoreResult struct {
+	Count   int `db:"count"`
+	EventID int `db:"event_id"`
+}
+
+type SessionUseCase interface {
+	CreateSession(tutorID string, by string, roomID string, clients []string) (Session, error)
+	UpdateSession(id int, by string, state string) (Session, error)
+	DeleteSession(clientID string, ID int) error
+	GetSessionByID(clientID string, id int, roomID *string, state string) (*Session, error)
+	GetSessionByRoomId(clientID string, roomID string, state string) (*[]Session, error)
+	GetSessionByClientID(clientID string, state string) (*[]Session, error)
+	CreateSessionEvents(clientID string, ID int, events *[]Event) (*[]Event, error)
+	DeleteSessionEvents(clientID string, ID int, eventIDs []int) error
+	SelectEvent(clientID string, sessionID int, eventIDs []int) error
+	UnselectEvent(clientID string, sessionID int, eventIDs []int) error
 }
