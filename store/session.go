@@ -19,25 +19,25 @@ func NewSessionStore() *SessionStore {
 
 const (
 	getSessionByClientID string = `
-SELECT sesssion.* FROM session
+SELECT .* FROM tutor_session
 JOIN session_client ON session.id = session_clients.session_id
 WHERE session_client.client_id = $1 AND session.state = $2
 	`
 	getSessionByRoomID string = `
-SELECT * FROM session
+SELECT * FROM tutor_session
 WHERE room_id = $1 AND state = $2
 	`
 	getSessionByID string = `
-SELECT * FROM session
+SELECT * FROM tutor_session
 WHERE id = $1
 	`
 	getSessionByIDForUpdate string = `
-SELECT * FROM session
+SELECT * FROM tutor_session
 WHERE id = $1
 FOR UPDATE OF session
 	`
 	getCountForEventInEventClient string = `
-SELECT count(*) as 'count', event_id FROM event_client
+SELECT count(*) as 'count', event_id FROM client_selected_event
 WHERE event_id IN ? AND session_id = ?
 GROUP BY event_id 
 ORDER BY event_id desc;
@@ -47,16 +47,16 @@ SELECT COUNT(*) from session_client
 WHERE session_id in (?) and client_id = ?
 	`
 	insertSession string = `
-INSERT INTO session (tutor_id, by, room_id)
+INSERT INTO tutor_session (tutor_id, by, room_id)
 VALUES ($1, $2, $3)
 RETURNING *
 	`
 	deleteSession string = `
-DELETE FROM session
+DELETE FROM tutor_session
 WHERE id = $1
 	`
 	deleteEventClient string = `
-DELETE FROM event_client
+DELETE FROM client_selected_event
 FROM event_id IN ? AND session_id = ? AND client_id = ?
 	`
 	getSessionClients string = `
@@ -70,9 +70,9 @@ WHERE session_id = $1
 	`
 	getSessionEventFromClientIDs string = `
 SELECT session_event FROM session_event 
-JOIN session ON session.id = session_event.session_id
+JOIN tutor_session ON tutor_session.id = session_event.session_id
 JOIN session_client.session_id = session_event.id
-WHERE session_client.client_id in (?) AND session.state = ?
+WHERE session_client.client_id in (?) AND tutor_session.state = ?
 	`
 	deleteSessionEvents string = `
 DELETE FROM session_event
@@ -197,7 +197,7 @@ func (ss SessionStore) CreateSession(
 	row := db.QueryRowx(
 		insertSession,
 		session.TutorID,
-		session.By,
+		session.UpdatedBy,
 		session.RoomID,
 	)
 
@@ -238,7 +238,7 @@ func (ss SessionStore) CreateEventClient(
 	clientID string,
 	eventIDs []int,
 ) ([]tutorme.CreateEventClientStoreResult, error) {
-	query := sq.Insert("event_client").Columns("client_id", "session_id", "event_id")
+	query := sq.Insert("client_selected_event").Columns("client_id", "session_id", "event_id")
 
 	for i := 0; i < len(eventIDs); i++ {
 		query.Values(clientID, sessionID, eventIDs[i])
@@ -320,7 +320,7 @@ func (ss SessionStore) UpdateSession(
 	state string,
 	targetEventID sql.NullInt64,
 ) (*tutorme.Session, error) {
-	query := sq.Update("session").
+	query := sq.Update("tutor_session").
 		Set("by", by).
 		Set("state", state)
 
