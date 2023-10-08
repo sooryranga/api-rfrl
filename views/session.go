@@ -45,7 +45,7 @@ func (sv *SessionView) CreateSessionEndpoint(c echo.Context) error {
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	session, err := sv.SessionUseCase.CreateSession(
@@ -71,6 +71,10 @@ func (sv *SessionView) UpdateSessionEndpoint(c echo.Context) error {
 
 	claims, err := tutorme.GetClaims(c)
 
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	session, err := sv.SessionUseCase.UpdateSession(payload.ID, claims.ClientID, payload.State)
 
 	if err != nil {
@@ -89,7 +93,7 @@ func (sv *SessionView) DeleteSessionEndpoint(c echo.Context) error {
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	err = sv.SessionUseCase.DeleteSession(claims.ClientID, ID)
@@ -111,7 +115,7 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	session, err := sv.SessionUseCase.GetSessionByID(claims.ClientID, ID)
@@ -131,6 +135,10 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 	}
 
 	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
 	event := tutorme.NewEvent(payload.Start, payload.End, payload.Title)
 
@@ -158,6 +166,10 @@ func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {
 
 	claims, err := tutorme.GetClaims(c)
 
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	event, err := sv.SessionUseCase.GetSessionEventByID(claims.ClientID, sessionID, ID)
 
 	if err != nil {
@@ -165,4 +177,27 @@ func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, event)
+}
+
+func (sv *SessionView) GetSessionsFromRoomEndpoint(c echo.Context) error {
+	roomID := c.Param("id")
+	state := c.QueryParam("state")
+
+	if roomID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.New("ID is not passed in"))
+	}
+
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	sessions, err := sv.SessionUseCase.GetSessionByRoomId(claims.ClientID, roomID, state)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, sessions)
 }
