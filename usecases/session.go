@@ -85,8 +85,8 @@ func (su SessionUseCase) UpdateSession(
 	return updatedSession, nil
 }
 
-func (su SessionUseCase) GetSessionByID(clientID string, id int, roomID *string, state string) (*tutorme.Session, error) {
-	session, err := su.SessionStore.GetSessionByID(su.DB, id)
+func (su SessionUseCase) GetSessionByID(clientID string, ID int) (*tutorme.Session, error) {
+	session, err := su.SessionStore.GetSessionByID(su.DB, ID)
 
 	if err != nil {
 		return nil, err
@@ -134,14 +134,14 @@ func (su SessionUseCase) GetSessionByClientID(clientID string, state string) (*[
 }
 
 func (su SessionUseCase) DeleteSession(clientID string, ID int) error {
-	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{ID})
+	session, err := su.SessionStore.GetSessionByID(su.DB, ID)
 
 	if err != nil {
 		return err
 	}
 
-	if !forClient {
-		return errors.New("Session does not belong to client")
+	if session.TutorID == clientID {
+		return errors.Errorf("Client %s cannot delete session", clientID)
 	}
 
 	return su.SessionStore.DeleteSession(su.DB, ID)
@@ -174,28 +174,11 @@ func (su SessionUseCase) CreateSessionEvents(clientID string, ID int, events *[]
 	return insertedEvents, err
 }
 
-func (su SessionUseCase) DeleteSessionEvents(clientID string, ID int, eventIDs []int) error {
-	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
-	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{ID})
-
-	if err != nil {
-		return err
-	}
-
-	if !forClient {
-		return errors.New("Session does not belong to client")
-	}
-
-	err = su.SessionStore.DeleteSessionEvents(su.DB, eventIDs, ID)
-
-	return err
-}
-
-func (su SessionUseCase) SelectEvent(clientID string, sessionID int, eventIDs []int) (*tutorme.Session, error) {
+func (su SessionUseCase) ClientActionOnSessionEvent(clientID string, sessionID int, canAttend bool) error {
 	session, err := su.SessionStore.GetSessionByID(su.DB, sessionID)
 
 	if err != nil {
-		return session, err
+		return err
 	}
 
 	forClient := false
@@ -207,50 +190,23 @@ func (su SessionUseCase) SelectEvent(clientID string, sessionID int, eventIDs []
 	}
 
 	if !forClient {
-		return session, errors.New("Session does not belong to client")
-	}
-
-	EventCount, err := su.SessionStore.CreateEventClient(su.DB, sessionID, clientID, eventIDs)
-	targetEventID := -1
-	for i := 0; i < len(EventCount); i++ {
-		if EventCount[i].Count == len(session.Clients)-1 {
-			targetEventID = EventCount[i].EventID
-			break
-		}
-	}
-
-	if targetEventID != -1 {
-		return su.SessionStore.UpdateSession(
-			su.DB,
-			sessionID,
-			clientID,
-			tutorme.SCHEDULED,
-			sql.NullInt64{
-				Int64: int64(targetEventID),
-				Valid: true,
-			},
-		)
-	}
-	return session, err
-}
-
-func (su SessionUseCase) UnselectEvent(clientID string, sessionID int, eventIDs []int) error {
-	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{sessionID})
-
-	if err != nil {
-		return err
-	}
-
-	if !forClient {
 		return errors.New("Session does not belong to client")
 	}
 
-	session, err := su.SessionStore.GetSessionByID(su.DB, sessionID)
+	return su.SessionStore.CreateClientSelectionOfEvent(su.DB, sessionID, clientID, canAttend)
+}
 
-	if session.State == tutorme.SCHEDULED {
-		return errors.New("Can't unselect an event thats already scheduled")
+func (su SessionUseCase) GetSessionEventByID(clientID string, sessionID int, ID int) (*tutorme.Event, error) {
+	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
+	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{sessionID})
+
+	if err != nil {
+		return nil, err
 	}
 
-	err = su.SessionStore.DeleteEventClient(su.DB, sessionID, clientID, eventIDs)
-	return err
+	if !forClient {
+		return nil, errors.New("Session does not belong to client")
+	}
+
+	return su.SessionStore.GetSessionEventByID(su.DB, sessionID, ID)
 }
