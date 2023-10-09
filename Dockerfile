@@ -1,7 +1,7 @@
 #
 # 1. Build Container
 #
-FROM golang:1.15.7 AS build
+FROM golang:1.16.2 AS build
 
 ENV GO111MODULE=on \
     GOOS=linux \
