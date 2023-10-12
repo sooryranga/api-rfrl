@@ -37,6 +37,15 @@ func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.
 	sessionEventR.POST("/", sessionViews.CreateSessionEventEndpoint)
 	sessionEventR.GET("/:id", sessionViews.GetSessionEventEndpoint)
 
+	clientActionOnEventR := e.Group("/session/:sessionId/book")
+	clientActionOnEventR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    key,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
+
+	clientActionOnEventR.POST("/", sessionViews.CreateClientActionOnSessionEvent)
+
 	sessionsR := e.Group("/sessions/")
 	sessionsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,

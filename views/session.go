@@ -26,9 +26,14 @@ type (
 	SessionEventPayload struct {
 		ID        int    `path:"id"`
 		SessionID int    `path:"sessionId"`
-		Start     string `json:"start" validate:"required, datetime"`
+		Start     string `json:"start" validate:"required, datetime, gte"`
 		End       string `json:"end" validate:"required, datetime, gtfield=Start"`
 		Title     string `json:"title" validate:"required, gte=0, lte=20"`
+	}
+
+	ClientSelectionOfSessionEventPayload struct {
+		SessionID int  `path:'sessionId"`
+		CanAttend bool `json:"can_attend" validate:"required"`
 	}
 )
 
@@ -217,4 +222,26 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, sessions)
+}
+
+func (sv *SessionView) CreateClientActionOnSessionEvent(c echo.Context) error {
+	payload := ClientSelectionOfSessionEventPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	err = sv.SessionUseCase.ClientActionOnSessionEvent(claims.ClientID, payload.SessionID, payload.CanAttend)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.NoContent(http.StatusOK)
 }

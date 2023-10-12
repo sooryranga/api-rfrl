@@ -66,6 +66,10 @@ func getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
 	return &clients, err
 }
 
+func (cl *ClientStore) GetClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
+	return getClientFromIDs(db, ids)
+}
+
 // CreateClient creates a new row for a client in the database
 func (cl *ClientStore) CreateClient(db tutorme.DB, client *tutorme.Client) (*tutorme.Client, error) {
 	row := db.QueryRowx(

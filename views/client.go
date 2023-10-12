@@ -52,6 +52,12 @@ type ClientView struct {
 
 // CreateClientEndpoint view is an endpoint used to create client
 func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if !claims.Admin {
+		return echo.NewHTTPError(http.StatusBadRequest, "Cannot create a user")
+	}
+
 	payload := ClientPayload{}
 
 	if err := c.Bind(&payload); err != nil {
@@ -79,6 +85,12 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	claims, err := tutorme.GetClaims(c)
+
+	if !claims.Admin && claims.ClientID != payload.ID {
+		return echo.NewHTTPError(http.StatusBadRequest, "Cannot update a user")
 	}
 
 	client, err := cv.ClientUseCase.UpdateClient(

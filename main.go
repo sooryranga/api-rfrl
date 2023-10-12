@@ -83,17 +83,20 @@ func main() {
 	clientStore := store.NewClientStore()
 	documentStore := store.NewDocumentStore()
 	sessionStore := store.NewSessionStore()
+	tutorReviewStore := store.NewTutorReviewStore()
 
 	// Usecases
 	authUseCase := usecases.NewAuthUseCase(*db, authStore, clientStore)
 	clientUseCase := usecases.NewClientUseCase(*db, clientStore)
 	documentUseCase := usecases.NewDocumentUseCase(*db, documentStore)
 	sessionUseCase := usecases.NewSessionUseCase(*db, sessionStore)
+	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)
 
 	routes.RegisterAuthRoutes(e, validate, signingKey, authUseCase)
 	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
 	routes.RegisterDocumentRoutes(e, validate, publicKey, documentUseCase)
 	routes.RegisterSessionRoutes(e, validate, publicKey, sessionUseCase)
+	routes.RegisterTutorReviewRoutes(e, validate, publicKey, tutorUseCase)
 
 	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {

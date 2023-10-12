@@ -62,6 +62,7 @@ type ClientStore interface {
 	GetClientFromID(db DB, id string) (*Client, error)
 	CreateClient(db DB, client *Client) (*Client, error)
 	UpdateClient(db DB, ID string, client *Client) (*Client, error)
+	GetClientFromIDs(db DB, ID []string) (*[]Client, error)
 }
 
 type ClientUseCase interface {

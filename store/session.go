@@ -579,3 +579,44 @@ func (ss SessionStore) CheckOverlapingEvents(db tutorme.DB, clientIds []string, 
 
 	return clientOverlap || sessionOverlap, nil
 }
+
+const checkClientsAttendedTutorSession string = `
+SELECT count(client_id) FROM session_client
+JOIN tutor_session ON tutor_session.id = session_client.session_id
+WHERE client_id IN (?) 
+AND can_attend = TRUE 
+AND tutor_session.state = 'paid'
+AND tutor_session.tutor_id = ?
+GROUP BY session_id
+	`
+
+func (ss SessionStore) CheckClientsAttendedTutorSession(db tutorme.DB, tutorID string, clientIDs []string) (bool, error) {
+	sql, args, err := sqlx.In(checkClientsAttendedTutorSession, clientIDs, tutorID)
+
+	if err != nil {
+		return false, err
+	}
+
+	sql = db.Rebind(sql)
+
+	rows, err := db.Queryx(sql, args...)
+
+	if err != nil {
+		return false, err
+	}
+
+	for rows.Next() {
+		var b int
+		err := rows.Scan(&b)
+
+		if err != nil {
+			return false, err
+		}
+
+		if b == len(clientIDs) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
