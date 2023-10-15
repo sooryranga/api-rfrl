@@ -144,7 +144,7 @@ func (ss *SessionStore) CheckSessionsIsForClient(db tutorme.DB, clientID string,
 
 	row := db.QueryRowx(query, args...)
 	err = row.Scan(&m)
-	log.Errorj(log.JSON{"count": m, "err": err, "session_id": ids, "clientID": clientID})
+
 	if err != nil {
 		return false, err
 	}

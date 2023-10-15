@@ -1,0 +1,9 @@
+BEGIN;
+
+DROP TABLE IF EXISTS question_tags;
+
+DROP TABLE IF EXISTS question;
+
+DROP TABLE IF EXISTS tags;
+
+COMMIT;
