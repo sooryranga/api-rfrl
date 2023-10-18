@@ -134,7 +134,7 @@ func (dc *DocumentStore) CheckDocumentsBelongToclients(
 func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db tutorme.DB, ID int, clientID string) error {
 
 	rows, err := db.Queryx(removeDocumentOrder, ID)
-	var docOrders []tutorme.DocumentOrder
+	docOrders := make([]tutorme.DocumentOrder, 0)
 
 	for rows.Next() {
 		var docOrder tutorme.DocumentOrder
@@ -148,7 +148,7 @@ func (dc *DocumentStore) RemoveAndRenumberDocumentsOrder(db tutorme.DB, ID int, 
 	query := sq.Update("document_order").
 		Set("page", sq.Expr("page - 1"))
 
-	for i := 0; i < len(docOrders); i += 1 {
+	for i := 0; i < len(docOrders); i++ {
 		docOrder := docOrders[i]
 		query = query.Where(
 			sq.Or{
@@ -247,7 +247,8 @@ func getDocumentOrder(
 		return nil, err
 	}
 
-	var docs []tutorme.Document
+	docs := make([]tutorme.Document, 0)
+
 	for rows.Next() {
 		var doc tutorme.Document
 		err = rows.StructScan(&doc)

@@ -21,9 +21,9 @@ func RegisteerQuestionRoutes(e *echo.Echo, validate *validator.Validate, key *rs
 	}))
 
 	questionR.POST("/", questionViews.CreateQuestionEndpoint)
-	questionR.GET("/:id", questionViews.GetQuestionEndpoint)
-	questionR.DELETE("/:id", questionViews.DeleteQuestionEndpoint)
-	questionR.PUT("/:id", questionViews.UpdateQuestionEndpoint)
+	questionR.GET("/:id/", questionViews.GetQuestionEndpoint)
+	questionR.DELETE("/:id/", questionViews.DeleteQuestionEndpoint)
+	questionR.PUT("/:id/", questionViews.UpdateQuestionEndpoint)
 
 	questionsR := e.Group("/questions")
 	questionsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
@@ -33,7 +33,7 @@ func RegisteerQuestionRoutes(e *echo.Echo, validate *validator.Validate, key *rs
 	}))
 
 	questionsR.GET("/", questionViews.GetQuestionsEndpoint)
-	questionsR.GET("/:id", questionViews.GetQuestionsFromClientEndpoint)
+	questionsR.GET("/:id/", questionViews.GetQuestionsFromClientEndpoint)
 
 	applyToQuestionR := e.Group("/question/:questionID/apply")
 	applyToQuestionR.Use(middleware.JWTWithConfig(middleware.JWTConfig{

@@ -31,7 +31,7 @@ WHERE session_client.session_id in (?)
 
 func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, error) {
 	idToIndex := make(map[int]int)
-	var sessions []tutorme.Session
+	sessions := make([]tutorme.Session, 0)
 	var sessionIds []int
 	i := 0
 	for rows.Next() {
@@ -48,7 +48,7 @@ func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, 
 	}
 
 	if i == 0 {
-		return nil, nil
+		return &sessions, nil
 	}
 
 	query, args, err := sqlx.In(getSessionClients, sessionIds)
@@ -59,7 +59,6 @@ func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, 
 
 	query = db.Rebind(query)
 	rows, err = db.Queryx(query, args...)
-	var clients *[]tutorme.Client
 
 	for rows.Next() {
 		var result getSessionClientsResult
@@ -68,10 +67,11 @@ func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows) (*[]tutorme.Session, 
 		if err != nil {
 			return nil, err
 		}
-		clients = &sessions[idToIndex[result.SessionID]].Clients
-		*clients = append(*clients, result.Client)
+		session := &sessions[idToIndex[result.SessionID]]
+		session.Clients = append(session.Clients, result.Client)
 	}
 
+	log.Errorj(log.JSON{"sessions": sessions})
 	return &sessions, nil
 }
 
@@ -343,7 +343,7 @@ func (ss SessionStore) CreateSessionEvents(
 		return nil, err
 	}
 
-	var insertedEvents []tutorme.Event
+	insertedEvents := make([]tutorme.Event, 0)
 
 	for rows.Next() {
 		var e tutorme.Event
@@ -411,7 +411,7 @@ func (ss SessionStore) GetScheduledEventsFromClientIDs(
 		return nil, err
 	}
 
-	var events *[]tutorme.Event
+	events := &([]tutorme.Event{})
 
 	for rows.Next() {
 		var e tutorme.Event

@@ -21,9 +21,9 @@ func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *
 	}))
 
 	tutorReviewR.POST("/", tutorReviewView.CreateTutorReviewEndpoint)
-	tutorReviewR.PUT("/:id", tutorReviewView.UpdateTutorReviewEndpoint)
-	tutorReviewR.DELETE("/:id", tutorReviewView.DeleteTutorReviewEndpoint)
-	tutorReviewR.GET("/:id", tutorReviewView.GetTutorReviewEndpoint)
+	tutorReviewR.PUT("/:id/", tutorReviewView.UpdateTutorReviewEndpoint)
+	tutorReviewR.DELETE("/:id/", tutorReviewView.DeleteTutorReviewEndpoint)
+	tutorReviewR.GET("/:id/", tutorReviewView.GetTutorReviewEndpoint)
 
 	tutorReviewsR := e.Group("/tutor-reviews")
 	tutorReviewsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
@@ -32,7 +32,7 @@ func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *
 		Claims:        &tutorme.JWTClaims{},
 	}))
 
-	tutorReviewsR.GET("/:tutorID", tutorReviewView.GetTutorReviewsEndpoint)
+	tutorReviewsR.GET("/:tutorID/", tutorReviewView.GetTutorReviewsEndpoint)
 
 	tutorReviewsAggregateR := e.Group("/tutor-reviews-aggregate")
 	tutorReviewsAggregateR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
@@ -41,5 +41,5 @@ func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *
 		Claims:        &tutorme.JWTClaims{},
 	}))
 
-	tutorReviewsAggregateR.GET("/:tutorID", tutorReviewView.GetTutorReviewsAggregateEndpoint)
+	tutorReviewsAggregateR.GET("/:tutorID/", tutorReviewView.GetTutorReviewsAggregateEndpoint)
 }

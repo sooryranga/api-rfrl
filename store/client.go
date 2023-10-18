@@ -51,7 +51,7 @@ func getClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme.Client, error) {
 	query = db.Rebind(query)
 	rows, err := db.Queryx(query, args...)
 
-	var clients []tutorme.Client
+	clients := make([]tutorme.Client, 0)
 
 	for rows.Next() {
 		var c tutorme.Client

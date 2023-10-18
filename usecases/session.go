@@ -42,7 +42,7 @@ func (su *SessionUseCase) CreateSession(
 		return nil, *err
 	}
 
-	var cl *[]tutorme.Client
+	cl := &([]tutorme.Client{})
 
 	cl, *err = su.SessionStore.CreateSessionClients(tx, session.ID, clients)
 
@@ -158,7 +158,7 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 	var tx *sqlx.Tx
 	var session *tutorme.Session
 	var isOverLapping bool
-	var insertedEvents *[]tutorme.Event
+	insertedEvents := &([]tutorme.Event{})
 
 	tx, *err = su.DB.Beginx()
 

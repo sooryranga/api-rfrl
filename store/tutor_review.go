@@ -112,7 +112,9 @@ func (trs *TutorReviewStore) GetTutorReviews(db tutorme.DB, tutorID string) (*[]
 	if err != nil {
 		return nil, err
 	}
-	var tutorReviews []tutorme.TutorReview
+
+	tutorReviews := make([]tutorme.TutorReview, 0)
+
 	for rows.Next() {
 		var tutorReview tutorme.TutorReview
 		err = rows.StructScan(&tutorReview)

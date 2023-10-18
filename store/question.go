@@ -48,7 +48,7 @@ func getTags(db tutorme.DB, tagIDs []int) (*[]tutorme.Tags, error) {
 	query = db.Rebind(query)
 	rows, err := db.Queryx(query, args...)
 
-	var tags []tutorme.Tags
+	tags := make([]tutorme.Tags, 0)
 
 	for rows.Next() {
 		var tag tutorme.Tags
@@ -73,7 +73,9 @@ func getTagsForQuestion(db tutorme.DB, questionID int) (*[]tutorme.Tags, error) 
 	if err != nil {
 		return nil, err
 	}
-	var tags []tutorme.Tags
+
+	tags := make([]tutorme.Tags, 0)
+
 	for rows.Next() {
 		var tag tutorme.Tags
 		err = rows.StructScan(&tag)
