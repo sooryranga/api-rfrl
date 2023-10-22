@@ -1,19 +1,20 @@
 package tutorme
 
 import (
-	"database/sql"
 	"time"
+
+	"gopkg.in/guregu/null.v4"
 )
 
 // Document model
 type Document struct {
-	ID          int            `db:"id" json:"id" mapstructure:"id"`
-	CreatedAt   time.Time      `db:"created_at" json:"created_at" mapstructure:"created_at"`
-	UpdatedAt   time.Time      `db:"updated_at" json:"updated_at" mapstructure:"updated_at"`
-	Src         string         `db:"src" json:"src" mapstructure:"src"`
-	Name        string         `db:"name" json:"name" mapstructure:"name"`
-	Description sql.NullString `db:"description" json:"description" mapstructure:"description"`
-	ClientID    string         `db:"client_id"`
+	ID          int         `db:"id" json:"id" mapstructure:"id"`
+	CreatedAt   time.Time   `db:"created_at" json:"created_at" mapstructure:"created_at"`
+	UpdatedAt   time.Time   `db:"updated_at" json:"updated_at" mapstructure:"updated_at"`
+	Src         string      `db:"src" json:"src" mapstructure:"src"`
+	Name        string      `db:"name" json:"name" mapstructure:"name"`
+	Description null.String `db:"description" json:"description" mapstructure:"description"`
+	ClientID    string      `db:"client_id"`
 }
 
 type DocumentOrder struct {
@@ -32,9 +33,11 @@ func NewDocument(
 	name string,
 	description string,
 ) *Document {
-	document := Document{Name: name, Src: src, ClientID: clientID}
-	if description != "" {
-		document.Description = sql.NullString{String: description, Valid: true}
+	document := Document{
+		Name:        name,
+		Src:         src,
+		ClientID:    clientID,
+		Description: null.NewString(description, description != ""),
 	}
 	return &document
 }

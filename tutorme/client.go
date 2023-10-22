@@ -1,22 +1,22 @@
 package tutorme
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/labstack/gommon/log"
+	"gopkg.in/guregu/null.v4"
 )
 
 // Client model
 type Client struct {
-	ID        string         `db:"id" json:"id" mapstructure:"id"`
-	CreatedAt time.Time      `db:"created_at" json:"created_at" mapstructure:"created_at"`
-	UpdatedAt time.Time      `db:"updated_at" json:"updated_at" mapstructure:"updated_at"`
-	FirstName sql.NullString `db:"first_name" json:"first_name" mapstructure:"first_name"`
-	LastName  sql.NullString `db:"last_name" json:"last_name" mapstructure:"last_name"`
-	About     sql.NullString `db:"about" json:"about" mapstructure:"about"`
-	Email     sql.NullString `db:"email" json:"email" mapstructure:"email"`
-	Photo     sql.NullString `db:"photo" json:"photo" mapstructure:"photo"`
+	ID        string      `db:"id" json:"id" mapstructure:"id"`
+	CreatedAt time.Time   `db:"created_at" json:"created_at" mapstructure:"created_at"`
+	UpdatedAt time.Time   `db:"updated_at" json:"updated_at" mapstructure:"updated_at"`
+	FirstName null.String `db:"first_name" json:"first_name" mapstructure:"first_name"`
+	LastName  null.String `db:"last_name" json:"last_name" mapstructure:"last_name"`
+	About     null.String `db:"about" json:"about" mapstructure:"about"`
+	Email     null.String `db:"email" json:"email" mapstructure:"email"`
+	Photo     null.String `db:"photo" json:"photo" mapstructure:"photo"`
 }
 
 // NewClient creates new client model struct
@@ -27,21 +27,12 @@ func NewClient(
 	email string,
 	photo string,
 ) *Client {
-	client := Client{}
-	if firstName != "" {
-		client.FirstName = sql.NullString{String: firstName, Valid: true}
-	}
-	if lastName != "" {
-		client.LastName = sql.NullString{String: lastName, Valid: true}
-	}
-	if about != "" {
-		client.About = sql.NullString{String: about, Valid: true}
-	}
-	if email != "" {
-		client.Email = sql.NullString{String: email, Valid: true}
-	}
-	if photo != "" {
-		client.Photo = sql.NullString{String: photo, Valid: true}
+	client := Client{
+		FirstName: null.NewString(firstName, firstName != ""),
+		LastName:  null.NewString(lastName, lastName != ""),
+		About:     null.NewString(about, about != ""),
+		Email:     null.NewString(email, email != ""),
+		Photo:     null.NewString(photo, photo != ""),
 	}
 	log.Errorf("%v", client)
 	return &client

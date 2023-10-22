@@ -2,7 +2,6 @@ package usecases
 
 import (
 	"crypto/rsa"
-	"database/sql"
 	"fmt"
 	"log"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/guregu/null.v4"
 )
 
 // AuthUseCase holds all business related functions for auth
@@ -75,7 +75,7 @@ func (au *AuthUseCase) SignupGoogle(
 	newClient := tutorme.NewClient(firstName, lastName, about, email, photo)
 	auth := tutorme.Auth{
 		AuthType: tutorme.GOOGLE,
-		Token:    sql.NullString{String: token, Valid: true},
+		Token:    null.StringFrom(token),
 	}
 
 	return au.SignupWithToken(newClient, &auth)
@@ -95,7 +95,7 @@ func (au *AuthUseCase) SignupLinkedIn(
 
 	auth := tutorme.Auth{
 		AuthType: tutorme.LINKEDIN,
-		Token:    sql.NullString{String: token, Valid: true},
+		Token:    null.StringFrom(token),
 	}
 
 	return au.SignupWithToken(newClient, &auth)
@@ -119,7 +119,7 @@ func (au *AuthUseCase) SignupEmail(
 
 	newClient := tutorme.NewClient(firstName, lastName, about, email, photo)
 	auth := tutorme.Auth{
-		Email:        sql.NullString{String: email, Valid: true},
+		Email:        null.StringFrom(email),
 		PasswordHash: hash,
 	}
 
