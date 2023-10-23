@@ -9,8 +9,8 @@ import (
 // Document model
 type Document struct {
 	ID          int         `db:"id" json:"id" mapstructure:"id"`
-	CreatedAt   time.Time   `db:"created_at" json:"created_at" mapstructure:"created_at"`
-	UpdatedAt   time.Time   `db:"updated_at" json:"updated_at" mapstructure:"updated_at"`
+	CreatedAt   time.Time   `db:"created_at" json:"createdAt" mapstructure:"created_at"`
+	UpdatedAt   time.Time   `db:"updated_at" json:"updatedAt" mapstructure:"updated_at"`
 	Src         string      `db:"src" json:"src" mapstructure:"src"`
 	Name        string      `db:"name" json:"name" mapstructure:"name"`
 	Description null.String `db:"description" json:"description" mapstructure:"description"`
@@ -19,10 +19,10 @@ type Document struct {
 
 type DocumentOrder struct {
 	ID         int       `db:"id" json:"id"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	RefType    string    `db:"ref_type" json:"ref_type"`
-	RefID      string    `db:"ref_id" json:"ref_id"`
-	DocumentID int       `db:"document_id" json:"document_id"`
+	CreatedAt  time.Time `db:"created_at" json:"createdAt"`
+	RefType    string    `db:"ref_type" json:"refType"`
+	RefID      string    `db:"ref_id" json:"refId"`
+	DocumentID int       `db:"document_id" json:"documentId"`
 	Page       int       `db:"page" json"page"`
 }
 

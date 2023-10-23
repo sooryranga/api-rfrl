@@ -14,8 +14,8 @@ type (
 	ClientPayload struct {
 		ID        string `path:"id"`
 		Email     string `json:"email" validate:"omitempty,email"`
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
 		Photo     string `json:"profileImageURL"`
 		About     string `json:"about"`
 	}
@@ -24,10 +24,10 @@ type (
 	EducationPaylod struct {
 		Institution     string `json:"institution"`
 		Degree          string `json:"degree"`
-		FeildOfStudy    string `json:"field_of_study"`
+		FeildOfStudy    string `json:"fieldOfStudy"`
 		start           string `json:"start" validate:"datetime"`
 		end             string `json:"end" validate:"omitempty, datetime"`
-		InstitutionLogo string `json:"institution_logo"`
+		InstitutionLogo string `json:"institutionLogo"`
 	}
 )
 

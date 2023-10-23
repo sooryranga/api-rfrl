@@ -19,8 +19,8 @@ type (
 	// SignUpPayload is the struct used to hold payload from /signup
 	SignUpPayload struct {
 		Email     string `json:"email" validate:"omitempty,email"`
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
 		Token     string `json:"token"`
 		Photo     string `json:"profileImageURL"`
 		About     string `json:"about"`

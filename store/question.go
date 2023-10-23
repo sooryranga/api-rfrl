@@ -168,12 +168,11 @@ func getTagsForMultipleQuestions(db tutorme.DB, questionIDs []int) (*map[int][]t
 func (qs *QuestionStore) CreateQuestion(db tutorme.DB, question tutorme.Question) (*tutorme.Question, error) {
 	sql, args, err := sq.
 		Insert("question").
-		Columns("title", "body", "from_id", "images").
+		Columns("title", "body", "from_id").
 		Values(
 			question.Title,
 			question.Body,
 			question.FromID,
-			question.Images,
 		).
 		Suffix("RETURNING *").PlaceholderFormat(sq.Dollar).ToSql()
 
@@ -204,7 +203,7 @@ func (qs *QuestionStore) CreateQuestion(db tutorme.DB, question tutorme.Question
 	return &createdQuestion, err
 }
 
-func (qs *QuestionStore) UpdateQuestion(db tutorme.DB, clientID string, id int, title string, body string, images []string, tags []int) (*tutorme.Question, error) {
+func (qs *QuestionStore) UpdateQuestion(db tutorme.DB, clientID string, id int, title string, body string, tags []int) (*tutorme.Question, error) {
 	query := sq.Update("question")
 	if title != "" {
 		query = query.Set("title", title)
@@ -212,10 +211,6 @@ func (qs *QuestionStore) UpdateQuestion(db tutorme.DB, clientID string, id int, 
 
 	if body != "" {
 		query = query.Set("body", body)
-	}
-
-	if len(images) != 0 {
-		query = query.Set("images", images)
 	}
 
 	sql, args, err := query.Suffix("RETURNING *").PlaceholderFormat(sq.Dollar).ToSql()
