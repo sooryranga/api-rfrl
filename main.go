@@ -96,7 +96,7 @@ func main() {
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)
 	questionUseCase := usecases.NewQuestionUsesCase(db, clientStore, questionStore)
 
-	routes.RegisterAuthRoutes(e, validate, signingKey, authUseCase)
+	routes.RegisterAuthRoutes(e, validate, signingKey, publicKey, authUseCase)
 	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
 	routes.RegisterDocumentRoutes(e, validate, publicKey, documentUseCase)
 	routes.RegisterSessionRoutes(e, validate, publicKey, sessionUseCase)

@@ -176,6 +176,16 @@ func (au *AuthUseCase) LoginEmail(email string, password string) (*tutorme.Clien
 	return c, nil
 }
 
+func (au *AuthUseCase) LoginWithJWT(clientID string) (*tutorme.Client, error) {
+	c, err := au.clientStore.GetClientFromID(au.db, clientID)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "LoginWithJWT")
+	}
+
+	return c, nil
+}
+
 // LoginGoogle allow user to login with their google oauth token
 func (au *AuthUseCase) LoginGoogle(token string) (*tutorme.Client, error) {
 	return au.authStore.GetByToken(au.db, token, tutorme.GOOGLE)
