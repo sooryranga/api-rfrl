@@ -25,8 +25,8 @@ WHERE client.id = $1
 	WHERE client.id IN (?)
 `
 	insertClientSQL string = `
-INSERT INTO client (first_name, last_name, about, email, photo)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO client (first_name, last_name, about, email, photo, is_tutor)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *
 	`
 )
@@ -72,8 +72,9 @@ func (cl *ClientStore) GetClientFromIDs(db tutorme.DB, ids []string) (*[]tutorme
 
 // CreateClient creates a new row for a client in the database
 func (cl *ClientStore) CreateClient(db tutorme.DB, client *tutorme.Client) (*tutorme.Client, error) {
-	row := db.QueryRowx(
-		insertClientSQL,
+	columns := []string{"first_name", "last_name", "about", "email", "photo"}
+	values := make([]interface{}, 0)
+	values = append(values,
 		client.FirstName,
 		client.LastName,
 		client.About,
@@ -81,9 +82,32 @@ func (cl *ClientStore) CreateClient(db tutorme.DB, client *tutorme.Client) (*tut
 		client.Photo,
 	)
 
+	if client.IsTutor.Valid {
+		columns = append(columns, "is_tutor")
+		values = append(values, client.IsTutor)
+	}
+
+	query := sq.Insert("client").
+		Columns(columns...).
+		Values(values...).
+		Suffix("RETURNING *")
+
+	sql, args, err := query.
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return nil, errors.Wrap(err, "CreateClient")
+	}
+
+	row := db.QueryRowx(
+		sql,
+		args...,
+	)
+
 	var m tutorme.Client
 
-	err := row.StructScan(&m)
+	err = row.StructScan(&m)
 	return &m, errors.Wrap(err, "CreateClient")
 }
 
@@ -104,6 +128,9 @@ func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Cl
 	}
 	if client.Email.Valid {
 		query = query.Set("email", client.Email)
+	}
+	if client.IsTutor.Valid {
+		query = query.Set("is_tutor", client.IsTutor)
 	}
 
 	sql, args, err := query.

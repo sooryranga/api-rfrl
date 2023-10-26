@@ -3,6 +3,7 @@ package usecases
 import (
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/jmoiron/sqlx"
+	"gopkg.in/guregu/null.v4"
 )
 
 // ClientUseCase holds all business related functions for client
@@ -23,6 +24,7 @@ func (cl *ClientUseCase) CreateClient(
 	about string,
 	email string,
 	photo string,
+	isTutor null.Bool,
 ) (*tutorme.Client, error) {
 	client := tutorme.NewClient(
 		firstName,
@@ -30,6 +32,7 @@ func (cl *ClientUseCase) CreateClient(
 		about,
 		email,
 		photo,
+		isTutor,
 	)
 	return cl.clientStore.CreateClient(cl.db, client)
 }
@@ -42,6 +45,7 @@ func (cl *ClientUseCase) UpdateClient(
 	about string,
 	email string,
 	photo string,
+	isTutor null.Bool,
 ) (*tutorme.Client, error) {
 	client := tutorme.NewClient(
 		firstName,
@@ -49,6 +53,7 @@ func (cl *ClientUseCase) UpdateClient(
 		about,
 		email,
 		photo,
+		isTutor,
 	)
 
 	return cl.clientStore.UpdateClient(cl.db, id, client)

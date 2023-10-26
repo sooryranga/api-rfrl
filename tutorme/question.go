@@ -12,8 +12,8 @@ type Tags struct {
 
 type Question struct {
 	ID         int       `db:"id" json:"id"`
-	CreatedAt  time.Time `db:"created_at" json:"createdAt" mapstructure:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updatedAt" mapstructure:"updated_at"`
+	CreatedAt  time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt  time.Time `db:"updated_at" json:"updatedAt"`
 	Title      string    `db:"title" json:"title"`
 	Body       string    `db:"body" json:"body"`
 	TagIDs     []int     `db:"tag_ids" json:"-"`

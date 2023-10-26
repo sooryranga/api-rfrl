@@ -70,9 +70,10 @@ func (au *AuthUseCase) SignupGoogle(
 	lastName string,
 	photo string,
 	about string,
+	isTutor null.Bool,
 ) (*tutorme.Client, error) {
 
-	newClient := tutorme.NewClient(firstName, lastName, about, email, photo)
+	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor)
 	auth := tutorme.Auth{
 		AuthType: tutorme.GOOGLE,
 		Token:    null.StringFrom(token),
@@ -89,9 +90,10 @@ func (au *AuthUseCase) SignupLinkedIn(
 	lastName string,
 	photo string,
 	about string,
+	isTutor null.Bool,
 ) (*tutorme.Client, error) {
 
-	newClient := tutorme.NewClient(firstName, lastName, about, email, photo)
+	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor)
 
 	auth := tutorme.Auth{
 		AuthType: tutorme.LINKEDIN,
@@ -110,6 +112,7 @@ func (au *AuthUseCase) SignupEmail(
 	lastName string,
 	photo string,
 	about string,
+	isTutor null.Bool,
 ) (*tutorme.Client, error) {
 	hash, err := hashAndSalt([]byte(password))
 
@@ -117,7 +120,7 @@ func (au *AuthUseCase) SignupEmail(
 		return nil, err
 	}
 
-	newClient := tutorme.NewClient(firstName, lastName, about, email, photo)
+	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor)
 	auth := tutorme.Auth{
 		Email:        null.StringFrom(email),
 		PasswordHash: hash,

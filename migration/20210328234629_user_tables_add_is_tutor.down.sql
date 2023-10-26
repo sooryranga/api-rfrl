@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE IF EXISTS client 
+  DROP COLUMN IF EXISTS is_tutor;
+
+COMMIT;

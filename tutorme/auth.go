@@ -86,9 +86,9 @@ type AuthStore interface {
 
 type AuthUseCase interface {
 	SignupWithToken(newClient *Client, auth *Auth) (*Client, error)
-	SignupGoogle(token string, email string, firstName string, lastName string, photo string, about string) (*Client, error)
-	SignupLinkedIn(token string, email string, firstName string, lastName string, photo string, about string) (*Client, error)
-	SignupEmail(password string, token string, email string, firstName string, lastName string, photo string, about string) (*Client, error)
+	SignupGoogle(token string, email string, firstName string, lastName string, photo string, about string, isTutor null.Bool) (*Client, error)
+	SignupLinkedIn(token string, email string, firstName string, lastName string, photo string, about string, isTutor null.Bool) (*Client, error)
+	SignupEmail(password string, token string, email string, firstName string, lastName string, photo string, about string, isTutor null.Bool) (*Client, error)
 	LoginEmail(email string, password string) (*Client, error)
 	LoginGoogle(token string) (*Client, error)
 	LoginLinkedIn(token string) (*Client, error)

@@ -7,17 +7,19 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gopkg.in/guregu/null.v4"
 )
 
 type (
 	// ClientPayload is the struct used to hold payload from /client
 	ClientPayload struct {
-		ID        string `path:"id"`
-		Email     string `json:"email" validate:"omitempty,email"`
-		FirstName string `json:"firstName"`
-		LastName  string `json:"lastName"`
-		Photo     string `json:"profileImageURL"`
-		About     string `json:"about"`
+		ID        string    `path:"id"`
+		Email     string    `json:"email" validate:"omitempty,email"`
+		FirstName string    `json:"firstName"`
+		LastName  string    `json:"lastName"`
+		Photo     string    `json:"profileImageURL"`
+		About     string    `json:"about"`
+		IsTutor   null.Bool `json:"is_tutor"`
 	}
 
 	// EducationPaylod is the struct used to create education
@@ -70,6 +72,7 @@ func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
 		payload.About,
 		payload.Email,
 		payload.Photo,
+		payload.IsTutor,
 	)
 
 	if err != nil {
@@ -100,6 +103,7 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 		payload.About,
 		payload.Email,
 		payload.Photo,
+		payload.IsTutor,
 	)
 
 	if err != nil {
