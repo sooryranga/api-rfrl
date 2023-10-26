@@ -63,3 +63,7 @@ func (cl *ClientUseCase) UpdateClient(
 func (cl *ClientUseCase) GetClient(id string) (*tutorme.Client, error) {
 	return cl.clientStore.GetClientFromID(cl.db, id)
 }
+
+func (cl *ClientUseCase) GetClients(options tutorme.GetClientsOptions) (*[]tutorme.Client, error) {
+	return cl.clientStore.GetClients(cl.db, options)
+}

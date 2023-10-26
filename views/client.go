@@ -125,3 +125,32 @@ func (cv *ClientView) GetClientEndpoint(c echo.Context) error {
 	return c.JSON(http.StatusOK, client)
 
 }
+
+func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	isTutor := null.Bool{}
+	err = isTutor.UnmarshalText([]byte(c.QueryParam("is_tutor")))
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	options := tutorme.GetClientsOptions{IsTutor: isTutor}
+
+	if !claims.Admin {
+		options.IsTutor = null.NewBool(true, true)
+	}
+
+	clients, err := cv.ClientUseCase.GetClients(options)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, clients)
+}

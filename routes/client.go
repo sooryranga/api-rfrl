@@ -26,4 +26,13 @@ func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.P
 	r.POST("/", clientView.CreateClientEndpoint)
 	r.PUT("/:id/", clientView.UpdateClientEndpoint)
 	r.GET("/:id/", clientView.GetClientEndpoint)
+
+	tutoringClientR := e.Group("/clients")
+	tutoringClientR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    key,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
+
+	tutoringClientR.GET("/", clientView.GetClientsEndpoint)
 }
