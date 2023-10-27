@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 )
 
@@ -33,8 +34,10 @@ type DB interface {
 }
 
 func HandleTransactions(tx *sqlx.Tx, err *error) {
+	log.Errorj(log.JSON{"err": *err, "*err != nil": *err != nil})
 	if p := recover(); p != nil {
 		tx.Rollback()
+		log.Error(p)
 		panic(p)
 	} else if *err != nil {
 		rollbackErr := tx.Rollback()

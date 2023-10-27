@@ -89,8 +89,9 @@ func main() {
 	questionStore := store.NewQuestionStore()
 
 	// Usecases
+	emailerUseCase := usecases.NewEmailerUseCase()
 	authUseCase := usecases.NewAuthUseCase(*db, authStore, clientStore)
-	clientUseCase := usecases.NewClientUseCase(*db, clientStore)
+	clientUseCase := usecases.NewClientUseCase(*db, clientStore, authStore, emailerUseCase)
 	documentUseCase := usecases.NewDocumentUseCase(*db, documentStore)
 	sessionUseCase := usecases.NewSessionUseCase(*db, sessionStore)
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)

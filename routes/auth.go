@@ -22,11 +22,11 @@ func RegisterAuthRoutes(e *echo.Echo, validate *validator.Validate, privateKey *
 	validate.RegisterStructValidation(views.SignUpPayloadValidation, views.SignUpPayload{})
 	e.POST("/signup/", authview.Signup)
 
-	r := e.Group("/login-authorized")
-	r.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+	loginAuth := e.Group("/login-authorized")
+	loginAuth.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    publicKey,
 		SigningMethod: tutorme.AlgorithmRS256,
 		Claims:        &tutorme.JWTClaims{},
 	}))
-	r.POST("/", authview.AuthorizedLogin)
+	loginAuth.POST("/", authview.AuthorizedLogin)
 }

@@ -1,6 +1,8 @@
 package usecases
 
 import (
+	"errors"
+
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
@@ -10,11 +12,23 @@ import (
 type ClientUseCase struct {
 	db          *sqlx.DB
 	clientStore tutorme.ClientStore
+	emailer     tutorme.EmailerUseCase
+	authStore   tutorme.AuthStore
 }
 
 // NewClientUseCase creates new ClientUseCase
-func NewClientUseCase(db sqlx.DB, clientStore tutorme.ClientStore) *ClientUseCase {
-	return &ClientUseCase{&db, clientStore}
+func NewClientUseCase(
+	db sqlx.DB,
+	clientStore tutorme.ClientStore,
+	authStore tutorme.AuthStore,
+	emailer tutorme.EmailerUseCase,
+) *ClientUseCase {
+	return &ClientUseCase{
+		&db,
+		clientStore,
+		emailer,
+		authStore,
+	}
 }
 
 // CreateClient use case to create a new client
@@ -66,4 +80,75 @@ func (cl *ClientUseCase) GetClient(id string) (*tutorme.Client, error) {
 
 func (cl *ClientUseCase) GetClients(options tutorme.GetClientsOptions) (*[]tutorme.Client, error) {
 	return cl.clientStore.GetClients(cl.db, options)
+}
+
+func (cl *ClientUseCase) CreateEmailVerification(clientID string, email string, emailType string) error {
+
+	passcode, err := cl.emailer.SendEmailVerification(email)
+
+	if err != nil {
+		return err
+	}
+
+	if emailType == tutorme.UserEmail {
+		exists, err := cl.authStore.CheckEmailAuthExists(cl.db, clientID, email)
+
+		if err != nil {
+			return err
+		}
+
+		if exists {
+			return errors.New("Email is already in use")
+		}
+	}
+
+	return cl.clientStore.CreateEmailVerification(cl.db, clientID, email, emailType, passcode)
+}
+
+func (cl *ClientUseCase) VerifyEmail(clientID string, email string, emailType string, passCode string) (*tutorme.Client, error) {
+	var err = new(error)
+	var tx *sqlx.Tx
+
+	tx, *err = cl.db.Beginx()
+
+	defer tutorme.HandleTransactions(tx, err)
+
+	*err = cl.clientStore.VerifyEmail(tx, clientID, email, emailType, passCode)
+
+	if *err != nil {
+		return nil, *err
+	}
+
+	if emailType == tutorme.UserEmail {
+		*err = cl.authStore.UpdateAuthEmail(tx, clientID, email)
+
+		if *err != nil {
+			return nil, *err
+		}
+	}
+
+	var client tutorme.Client
+	var updatedClient *tutorme.Client
+
+	if emailType == tutorme.WorkEmail {
+		client = tutorme.Client{WorkEmail: null.NewString(email, true), VerifiedWorkEmail: null.NewBool(true, true)}
+	} else {
+		client = tutorme.Client{Email: null.NewString(email, true), VerifiedEmail: null.NewBool(true, true)}
+	}
+
+	updatedClient, *err = cl.clientStore.UpdateClient(tx, clientID, &client)
+
+	if *err != nil {
+		return nil, *err
+	}
+
+	return updatedClient, nil
+}
+
+func (cl *ClientUseCase) GetVerificationEmail(clientID string, emailType string) (string, error) {
+	return cl.clientStore.GetVerificationEmail(cl.db, clientID, emailType)
+}
+
+func (cl *ClientUseCase) DeleteVerificationEmail(clientID string, emailType string) error {
+	return cl.clientStore.DeleteVerificationEmail(cl.db, clientID, emailType)
 }

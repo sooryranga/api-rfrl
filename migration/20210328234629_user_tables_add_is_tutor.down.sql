@@ -3,4 +3,13 @@ BEGIN;
 ALTER TABLE IF EXISTS client 
   DROP COLUMN IF EXISTS is_tutor;
 
+ALTER TABLE IF EXISTS client
+  DROP COLUMN IF EXISTS verified_work_email;
+
+ALTER TABLE IF EXISTS client
+  DROP COLUMN IF EXISTS verified_email;
+
+ALTER TABLE IF EXISTS client
+  DROP COLUMN IF EXISTS work_email;
+
 COMMIT;

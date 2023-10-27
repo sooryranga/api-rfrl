@@ -1,12 +1,14 @@
 package views
 
 import (
+	"fmt"
 	"net/http"
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -30,6 +32,13 @@ type (
 		start           string `json:"start" validate:"datetime"`
 		end             string `json:"end" validate:"omitempty, datetime"`
 		InstitutionLogo string `json:"institutionLogo"`
+	}
+
+	// VerifyEmailPayload is the struct used to verify email
+	VerifyEmailPayload struct {
+		Email    string `json:"email" validate:"email"`
+		Type     string `json:"type" validate:"required,oneof= user work"`
+		PassCode string `json:"passCode" validate:"omitempty,len=6,numeric"`
 	}
 )
 
@@ -153,4 +162,137 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, clients)
+}
+
+func (cv *ClientView) VerifyEmail(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	payload := VerifyEmailPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	err = cv.ClientUseCase.CreateEmailVerification(
+		claims.ClientID,
+		payload.Email,
+		payload.Type,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (cv *ClientView) VerifyEmailPassCode(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	payload := VerifyEmailPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if len(payload.PassCode) != 6 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid passcode")
+	}
+
+	log.Errorj(log.JSON{"VerifyEmailPayload": payload})
+	client, err := cv.ClientUseCase.VerifyEmail(
+		claims.ClientID,
+		payload.Email,
+		payload.Type,
+		payload.PassCode,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, client)
+}
+
+func (cv *ClientView) GetVerificationEmails(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	emailType := c.QueryParam("type")
+
+	if emailType == "" {
+		emailType = tutorme.WorkEmail
+	} else if emailType != tutorme.WorkEmail && emailType != tutorme.UserEmail {
+		return echo.NewHTTPError(
+			http.StatusBadRequest,
+			fmt.Sprintf(
+				"Only %s and %s are supported type for verification",
+				tutorme.WorkEmail,
+				tutorme.UserEmail,
+			),
+		)
+	}
+
+	email, err := cv.ClientUseCase.GetVerificationEmail(
+		claims.ClientID,
+		emailType,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	type GetVerificationEmailsResponse struct {
+		Email string `json:"email"`
+	}
+
+	return c.JSON(
+		http.StatusOK,
+		GetVerificationEmailsResponse{email},
+	)
+
+}
+
+func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	emailType := c.QueryParam("type")
+
+	if emailType == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Undefined type in query param")
+	}
+
+	if emailType != tutorme.WorkEmail && emailType != tutorme.UserEmail {
+		return echo.NewHTTPError(
+			http.StatusBadRequest,
+			fmt.Sprintf(
+				"Only %s and %s are supported type for verification",
+				tutorme.WorkEmail,
+				tutorme.UserEmail,
+			),
+		)
+	}
+
+	err = cv.ClientUseCase.DeleteVerificationEmail(claims.ClientID, emailType)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.NoContent(http.StatusOK)
 }
