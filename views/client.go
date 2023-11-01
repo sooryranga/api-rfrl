@@ -21,7 +21,7 @@ type (
 		LastName  string    `json:"lastName"`
 		Photo     string    `json:"profileImageURL"`
 		About     string    `json:"about"`
-		IsTutor   null.Bool `json:"is_tutor"`
+		IsTutor   null.Bool `json:"isTutor"`
 	}
 
 	// EducationPaylod is the struct used to create education

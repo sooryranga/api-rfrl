@@ -32,8 +32,8 @@ type (
 	}
 
 	ClientSelectionOfSessionEventPayload struct {
-		SessionID int  `path:'sessionId"`
-		CanAttend bool `json:"canAttend" validate:"required"`
+		SessionID int   `path:'sessionId"`
+		CanAttend *bool `json:"canAttend" validate:"required"`
 	}
 )
 
@@ -236,7 +236,7 @@ func (sv *SessionView) CreateClientActionOnSessionEvent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	err = sv.SessionUseCase.ClientActionOnSessionEvent(claims.ClientID, payload.SessionID, payload.CanAttend)
+	err = sv.SessionUseCase.ClientActionOnSessionEvent(claims.ClientID, payload.SessionID, *payload.CanAttend)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

@@ -26,7 +26,7 @@ type (
 	UpdateCompanyEmailViewPayload struct {
 		Name        string `json:"name" validate:"gte=3"`
 		EmailDomain string `json:"emailDomain" validate:"gte=2"`
-		Active      bool   `json:"active"`
+		Active      *bool  `json:"active" validate:"required"`
 	}
 )
 
@@ -38,6 +38,10 @@ func (comv *CompanyView) SuggestCompanyView(c echo.Context) error {
 	payload := SuggestCompanyPayload{}
 
 	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -54,6 +58,10 @@ func (comv *CompanyView) UpdateCompanyView(c echo.Context) error {
 	payload := UpdateCompanyViewPayload{}
 
 	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -89,6 +97,10 @@ func (comv *CompanyView) UpdateCompanyEmailView(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err := c.Validate(payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
@@ -102,7 +114,7 @@ func (comv *CompanyView) UpdateCompanyEmailView(c echo.Context) error {
 	err = comv.CompanyUseCase.UpdateCompanyEmail(
 		payload.Name,
 		payload.EmailDomain,
-		payload.Active,
+		*payload.Active,
 	)
 
 	if err != nil {
@@ -126,8 +138,8 @@ func (comv *CompanyView) GetCompanies(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if claims.Admin == false {
-		active.Bool = false
+	if !claims.Admin && active.Valid && !active.Bool {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Cannot filter for non active companies")
 	}
 
 	companies, err := comv.CompanyUseCase.GetCompanies(active.Bool)

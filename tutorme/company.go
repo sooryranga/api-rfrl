@@ -31,14 +31,13 @@ type CompanyUseCase interface {
 	UpdateCompany(name string, photo null.String, industry null.String, about null.String, active null.Bool) (*Company, error)
 	UpdateCompanyEmail(name string, emailDomain string, active bool) error
 	GetCompanies(active bool) (*[]Company, error)
-	GetEmailDomainForCompany(name string) (*[]string, error)
 }
 
 type CompanyStore interface {
 	SelectCompany(db DB, name string) (*Company, error)
 	CreateOrSelectCompany(db DB, name string) (*Company, error)
 	CreateCompanyEmailDomain(db DB, name string, emailDomain string) (string, error)
-	UpdatedCompany(db DB, company Company) (*Company, error)
+	UpdateCompany(db DB, company Company) (*Company, error)
 	UpdateOrCreateCompanyEmail(db DB, name string, emailDomain string, active bool) error
 	GetCompanies(db DB, active bool) (*[]Company, error)
 }

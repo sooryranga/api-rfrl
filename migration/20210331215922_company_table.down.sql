@@ -1,5 +1,13 @@
 BEGIN;
 
-DROP TABLE IF EXISTS comapny;
+ALTER TABLE IF EXISTS client 
+  DROP CONSTRAINT IF EXISTS fk_company_name;
+
+ALTER TABLE IF EXISTS client 
+  DROP COLUMN IF EXISTS company_name;
+
+DROP TABLE IF EXISTS company_email;
+
+DROP TABLE IF EXISTS company;
 
 COMMIT;
