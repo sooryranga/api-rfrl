@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	firebase "firebase.google.com/go"
 	"github.com/Arun4rangan/api-tutorme/routes"
 	"github.com/Arun4rangan/api-tutorme/store"
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
@@ -18,6 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"google.golang.org/api/option"
 )
 
 // Validator for echo
@@ -57,6 +60,21 @@ func main() {
 		panic(fmt.Sprintf("%v", err))
 	}
 
+	//firestore
+	ctx := context.Background()
+	sa := option.WithCredentialsFile(os.Getenv("FIREBASE_AUTH_FILE"))
+	app, err := firebase.NewApp(ctx, nil, sa)
+
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+	defer client.Close()
+
 	// Validator
 	validate := validator.New()
 
@@ -88,11 +106,12 @@ func main() {
 	tutorReviewStore := store.NewTutorReviewStore()
 	questionStore := store.NewQuestionStore()
 	companyStore := store.NewCompanyStore()
+	fireStoreClient := store.NewFireStore(client)
 
 	// Usecases
 	emailerUseCase := usecases.NewEmailerUseCase()
 	authUseCase := usecases.NewAuthUseCase(*db, authStore, clientStore)
-	clientUseCase := usecases.NewClientUseCase(*db, clientStore, authStore, emailerUseCase)
+	clientUseCase := usecases.NewClientUseCase(*db, clientStore, authStore, emailerUseCase, fireStoreClient)
 	documentUseCase := usecases.NewDocumentUseCase(*db, documentStore)
 	sessionUseCase := usecases.NewSessionUseCase(*db, sessionStore)
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)

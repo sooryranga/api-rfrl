@@ -8,6 +8,7 @@ services:
       - db-password
       - rsa
       - public-rsa
+      - fire-base-auth
     depends_on:
       database:
         condition: service_healthy
@@ -22,6 +23,7 @@ services:
       - POSTGRES_URI=postgres://tutorme:__PASSWORD__@database:5432/tutorme?sslmode=disable
       - RSA_FILE=/run/secrets/rsa
       - PUBLIC_RSA_FILE=/run/secrets/public-rsa
+      - FIREBASE_AUTH_FILE=/run/secrets/fire-base-auth
     volumes:
       - ./:/app
 
@@ -52,6 +54,8 @@ volumes:
 secrets:
   db-password:
     file: db/password.txt
+  fire-base-auth:
+    file: firebase/tutorproject-292921-firebase-adminsdk-ki5at-7e9eb74043.json
   rsa:
     file: id_rsa
   public-rsa:
