@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS question (
   title VARCHAR(120) NOT NULL,
   body TEXT NOT NULL,
   applicants INT DEFAULT 0,
-  images text[],
   from_id UUID REFERENCES client (id) ON DELETE CASCADE
 );
 

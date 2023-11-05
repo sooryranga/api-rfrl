@@ -1,7 +1,7 @@
 BEGIN;
 
-DROP TABLE IF EXISTS document;
-
 DROP TABLE IF EXISTS document_order;
+
+DROP TABLE IF EXISTS document;
 
 COMMIT;

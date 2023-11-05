@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"crypto/rsa"
+	"database/sql"
 	"fmt"
 	"log"
 
@@ -18,48 +19,54 @@ type AuthUseCase struct {
 	db          *sqlx.DB
 	authStore   tutorme.AuthStore
 	clientStore tutorme.ClientStore
+	fireStore   tutorme.FirstStoreClient
 }
 
 // NewAuthUseCase creates new AuthUseCase
-func NewAuthUseCase(db sqlx.DB, authStore tutorme.AuthStore, clientStore tutorme.ClientStore) *AuthUseCase {
-	return &AuthUseCase{&db, authStore, clientStore}
+func NewAuthUseCase(
+	db sqlx.DB,
+	authStore tutorme.AuthStore,
+	clientStore tutorme.ClientStore,
+	fireStore tutorme.FirstStoreClient,
+) *AuthUseCase {
+	return &AuthUseCase{&db, authStore, clientStore, fireStore}
 }
 
 // SignupWithToken allows user to sign up with token from google or linkedin auth
 func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.Auth) (*tutorme.Client, error) {
-	tx, err := au.db.Beginx()
+	var err = new(error)
+	var tx *sqlx.Tx
 
-	if err != nil {
-		return nil, err
+	tx, *err = au.db.Beginx()
+
+	defer tutorme.HandleTransactions(tx, err)
+
+	if *err != nil {
+		return nil, *err
 	}
 
-	newClient, err = au.clientStore.CreateClient(tx, newClient)
+	var createdClient *tutorme.Client
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, err
+	createdClient, *err = au.clientStore.CreateClient(tx, newClient)
+
+	if *err != nil {
+		return nil, *err
 	}
 
-	_, err = au.authStore.CreateWithToken(tx, auth, newClient.ID)
+	_, *err = au.authStore.CreateWithToken(tx, auth, createdClient.ID)
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, errors.Wrap(err, fmt.Sprintf("%v", newClient.ID))
+	if *err != nil {
+		return nil, *err
 	}
 
-	err = tx.Commit()
+	*err = au.fireStore.CreateClient(
+		createdClient.ID,
+		createdClient.Photo.String,
+		createdClient.FirstName.String,
+		createdClient.LastName.String,
+	)
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, err
-	}
-	return newClient, nil
+	return createdClient, *err
 }
 
 // SignupGoogle allows user to sign up with google
@@ -114,10 +121,10 @@ func (au *AuthUseCase) SignupEmail(
 	about string,
 	isTutor null.Bool,
 ) (*tutorme.Client, error) {
-	hash, err := hashAndSalt([]byte(password))
+	hash, hashError := hashAndSalt([]byte(password))
 
-	if err != nil {
-		return nil, err
+	if hashError != nil {
+		return nil, hashError
 	}
 
 	newClient := tutorme.NewClient(firstName, lastName, about, email, photo, isTutor)
@@ -126,37 +133,39 @@ func (au *AuthUseCase) SignupEmail(
 		PasswordHash: hash,
 	}
 
-	tx, err := au.db.Beginx()
-	if err != nil {
-		return nil, err
+	var err = new(error)
+	var tx *sqlx.Tx
+
+	tx, *err = au.db.Beginx()
+
+	defer tutorme.HandleTransactions(tx, err)
+
+	if *err != nil {
+		return nil, *err
 	}
 
-	newClient, err = au.clientStore.CreateClient(tx, newClient)
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, err
+	var createdClient *tutorme.Client
+
+	createdClient, *err = au.clientStore.CreateClient(tx, newClient)
+
+	if *err != nil {
+		return nil, *err
 	}
 
-	_, err = au.authStore.CreateWithEmail(tx, &auth, newClient.ID)
+	_, *err = au.authStore.CreateWithEmail(tx, &auth, createdClient.ID)
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, err
+	if *err != nil {
+		return nil, *err
 	}
 
-	err = tx.Commit()
+	*err = au.fireStore.CreateClient(
+		createdClient.ID,
+		createdClient.Photo.String,
+		createdClient.FirstName.String,
+		createdClient.LastName.String,
+	)
 
-	if err != nil {
-		if rb := tx.Rollback(); rb != nil {
-			return nil, errors.Wrap(rb, err.Error())
-		}
-		return nil, err
-	}
-	return newClient, nil
+	return createdClient, *err
 }
 
 // LoginEmail allows user to login with email by checking password hash against the has the passed in
@@ -183,6 +192,9 @@ func (au *AuthUseCase) LoginWithJWT(clientID string) (*tutorme.Client, error) {
 	c, err := au.clientStore.GetClientFromID(au.db, clientID)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New(fmt.Sprintf("Client not found with %s", clientID))
+		}
 		return nil, errors.Wrap(err, "LoginWithJWT")
 	}
 

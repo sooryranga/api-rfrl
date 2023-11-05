@@ -58,6 +58,10 @@ func (cl *ClientUseCase) CreateClient(
 
 	defer tutorme.HandleTransactions(tx, err)
 
+	if *err != nil {
+		return nil, *err
+	}
+
 	var createdClient *tutorme.Client
 	createdClient, *err = cl.clientStore.CreateClient(cl.db, client)
 
@@ -108,7 +112,11 @@ func (cl *ClientUseCase) UpdateClient(
 		return nil, *err
 	}
 
-	*err = cl.fireStore.UpdateClient(id, client.Photo, client.FirstName, client.LastName)
+	if client.FirstName.Valid || client.LastName.Valid {
+		*err = cl.fireStore.UpdateClient(id, client.Photo, updatedClient.FirstName, updatedClient.LastName)
+	} else {
+		*err = cl.fireStore.UpdateClient(id, client.Photo, client.FirstName, client.LastName)
+	}
 
 	return updatedClient, *err
 }
