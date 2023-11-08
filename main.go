@@ -113,7 +113,7 @@ func main() {
 	authUseCase := usecases.NewAuthUseCase(*db, authStore, clientStore, fireStoreClient)
 	clientUseCase := usecases.NewClientUseCase(*db, clientStore, authStore, emailerUseCase, fireStoreClient)
 	documentUseCase := usecases.NewDocumentUseCase(*db, documentStore)
-	sessionUseCase := usecases.NewSessionUseCase(*db, sessionStore)
+	sessionUseCase := usecases.NewSessionUseCase(*db, sessionStore, clientStore)
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)
 	questionUseCase := usecases.NewQuestionUsesCase(db, clientStore, questionStore)
 	companyUseCase := usecases.NewCompanyUseCase(*db, companyStore)

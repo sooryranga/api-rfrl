@@ -68,7 +68,6 @@ type SessionStore interface {
 	GetSessionByIDForUpdate(db DB, ID int) (*Session, error)
 	GetSessionEventByID(db DB, sessionID int, ID int) (*Event, error)
 	CheckSessionsIsForClient(db DB, client string, sessionIDs []int) (bool, error)
-	CheckOverlapingEvents(db DB, clientIDs []string, events *[]Event) (bool, error)
 	DeleteSession(db DB, ID int) error
 	UpdateSession(db DB, ID int, by string, state string, EventID null.Int) (*Session, error)
 	CreateSession(db DB, session *Session) (*Session, error)
@@ -77,7 +76,6 @@ type SessionStore interface {
 	CreateClientSelectionOfEvent(db DB, sessionID int, clientID string, canAttend bool) error
 	DeleteSessionEvents(db DB, eventIds []int) error
 	CheckClientsAttendedTutorSession(db DB, tutorID string, clientIDs []string) (bool, error)
-	GetRelatedEventsByClientIDs(db DB, clientIDs []string, startTime null.Time, endTime null.Time, state null.String) (*[]Event, error)
 }
 
 type SessionUseCase interface {
