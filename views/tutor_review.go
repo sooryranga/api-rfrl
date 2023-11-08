@@ -36,7 +36,7 @@ func (trv *TutorReviewView) CreateTutorReviewEndpoint(c echo.Context) error {
 	}
 
 	if claims.ClientID == payload.TutorID {
-		return echo.NewHTTPError(http.StatusBadGateway, "Cannot create a review for yourself")
+		return echo.NewHTTPError(http.StatusBadRequest, "Cannot create a review for yourself")
 	}
 
 	tutorReview, err := trv.TutorReviewUseCase.CreateTutorReview(
@@ -63,7 +63,7 @@ func (trv *TutorReviewView) UpdateTutorReviewEndpoint(c echo.Context) error {
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	tutorReview, err := trv.TutorReviewUseCase.UpdateTutorReview(
@@ -84,19 +84,19 @@ func (trv *TutorReviewView) DeleteTutorReviewEndpoint(c echo.Context) error {
 	payload := TutorReviewPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	err = trv.TutorReviewUseCase.DeleteTutorReview(claims.ClientID, payload.ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -112,7 +112,7 @@ func (trv *TutorReviewView) GetTutorReviewEndpoint(c echo.Context) error {
 	tutorReview, err := trv.TutorReviewUseCase.GetTutorReview(ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, tutorReview)
@@ -130,7 +130,7 @@ func (trv *TutorReviewView) GetTutorReviewsEndpoint(c echo.Context) error {
 	tutorReviews, err := trv.TutorReviewUseCase.GetTutorReviews(clientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, *tutorReviews)
@@ -146,7 +146,7 @@ func (trv *TutorReviewView) GetTutorReviewsAggregateEndpoint(c echo.Context) err
 	aggregateReview, err := trv.TutorReviewUseCase.GetTutorReviewsAggregate(clientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, *aggregateReview)

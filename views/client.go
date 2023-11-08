@@ -158,7 +158,7 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 	clients, err := cv.ClientUseCase.GetClients(options)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, clients)

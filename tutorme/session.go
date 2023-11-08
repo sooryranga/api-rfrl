@@ -11,6 +11,7 @@ type Session struct {
 	CreatedAt       time.Time `db:"created_at" json:"createdAt"`
 	UpdatedAt       time.Time `db:"updated_at" json:"updatedAt"`
 	TutorID         string    `db:"tutor_id" json:"tutorId"`
+	Tutor           Client    `json:"tutor"`
 	UpdatedBy       string    `db:"updated_by" json:"updatedBy"`
 	RoomID          string    `db:"room_id" json:"roomId"`
 	Clients         []Client  `json:"clients"`
@@ -29,6 +30,7 @@ type Event struct {
 
 const (
 	SCHEDULED string = "scheduled"
+	PENDING   string = "pending"
 )
 
 // NewSession creates new Session
@@ -73,9 +75,9 @@ type SessionStore interface {
 	CreateSessionClients(db DB, sessionID int, clientIDs []string) (*[]Client, error)
 	CreateSessionEvents(db DB, events []Event) (*[]Event, error)
 	CreateClientSelectionOfEvent(db DB, sessionID int, clientID string, canAttend bool) error
-	GetScheduledEventsFromClientIDs(db DB, clientIds []string, state string) (*[]Event, error)
 	DeleteSessionEvents(db DB, eventIds []int) error
 	CheckClientsAttendedTutorSession(db DB, tutorID string, clientIDs []string) (bool, error)
+	GetRelatedEventsByClientIDs(db DB, clientIDs []string, startTime null.Time, endTime null.Time, state null.String) (*[]Event, error)
 }
 
 type SessionUseCase interface {
@@ -88,4 +90,5 @@ type SessionUseCase interface {
 	GetSessionEventByID(clientID string, sessionID int, ID int) (*Event, error)
 	CreateSessionEvent(clientID string, ID int, event Event) (*Event, error)
 	ClientActionOnSessionEvent(clientID string, sessionID int, canAttend bool) error
+	GetSessionRelatedEvents(clientID string, sessionID int, startTime null.Time, endTime null.Time, state null.String) (*[]Event, error)
 }
