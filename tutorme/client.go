@@ -75,7 +75,7 @@ type ClientStore interface {
 	VerifyEmail(db DB, clientID string, email string, emailType string, passCode string) error
 	GetVerificationEmail(db DB, clientID string, emailType string) (string, error)
 	DeleteVerificationEmail(db DB, clientID string, emailType string) error
-	GetRelatedEventsByClientIDs(db DB, clientIDs []string, startTime null.Time, endTime null.Time, state null.String) (*[]Event, error)
+	GetRelatedEventsByClientIDs(db DB, clientIDs []string, start null.Time, end null.Time, state null.String) (*[]Event, error)
 	CheckOverlapingEventsByClientIDs(db DB, clientIDs []string, events *[]Event) (bool, error)
 }
 
@@ -88,5 +88,5 @@ type ClientUseCase interface {
 	VerifyEmail(clientID string, email string, emailType string, passCode string) (*Client, error)
 	GetVerificationEmail(clientID string, emailType string) (string, error)
 	DeleteVerificationEmail(clientID string, emailType string) error
-	GetClientEvents(clientID string, startTime null.Time, endTime null.Time, state null.String) (*[]Event, error)
+	GetClientEvents(clientID string, start null.Time, end null.Time, state null.String) (*[]Event, error)
 }

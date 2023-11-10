@@ -201,6 +201,6 @@ func (cl *ClientUseCase) DeleteVerificationEmail(clientID string, emailType stri
 	return cl.clientStore.DeleteVerificationEmail(cl.db, clientID, emailType)
 }
 
-func (cl *ClientUseCase) GetClientEvents(clientID string, startTime null.Time, endTime null.Time, state null.String) (*[]tutorme.Event, error) {
-	return cl.clientStore.GetRelatedEventsByClientIDs(cl.db, []string{clientID}, startTime, endTime, state)
+func (cl *ClientUseCase) GetClientEvents(clientID string, start null.Time, end null.Time, state null.String) (*[]tutorme.Event, error) {
+	return cl.clientStore.GetRelatedEventsByClientIDs(cl.db, []string{clientID}, start, end, state)
 }

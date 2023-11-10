@@ -24,8 +24,9 @@ func (su *SessionUseCase) CreateSession(
 	updatedBy string,
 	roomID string,
 	clients []string,
+	state string,
 ) (*tutorme.Session, error) {
-	session := tutorme.NewSession(tutorID, updatedBy, roomID)
+	session := tutorme.NewSession(tutorID, updatedBy, roomID, state)
 	var err = new(error)
 	var tx *sqlx.Tx
 
@@ -58,6 +59,12 @@ func (su *SessionUseCase) CreateSession(
 	return session, *err
 }
 
+func (su SessionUseCase) CheckAllClientSessionHasResponded(
+	ID int,
+) (bool, error) {
+	return su.SessionStore.CheckAllClientSessionHasResponded(su.DB, ID)
+}
+
 func (su SessionUseCase) UpdateSession(
 	ID int,
 	updatedBy string,
@@ -72,7 +79,7 @@ func (su SessionUseCase) UpdateSession(
 
 	var session, updatedSession *tutorme.Session
 
-	session, *err = su.SessionStore.GetSessionByIDForUpdate(tx, ID)
+	session, *err = su.SessionStore.GetSessionByIDForUpdate(tx, updatedBy, ID)
 
 	if *err != nil {
 		return nil, *err
@@ -85,49 +92,26 @@ func (su SessionUseCase) UpdateSession(
 		return session, *err
 	}
 
+	updatedSession.CanAttend = session.CanAttend
+
 	return updatedSession, nil
 }
 
 func (su SessionUseCase) GetSessionByID(clientID string, ID int) (*tutorme.Session, error) {
-	session, err := su.SessionStore.GetSessionByID(su.DB, ID)
+	session, err := su.SessionStore.GetSessionByID(su.DB, clientID, ID)
 
 	if err != nil {
 		return nil, err
-	}
-
-	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{session.ID})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !forClient {
-		return nil, errors.New("Session does not belong to client")
 	}
 
 	return session, nil
 }
 
 func (su SessionUseCase) GetSessionByRoomId(clientID string, roomID string, state string) (*[]tutorme.Session, error) {
-	sessions, err := su.SessionStore.GetSessionByRoomID(su.DB, roomID, state)
+	sessions, err := su.SessionStore.GetSessionByRoomID(su.DB, clientID, roomID, state)
 
 	if err != nil {
 		return nil, err
-	}
-
-	var sessionIDs []int
-	for i := 0; i < len(*sessions); i++ {
-		sessionIDs = append(sessionIDs, (*sessions)[i].ID)
-	}
-
-	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, sessionIDs)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !forClient {
-		return nil, errors.New("Room does not belong to client")
 	}
 
 	return sessions, nil
@@ -151,7 +135,7 @@ func canDeleteSession(clientID string, session tutorme.Session) error {
 }
 
 func (su SessionUseCase) DeleteSession(clientID string, ID int) error {
-	session, err := su.SessionStore.GetSessionByID(su.DB, ID)
+	session, err := su.SessionStore.GetSessionByID(su.DB, clientID, ID)
 
 	if err != nil {
 		return err
@@ -178,7 +162,7 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 
 	defer tutorme.HandleTransactions(tx, err)
 
-	session, *err = su.SessionStore.GetSessionByID(tx, ID)
+	session, *err = su.SessionStore.GetSessionByID(tx, clientID, ID)
 
 	if *err != nil {
 		return nil, *err
@@ -231,13 +215,25 @@ func (su SessionUseCase) CreateSessionEvent(clientID string, ID int, event tutor
 
 	_, *err = su.SessionStore.UpdateSession(tx, ID, clientID, "", null.IntFrom(int64(createdEvent.ID)))
 
-	*err = su.SessionStore.DeleteSessionEvents(tx, []int{int(currentEvent.Int64)})
+	if *err != nil {
+		return nil, *err
+	}
+
+	if currentEvent.Valid {
+		*err = su.SessionStore.DeleteSessionEvents(tx, []int{int(currentEvent.Int64)})
+
+		if *err != nil {
+			return nil, *err
+		}
+	}
+
+	*err = su.SessionStore.CreateClientSelectionOfEvent(tx, ID, clientID, true)
 
 	return &createdEvent, *err
 }
 
 func (su SessionUseCase) ClientActionOnSessionEvent(clientID string, sessionID int, canAttend bool) error {
-	session, err := su.SessionStore.GetSessionByID(su.DB, sessionID)
+	session, err := su.SessionStore.GetSessionByID(su.DB, clientID, sessionID)
 
 	if err != nil {
 		return err
@@ -255,18 +251,20 @@ func (su SessionUseCase) ClientActionOnSessionEvent(clientID string, sessionID i
 		return errors.New("Session does not belong to client")
 	}
 
-	return su.SessionStore.CreateClientSelectionOfEvent(su.DB, sessionID, clientID, canAttend)
+	err = su.SessionStore.CreateClientSelectionOfEvent(su.DB, sessionID, clientID, canAttend)
+
+	return err
 }
 
 func (su SessionUseCase) GetSessionRelatedEvents(
 	clientID string,
 	sessionID int,
-	startTime null.Time,
-	endTime null.Time,
+	start null.Time,
+	end null.Time,
 	state null.String,
 ) (*[]tutorme.Event, error) {
 	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
-	session, err := su.SessionStore.GetSessionByID(su.DB, sessionID)
+	session, err := su.SessionStore.GetSessionByID(su.DB, clientID, sessionID)
 
 	if err != nil {
 		return nil, err
@@ -285,20 +283,19 @@ func (su SessionUseCase) GetSessionRelatedEvents(
 		return nil, errors.New("Session does not belong to client")
 	}
 
-	return su.ClientStore.GetRelatedEventsByClientIDs(su.DB, clientIds, startTime, endTime, state)
+	return su.ClientStore.GetRelatedEventsByClientIDs(su.DB, clientIds, start, end, state)
 }
 
-func (su SessionUseCase) GetSessionEventByID(clientID string, sessionID int, ID int) (*tutorme.Event, error) {
+func (su SessionUseCase) GetSessionEventByID(sessionID int, ID int) (*tutorme.Event, error) {
 	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
-	forClient, err := su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, []int{sessionID})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !forClient {
-		return nil, errors.New("Session does not belong to client")
-	}
-
 	return su.SessionStore.GetSessionEventByID(su.DB, sessionID, ID)
+}
+
+func (su SessionUseCase) GetSessionsEvent(sessionIDs []int) (map[int]*tutorme.Event, error) {
+	// This will be a problem for the future because there is no guarantees that two parallel transaction will result in a unique event range
+	return su.SessionStore.GetSessionsEvent(su.DB, sessionIDs)
+}
+
+func (su SessionUseCase) CheckSessionsIsForClient(clientID string, sessionIDs []int) (bool, error) {
+	return su.SessionStore.CheckSessionsIsForClient(su.DB, clientID, sessionIDs)
 }
