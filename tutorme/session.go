@@ -18,7 +18,7 @@ type Session struct {
 	State           string    `db:"state" json:"state"`
 	TargetedEventID null.Int  `db:"event_id" json:"eventId"`
 	CanAttend       null.Bool `db:"can_attend" json:"canAttend"`
-	Event           Event     `json:"event"`
+	Event           *Event    `json:"event"`
 }
 
 type Event struct {
