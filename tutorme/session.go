@@ -18,6 +18,7 @@ type Session struct {
 	State           string    `db:"state" json:"state"`
 	TargetedEventID null.Int  `db:"event_id" json:"eventId"`
 	CanAttend       null.Bool `db:"can_attend" json:"canAttend"`
+	ConferenceID    string    `db:"conference_id" json:"-"`
 	Event           *Event    `json:"event"`
 }
 
@@ -73,7 +74,7 @@ type SessionStore interface {
 	GetSessionEventByID(db DB, sessionID int, ID int) (*Event, error)
 	CheckSessionsIsForClient(db DB, client string, sessionIDs []int) (bool, error)
 	DeleteSession(db DB, ID int) error
-	UpdateSession(db DB, ID int, by string, state string, EventID null.Int) (*Session, error)
+	UpdateSession(db DB, ID int, by string, state string, EventID null.Int, ConferenceID null.String) (*Session, error)
 	CreateSession(db DB, session *Session) (*Session, error)
 	CreateSessionClients(db DB, sessionID int, clientIDs []string) (*[]Client, error)
 	CreateSessionEvents(db DB, events []Event) (*[]Event, error)
@@ -82,6 +83,7 @@ type SessionStore interface {
 	CheckClientsAttendedTutorSession(db DB, tutorID string, clientIDs []string) (bool, error)
 	CheckAllClientSessionHasResponded(db DB, ID int) (bool, error)
 	GetSessionsEvent(db DB, sessionID []int) (map[int]*Event, error)
+	GetSessionFromConferenceID(db DB, conferenceID string) (*Session, error)
 }
 
 type SessionUseCase interface {
@@ -98,4 +100,5 @@ type SessionUseCase interface {
 	CheckAllClientSessionHasResponded(ID int) (bool, error)
 	CheckSessionsIsForClient(clientID string, sessionIDs []int) (bool, error)
 	GetSessionsEvent(sessionIDs []int) (map[int]*Event, error)
+	GetSessionFromConferenceID(conferenceID string) (*Session, error)
 }

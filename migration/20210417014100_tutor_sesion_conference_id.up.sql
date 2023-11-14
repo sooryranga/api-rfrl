@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE IF EXISTS tutor_session
+  ADD COLUMN conference_id UUID UNIQUE;
+
+COMMIT;

@@ -98,6 +98,11 @@ func main() {
 
 	e.Use(middleware.CORS())
 
+	//set up conference hub
+	conferenceHub := usecases.NewConferenceHub()
+
+	go conferenceHub.Run()
+
 	// Stores
 	authStore := store.NewAuthStore()
 	clientStore := store.NewClientStore()
@@ -117,6 +122,7 @@ func main() {
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)
 	questionUseCase := usecases.NewQuestionUsesCase(db, clientStore, questionStore)
 	companyUseCase := usecases.NewCompanyUseCase(*db, companyStore)
+	conferenceUseCase := usecases.NewConferenceUseCase(conferenceHub)
 
 	routes.RegisterAuthRoutes(e, validate, signingKey, publicKey, authUseCase)
 	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
@@ -125,6 +131,7 @@ func main() {
 	routes.RegisterTutorReviewRoutes(e, validate, publicKey, tutorUseCase)
 	routes.RegisteerQuestionRoutes(e, validate, publicKey, questionUseCase)
 	routes.RegisterCompanyRoutes(e, validate, publicKey, companyUseCase)
+	routes.RegisterConferenceRoutes(e, publicKey, sessionUseCase, conferenceUseCase)
 
 	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {
