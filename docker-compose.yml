@@ -18,14 +18,32 @@ services:
       - 8010:8010
     links:
       - database
+      - pubsub
     environment:
       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
       - POSTGRES_URI=postgres://tutorme:__PASSWORD__@database:5432/tutorme?sslmode=disable
       - RSA_FILE=/run/secrets/rsa
       - PUBLIC_RSA_FILE=/run/secrets/public-rsa
       - FIREBASE_AUTH_FILE=/run/secrets/fire-base-auth
+      - PUBSUB_EMULATOR_HOST=pubsub:8681
     volumes:
       - ./:/app
+
+  pubsub:
+    build:
+      dockerfile: Dockerfile.pubsub
+    expose:
+      - 8681
+    ports:
+      - 8681:8681
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8681"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - PUBSUB_PROJECT_ID=tutorproject-292921
+      - PUBSUB_EMULATOR_HOST=localhost:8681
 
   database:
     image: postgres

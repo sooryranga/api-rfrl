@@ -175,7 +175,7 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	log.Errorj(log.JSON{"session": session})
+
 	if session.TargetedEventID.Valid {
 		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, int(session.TargetedEventID.Int64))
 
@@ -264,7 +264,7 @@ func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 
 	if session.Event.StartTime.Sub(time.Now()).Minutes() > 30 {
 		return echo.NewHTTPError(
-			http.StatusBadGateway, fmt.Sprintf(
+			http.StatusBadRequest, fmt.Sprintf(
 				"Session event starts at : %s. Please try again closer to that time.",
 				session.Event.StartTime.Format(time.RFC3339),
 			),
@@ -273,7 +273,7 @@ func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 
 	if session.Event.EndTime.Sub(time.Now()).Minutes() < -10 {
 		return echo.NewHTTPError(
-			http.StatusBadGateway,
+			http.StatusBadRequest,
 			fmt.Sprintf(
 				"Session event has ended at : %s.",
 				session.Event.EndTime.Format(time.RFC3339),

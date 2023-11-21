@@ -2,9 +2,11 @@ package usecases
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/gommon/log"
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
@@ -56,7 +58,6 @@ func (c *WebSocketClient) readPump() {
 		signalMessage.RawMessage = message
 		signalMessage.ConferenceID = c.ConferenceID
 
-		log.Errorj(log.JSON{"signalMessage": signalMessage})
 		if err != nil {
 			log.Errorj(log.JSON{"error": err.Error(), "conferenceID": c.ConferenceID})
 			return
@@ -184,6 +185,7 @@ func (h ConferenceHub) Run() {
 			}
 
 		case message := <-h.broadcast:
+			log.Errorj(log.JSON{"broadcast-message": message})
 			conferenceID := message.ConferenceID
 			conferenceClients, ok := h.sessionConnectedClients[conferenceID]
 
@@ -204,16 +206,19 @@ func (h ConferenceHub) Run() {
 }
 
 type ConferenceUseCase struct {
-	Hub *ConferenceHub
+	DB                  *sqlx.DB
+	Hub                 *ConferenceHub
+	ConferenceStore     tutorme.ConferenceStore
+	ConferencePublisher tutorme.ConferencePublisher
 }
 
 func NewConferenceUseCase(hub *ConferenceHub) ConferenceUseCase {
 	return ConferenceUseCase{Hub: hub}
 }
 
-func (cuc ConferenceUseCase) Serve(conn *websocket.Conn, conferenceID string) {
+func (cu ConferenceUseCase) Serve(conn *websocket.Conn, conferenceID string) {
 	client := &WebSocketClient{
-		hub:          cuc.Hub,
+		hub:          cu.Hub,
 		conn:         conn,
 		send:         make(chan []byte, 256),
 		ConferenceID: conferenceID,
@@ -223,4 +228,36 @@ func (cuc ConferenceUseCase) Serve(conn *websocket.Conn, conferenceID string) {
 
 	go client.writePump()
 	client.readPump()
+}
+
+func (cu ConferenceUseCase) SubmitCode(sessionID int, rawCode string, language string) error {
+	var err = new(error)
+	var tx *sqlx.Tx
+
+	tx, *err = cu.DB.Beginx()
+
+	defer tutorme.HandleTransactions(tx, err)
+
+	var conference *tutorme.Conference
+	conference, *err = cu.ConferenceStore.GetOrCreateConference(cu.DB, sessionID)
+
+	if *err != nil {
+		return *err
+	}
+
+	if conference.CodeState != tutorme.NOT_RUNNING && time.Now().Sub(conference.UpdatedAt).Minutes() < 1 {
+		*err = errors.New("code is currently running right now")
+		return *err
+	}
+
+	var code *tutorme.Code
+	code, *err = cu.ConferenceStore.CreateNewCode(cu.DB, sessionID, rawCode)
+
+	if *err != nil {
+		return *err
+	}
+
+	*err = cu.ConferencePublisher.PublishCode(code.ID, rawCode, language)
+
+	return *err
 }

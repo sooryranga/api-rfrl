@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	cloud.google.com/go/firestore v1.1.1
+	cloud.google.com/go/pubsub v1.0.1
 	firebase.google.com/go v3.13.0+incompatible
 	firebase.google.com/go/v4 v4.4.0 // indirect
 	github.com/Masterminds/squirrel v1.5.0
