@@ -14,7 +14,7 @@ type ClientUseCase struct {
 	clientStore tutorme.ClientStore
 	emailer     tutorme.EmailerUseCase
 	authStore   tutorme.AuthStore
-	fireStore   tutorme.FirstStoreClient
+	fireStore   tutorme.FireStoreClient
 }
 
 // NewClientUseCase creates new ClientUseCase
@@ -23,7 +23,7 @@ func NewClientUseCase(
 	clientStore tutorme.ClientStore,
 	authStore tutorme.AuthStore,
 	emailer tutorme.EmailerUseCase,
-	fireStore tutorme.FirstStoreClient,
+	fireStore tutorme.FireStoreClient,
 ) *ClientUseCase {
 	return &ClientUseCase{
 		&db,

@@ -52,7 +52,13 @@ func getGoogleProjectID() string {
 	return projectID
 }
 
+func getAPIKey() string {
+	return os.Getenv("API_KEY")
+}
+
 func main() {
+	apiKey := getAPIKey()
+
 	signingKey, err := tutorme.GetSigningKey()
 
 	if err != nil {
@@ -147,7 +153,7 @@ func main() {
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)
 	questionUseCase := usecases.NewQuestionUsesCase(db, clientStore, questionStore)
 	companyUseCase := usecases.NewCompanyUseCase(*db, companyStore)
-	conferenceUseCase := usecases.NewConferenceUseCase(db, conferenceStore, conferenceHub, conferencePublisher)
+	conferenceUseCase := usecases.NewConferenceUseCase(db, conferenceStore, conferenceHub, conferencePublisher, fireStoreClient)
 
 	routes.RegisterAuthRoutes(e, validate, signingKey, publicKey, authUseCase)
 	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
@@ -156,7 +162,7 @@ func main() {
 	routes.RegisterTutorReviewRoutes(e, validate, publicKey, tutorUseCase)
 	routes.RegisteerQuestionRoutes(e, validate, publicKey, questionUseCase)
 	routes.RegisterCompanyRoutes(e, validate, publicKey, companyUseCase)
-	routes.RegisterConferenceRoutes(e, publicKey, sessionUseCase, conferenceUseCase)
+	routes.RegisterConferenceRoutes(e, publicKey, apiKey, sessionUseCase, conferenceUseCase)
 
 	e.Validator = &Validator{validator: validate}
 	e.GET("/", func(c echo.Context) error {

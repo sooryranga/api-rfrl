@@ -9,14 +9,16 @@ import (
 )
 
 type FireStoreClient struct {
-	UserRef *firestore.CollectionRef
-	Client  *firestore.Client
+	ConferenceCodeRef *firestore.CollectionRef
+	UserRef           *firestore.CollectionRef
+	Client            *firestore.Client
 }
 
 func NewFireStore(client *firestore.Client) *FireStoreClient {
 	return &FireStoreClient{
-		UserRef: client.Collection("users"),
-		Client:  client,
+		UserRef:           client.Collection("users"),
+		ConferenceCodeRef: client.Collection("conferenceCode"),
+		Client:            client,
 	}
 }
 
@@ -40,6 +42,18 @@ func (fs *FireStoreClient) CreateClient(id string, photo string, firstName strin
 		UserName: userName,
 		Avatar:   photo,
 	})
+	return err
+}
+
+func (fs *FireStoreClient) UpdateCode(sessionID int, codeID int, result string) error {
+	ctx := context.Background()
+	code := fs.ConferenceCodeRef.Doc(fmt.Sprintf("%d-%d", sessionID, codeID))
+
+	_, err := code.Update(
+		ctx,
+		[]firestore.Update{{Path: "result", Value: result}},
+	)
+
 	return err
 }
 

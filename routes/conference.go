@@ -10,17 +10,25 @@ import (
 )
 
 // RegisterCompanyRoutes register auth routes
-func RegisterConferenceRoutes(e *echo.Echo, publicKey *rsa.PublicKey, sessionUseCase tutorme.SessionUseCase, conferenceUseCase tutorme.ConferenceUseCase) {
+func RegisterConferenceRoutes(
+	e *echo.Echo,
+	publicKey *rsa.PublicKey,
+	apiKey string,
+	sessionUseCase tutorme.SessionUseCase,
+	conferenceUseCase tutorme.ConferenceUseCase,
+) {
 	views := views.ConferenceView{SessionUseCase: sessionUseCase, ConferenceUseCase: conferenceUseCase}
 
 	conferenceR := e.Group("/conference/:conferenceID")
 	conferenceR.GET("/", views.ConnectToSessionClients)
 
 	conferenceSessionR := e.Group("conference-session/:sessionID")
-	conferenceSessionR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+	conferenceSessionR.POST("/code/", views.SubmitCode, middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    publicKey,
 		SigningMethod: tutorme.AlgorithmRS256,
 		Claims:        &tutorme.JWTClaims{},
 	}))
-	conferenceSessionR.POST("/code/", views.SubmitCode)
+	conferenceSessionR.POST("/code/:ID/", views.SetCodeResult, middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+		return key == apiKey, nil
+	}))
 }

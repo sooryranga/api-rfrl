@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/Arun4rangan/api-tutorme/tutorme"
+	sq "github.com/Masterminds/squirrel"
 )
 
 type ConferenceStore struct{}
@@ -59,4 +60,37 @@ func (cs *ConferenceStore) CreateNewCode(db tutorme.DB, sessionID int, rawCode s
 	_, err = db.Queryx(updateCodeConferenceQuery, sessionID, code.ID)
 
 	return &code, err
+}
+
+func (cs *ConferenceStore) UpdateCode(db tutorme.DB, id int, code tutorme.Code) (*tutorme.Code, error) {
+	query := sq.Update("conference_code")
+
+	if code.Code.Valid {
+		query = query.Set("code", code.Code.String)
+	}
+
+	if code.Result.Valid {
+		query = query.Set("result", code.Result.String)
+	}
+
+	sql, args, err := query.
+		Where(sq.Eq{"id": id}).
+		Suffix("RETURNING *").
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return nil, err
+	}
+
+	row := db.QueryRowx(
+		sql,
+		args...,
+	)
+
+	var c tutorme.Code
+
+	err = row.StructScan(&c)
+
+	return &c, err
 }

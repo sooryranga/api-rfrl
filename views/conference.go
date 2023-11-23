@@ -1,4 +1,3 @@
-
 package views
 
 import (
@@ -18,9 +17,19 @@ import (
 type (
 	// ClientPayload is the struct used to hold payload from /client
 	SubmitCodePayload struct {
-		SessionID       int    `path:"sessionID"`
-		Code     string `json:"code"`
-		Language string `json:"language"`
+		SessionID int    `path:"sessionID"`
+		Code      string `json:"code"`
+		Language  string `json:"language"`
+	}
+
+	SetCodeResultPayload struct {
+		SessionID int    `path:"sessionID"`
+		Result    string `json:"result"`
+		ID        int    `path:"ID"`
+	}
+
+	SubmitCodeResponse struct {
+		CodeID int `json:"codeId"`
 	}
 )
 
@@ -116,7 +125,29 @@ func (cv *ConferenceView) SubmitCode(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized for this session")
 	}
 
-	err = cv.ConferenceUseCase.SubmitCode(payload.SessionID, payload.Code, payload.Language)
+	id, err := cv.ConferenceUseCase.SubmitCode(payload.SessionID, payload.Code, payload.Language)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, SubmitCodeResponse{
+		CodeID: id,
+	})
+}
+
+func (cv *ConferenceView) SetCodeResult(c echo.Context) error {
+	payload := SetCodeResultPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	err := cv.ConferenceUseCase.SetCodeResult(
+		payload.SessionID,
+		payload.ID,
+		payload.Result,
+	)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
