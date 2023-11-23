@@ -2,3 +2,4 @@ id_rsa*
 tmp/*
 api-tutorme
 .vscode/*
+*node_modules*

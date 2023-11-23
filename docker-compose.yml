@@ -1,5 +1,20 @@
 version: "3.9"
 services:
+  javascriptconsumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer.javascript
+    depends_on:
+      pubsub:
+        condition: service_healthy
+    links:
+      - pubsub
+    environment:
+      - PUBSUB_EMULATOR_HOST=pubsub:8681
+      - PUBSUB_PROJECT_ID=tutorproject-292921
+    volumes:
+      - .consumer/javascript/:/app
+
   backend:
     build:
       context: .
@@ -11,6 +26,8 @@ services:
       - fire-base-auth
     depends_on:
       database:
+        condition: service_healthy
+      pubsub:
         condition: service_healthy
     expose:
       - 8010
@@ -26,11 +43,13 @@ services:
       - PUBLIC_RSA_FILE=/run/secrets/public-rsa
       - FIREBASE_AUTH_FILE=/run/secrets/fire-base-auth
       - PUBSUB_EMULATOR_HOST=pubsub:8681
+      - PUBSUB_PROJECT_ID=tutorproject-292921
     volumes:
       - ./:/app
 
   pubsub:
     build:
+      context: .
       dockerfile: Dockerfile.pubsub
     expose:
       - 8681
