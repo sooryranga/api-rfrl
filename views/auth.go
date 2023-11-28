@@ -38,12 +38,16 @@ type (
 	LoginPayload struct {
 		loginFields
 	}
+
+	SignUpFlowPayload struct {
+		Stage tutorme.SignUpFlow `json:"stage"`
+	}
 )
 
 // SignUpPayloadValidation validates client inputs
 func SignUpPayloadValidation(sl validator.StructLevel) {
 	payload := sl.Current().Interface().(SignUpPayload)
-	log.Errorj(log.JSON{"payload": payload})
+
 	switch payload.Type {
 	case tutorme.GOOGLE:
 		if len(payload.Token) == 0 {
@@ -108,11 +112,12 @@ func (av *AuthView) Signup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	var newClient *tutorme.Client
+	var auth *tutorme.Auth
 	var err error
 
 	switch payload.Type {
 	case tutorme.GOOGLE:
-		newClient, err = av.AuthUseCases.SignupGoogle(
+		newClient, auth, err = av.AuthUseCases.SignupGoogle(
 			payload.Token,
 			payload.Email,
 			payload.FirstName,
@@ -122,7 +127,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 			payload.IsTutor,
 		)
 	case tutorme.LINKEDIN:
-		newClient, err = av.AuthUseCases.SignupLinkedIn(
+		newClient, auth, err = av.AuthUseCases.SignupLinkedIn(
 			payload.Token,
 			payload.Email,
 			payload.FirstName,
@@ -132,7 +137,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 			payload.IsTutor,
 		)
 	case tutorme.EMAIL:
-		newClient, err = av.AuthUseCases.SignupEmail(
+		newClient, auth, err = av.AuthUseCases.SignupEmail(
 			payload.Password,
 			payload.Token,
 			payload.Email,
@@ -178,6 +183,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"token":  token,
 		"client": newClient,
+		"auth":   auth,
 	})
 }
 
@@ -188,7 +194,7 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	existingClient, err := av.AuthUseCases.LoginWithJWT(claims.ClientID)
+	existingClient, auth, err := av.AuthUseCases.LoginWithJWT(claims.ClientID)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -208,20 +214,22 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"token":  token,
 		"client": existingClient,
+		"auth":   auth,
 	})
 }
 
 func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	var existingClient *tutorme.Client
+	var auth *tutorme.Auth
 	var err error
 
 	switch payload.Type {
 	case tutorme.GOOGLE:
-		existingClient, err = av.AuthUseCases.LoginGoogle(payload.Token)
+		existingClient, auth, err = av.AuthUseCases.LoginGoogle(payload.Token)
 	case tutorme.LINKEDIN:
-		existingClient, err = av.AuthUseCases.LoginLinkedIn(payload.Token)
+		existingClient, auth, err = av.AuthUseCases.LoginLinkedIn(payload.Token)
 	case tutorme.EMAIL:
-		existingClient, err = av.AuthUseCases.LoginEmail(payload.Email, payload.Password)
+		existingClient, auth, err = av.AuthUseCases.LoginEmail(payload.Email, payload.Password)
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Login type - %s is not supported", payload.Token))
 	}
@@ -249,6 +257,7 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"token":  token,
 		"client": existingClient,
+		"auth":   auth,
 	})
 }
 
@@ -265,4 +274,20 @@ func (av *AuthView) Login(c echo.Context) error {
 	}
 
 	return av.login(c, payload.loginFields)
+}
+
+func (av *AuthView) UpdateSignUpFlow(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	payload := SignUpFlowPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return av.AuthUseCases.UpdateSignUpFlow(claims.ClientID, payload.Stage)
 }

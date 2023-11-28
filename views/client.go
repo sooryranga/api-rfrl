@@ -20,7 +20,7 @@ type (
 		Email     string    `json:"email" validate:"omitempty,email"`
 		FirstName string    `json:"firstName"`
 		LastName  string    `json:"lastName"`
-		Photo     string    `json:"profileImageURL"`
+		Photo     string    `json:"photo"`
 		About     string    `json:"about"`
 		IsTutor   null.Bool `json:"isTutor"`
 	}

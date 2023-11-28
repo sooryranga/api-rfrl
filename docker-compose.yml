@@ -64,6 +64,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "none"
     environment:
       - PUBSUB_PROJECT_ID=tutorproject-292921
       - PUBSUB_EMULATOR_HOST=localhost:8681
