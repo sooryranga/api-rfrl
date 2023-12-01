@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE client ALTER COLUMN photo TYPE text;
+
+ALTER TABLE document ALTER COLUMN src TYPE text;
+
+COMMIT;
