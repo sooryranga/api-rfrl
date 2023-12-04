@@ -11,6 +11,26 @@ const (
 	UserEmail = "user"
 )
 
+// Education model
+type Education struct {
+	Institution     null.String `db:"institution" json:"institution"`
+	Degree          null.String `db:"degree" json:"degree"`
+	FieldOfStudy    null.String `db:"field_of_study" json:"fieldOfStudy"`
+	StartYear       null.Int    `db:"start_year" json:"startYear"`
+	EndYear         null.Int    `db:"end_year" json:"endYear"`
+	InstitutionLogo null.String
+}
+
+func NewEducation(institution string, degree string, fieldOfStudy string, startYear int, endYear int) Education {
+	return Education{
+		Institution:  null.NewString(institution, institution != ""),
+		FieldOfStudy: null.NewString(fieldOfStudy, fieldOfStudy != ""),
+		Degree:       null.NewString(degree, degree != ""),
+		StartYear:    null.NewInt(int64(startYear), startYear != 0),
+		EndYear:      null.NewInt(int64(endYear), endYear != 0),
+	}
+}
+
 // Client model
 type Client struct {
 	ID                string      `db:"id" json:"id"`
@@ -27,6 +47,7 @@ type Client struct {
 	IsAdmin           null.Bool   `db:"is_admin" json:"-"`
 	VerifiedWorkEmail null.Bool   `db:"verified_work_email" json:"verifiedWorkEmail"`
 	VerifiedEmail     null.Bool   `db:"verified_email" json:"verifiedEmail"`
+	Education
 }
 
 // NewClient creates new client model struct
@@ -50,17 +71,6 @@ func NewClient(
 	return &client
 }
 
-// Education model
-type Education struct {
-	ID              int       `db:"id:`
-	Institution     string    `db:"institution"`
-	Degree          string    `db:"degree"`
-	FieldOfStudy    string    `db:"field_of_study"`
-	Start           time.Time `db:"start"`
-	end             time.Time `db:"end"`
-	InstitutionLogo string    `db:"institution_logo"`
-}
-
 type GetClientsOptions struct {
 	IsTutor null.Bool
 }
@@ -77,6 +87,7 @@ type ClientStore interface {
 	DeleteVerificationEmail(db DB, clientID string, emailType string) error
 	GetRelatedEventsByClientIDs(db DB, clientIDs []string, start null.Time, end null.Time, state null.String) (*[]Event, error)
 	CheckOverlapingEventsByClientIDs(db DB, clientIDs []string, events *[]Event) (bool, error)
+	CreateOrUpdateClientEducation(db DB, clientID string, education Education) error
 }
 
 type ClientUseCase interface {
@@ -89,4 +100,5 @@ type ClientUseCase interface {
 	GetVerificationEmail(clientID string, emailType string) (string, error)
 	DeleteVerificationEmail(clientID string, emailType string) error
 	GetClientEvents(clientID string, start null.Time, end null.Time, state null.String) (*[]Event, error)
+	CreateOrUpdateClientEducation(clientID string, institution string, degree string, fieldOfStudy string, startYear int, endYear int) error
 }

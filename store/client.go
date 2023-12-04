@@ -442,3 +442,39 @@ func (cl ClientStore) CheckOverlapingEventsByClientIDs(db tutorme.DB, clientIds 
 
 	return clientOverlap || sessionOverlap, nil
 }
+
+func (cl ClientStore) CreateOrUpdateClientEducation(db tutorme.DB, clientID string, education tutorme.Education) error {
+	query := sq.Update("client")
+
+	if education.Institution.Valid {
+		query = query.Set("institution", education.Institution)
+	}
+	if education.Degree.Valid {
+		query = query.Set("degree", education.Degree)
+	}
+	if education.FieldOfStudy.Valid {
+		query = query.Set("field_of_study", education.FieldOfStudy)
+	}
+	if education.StartYear.Valid {
+		query = query.Set("start_year", education.StartYear)
+	}
+	if education.EndYear.Valid {
+		query = query.Set("end_year", education.EndYear)
+	}
+
+	sql, args, err := query.
+		Where(sq.Eq{"id": clientID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Queryx(
+		sql,
+		args...,
+	)
+
+	return err
+}

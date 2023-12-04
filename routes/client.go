@@ -32,6 +32,8 @@ func RegisterClientRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.P
 	r.GET("/:clientID/verify-email/", clientView.GetVerificationEmails)
 	r.DELETE("/:clientID/verify-email/", clientView.DeleteVerifyEmail)
 
+	r.PUT("/:clientID/education/", clientView.CreateEducation)
+
 	tutoringClientR := e.Group("/clients")
 	tutoringClientR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
