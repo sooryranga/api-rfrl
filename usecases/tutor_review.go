@@ -3,6 +3,7 @@ package usecases
 import (
 	"github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/pkg/errors"
+	"gopkg.in/guregu/null.v4"
 )
 
 type TutorReviewUseCase struct {
@@ -21,7 +22,7 @@ func NewTutorReviewUseCase(
 	return &TutorReviewUseCase{db, tutorReviewStore, sessionStore, clientStore}
 }
 
-func (tru *TutorReviewUseCase) CreateTutorReview(ClientID string, TutorID string, Stars int, Review string) (*tutorme.TutorReview, error) {
+func (tru *TutorReviewUseCase) CreateTutorReview(ClientID string, TutorID string, Stars int, Review string, Headline string) (*tutorme.TutorReview, error) {
 	if ClientID == TutorID {
 		return nil, errors.Errorf("Client cannot create a review for said client")
 	}
@@ -36,9 +37,15 @@ func (tru *TutorReviewUseCase) CreateTutorReview(ClientID string, TutorID string
 		return nil, errors.Errorf("Client did not get tutored by Tutor")
 	}
 
-	tutorReview := tutorme.NewTutorReview(TutorID, Stars, Review)
+	tutorReview := tutorme.NewTutorReview(TutorID, Stars, Review, Headline)
 
 	createdTutorReview, err := tru.TutorReviewStore.CreateTutorReview(tru.DB, ClientID, &tutorReview)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = tru.TutorReviewStore.DeletePendingReview(tru.DB, ClientID, TutorID)
 
 	if err != nil {
 		return nil, err
@@ -55,7 +62,7 @@ func (tru *TutorReviewUseCase) CreateTutorReview(ClientID string, TutorID string
 	return createdTutorReview, err
 }
 
-func (tru *TutorReviewUseCase) UpdateTutorReview(ClientID string, ID int, Stars int, Review string) (*tutorme.TutorReview, error) {
+func (tru *TutorReviewUseCase) UpdateTutorReview(ClientID string, ID int, Stars int, Review string, Headline string) (*tutorme.TutorReview, error) {
 	forClient, err := tru.TutorReviewStore.CheckTutorReviewForClient(tru.DB, ClientID, ID)
 
 	if err != nil {
@@ -66,7 +73,13 @@ func (tru *TutorReviewUseCase) UpdateTutorReview(ClientID string, ID int, Stars 
 		return nil, errors.Errorf("Tutor Review  (%d) does not belong to this client %s", ID, ClientID)
 	}
 
-	return tru.TutorReviewStore.UpdateTutorReview(tru.DB, ID, Stars, Review)
+	tutorReview := tutorme.TutorReview{}
+	tutorReview.ID = ID
+	tutorReview.Stars = null.NewInt(int64(Stars), true)
+	tutorReview.Review = null.NewString(Review, true)
+	tutorReview.Headline = null.NewString(Headline, true)
+
+	return tru.TutorReviewStore.UpdateTutorReview(tru.DB, &tutorReview)
 }
 
 func (tru *TutorReviewUseCase) DeleteTutorReview(ClientID string, ID int) error {
@@ -127,4 +140,26 @@ func (tru *TutorReviewUseCase) GetTutorReviews(TutorID string) (*[]tutorme.Tutor
 
 func (tru *TutorReviewUseCase) GetTutorReviewsAggregate(ClientID string) (*tutorme.TutorReviewAggregate, error) {
 	return tru.TutorReviewStore.GetTutorReviewsAggregate(tru.DB, ClientID)
+}
+
+func (tru *TutorReviewUseCase) GetPendingReviews(ClientID string) (*[]tutorme.PendingTutorReview, error) {
+	return tru.TutorReviewStore.GetPendingReviews(tru.DB, ClientID)
+}
+
+func (tru *TutorReviewUseCase) CreatePendingReview(menteeID string, tutorID string) error {
+	alreadyExist, err := tru.TutorReviewStore.CheckIfReviewAlreadyExists(tru.DB, menteeID, tutorID)
+
+	if err != nil {
+		return err
+	}
+
+	if alreadyExist {
+		return nil
+	}
+
+	return tru.TutorReviewStore.CreatePendingReview(tru.DB, menteeID, tutorID)
+}
+
+func (tru *TutorReviewUseCase) DeletePendingReview(menteeID string, tutorID string) error {
+	return tru.TutorReviewStore.DeletePendingReview(tru.DB, menteeID, tutorID)
 }

@@ -158,7 +158,7 @@ func main() {
 	routes.RegisterAuthRoutes(e, validate, signingKey, publicKey, authUseCase)
 	routes.RegisterClientRoutes(e, validate, publicKey, clientUseCase)
 	routes.RegisterDocumentRoutes(e, validate, publicKey, documentUseCase)
-	routes.RegisterSessionRoutes(e, validate, publicKey, sessionUseCase)
+	routes.RegisterSessionRoutes(e, validate, publicKey, sessionUseCase, tutorUseCase)
 	routes.RegisterTutorReviewRoutes(e, validate, publicKey, tutorUseCase)
 	routes.RegisteerQuestionRoutes(e, validate, publicKey, questionUseCase)
 	routes.RegisterCompanyRoutes(e, validate, publicKey, companyUseCase)

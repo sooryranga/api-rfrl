@@ -42,4 +42,14 @@ func RegisterTutorReviewRoutes(e *echo.Echo, validate *validator.Validate, key *
 	}))
 
 	tutorReviewsAggregateR.GET("/:tutorID/", tutorReviewView.GetTutorReviewsAggregateEndpoint)
+
+	pendingReviewsR := e.Group("/pending-tutor-reviews")
+	pendingReviewsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:    key,
+		SigningMethod: tutorme.AlgorithmRS256,
+		Claims:        &tutorme.JWTClaims{},
+	}))
+
+	pendingReviewsR.GET("/", tutorReviewView.GetPendingReviewsEndpoint)
+
 }

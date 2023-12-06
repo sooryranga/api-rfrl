@@ -7,6 +7,8 @@ import (
 	"time"
 
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
@@ -51,7 +53,8 @@ type (
 )
 
 type SessionView struct {
-	SessionUseCase tutorme.SessionUseCase
+	SessionUseCase     tutorme.SessionUseCase
+	TutorReviewUseCase tutorme.TutorReviewUseCase
 }
 
 func (sv *SessionView) CreateSessionEndpoint(c echo.Context) error {
@@ -279,6 +282,22 @@ func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 				session.Event.EndTime.Format(time.RFC3339),
 			),
 		)
+	}
+
+	if claims.ClientID != session.TutorID {
+		err = sv.TutorReviewUseCase.CreatePendingReview(claims.ClientID, session.TutorID)
+	}
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if !pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+				return echo.NewHTTPError(
+					http.StatusBadRequest,
+					err.Error(),
+				)
+			}
+		}
 	}
 
 	return c.JSON(
