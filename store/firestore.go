@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"gopkg.in/guregu/null.v4"
@@ -28,6 +29,13 @@ type User struct {
 	Avatar   string `firestore:"avatar"` // in millions
 }
 
+type Code struct {
+	SessionID int       `firestore:"sessionId"`
+	CodeID    int       `firestore:"codeId"`
+	Timestamp time.Time `firestore:"timestamp"`
+	Stdin     string    `firestore:"stdin"`
+}
+
 func (fs *FireStoreClient) userName(firstName string, lastName string) string {
 	return fmt.Sprintf("%s %s", firstName, lastName)
 }
@@ -45,13 +53,27 @@ func (fs *FireStoreClient) CreateClient(id string, photo string, firstName strin
 	return err
 }
 
+func (fs *FireStoreClient) CreateCode(sessionID int, codeID int) error {
+	ctx := context.Background()
+	code := fs.ConferenceCodeRef.Doc(fmt.Sprintf("%d-%d", sessionID, codeID))
+
+	_, err := code.Set(ctx, Code{
+		SessionID: sessionID,
+		CodeID:    codeID,
+		Timestamp: time.Now(),
+		Stdin:     "run",
+	})
+
+	return err
+}
+
 func (fs *FireStoreClient) UpdateCode(sessionID int, codeID int, result string) error {
 	ctx := context.Background()
 	code := fs.ConferenceCodeRef.Doc(fmt.Sprintf("%d-%d", sessionID, codeID))
 
 	_, err := code.Update(
 		ctx,
-		[]firestore.Update{{Path: "result", Value: result}},
+		[]firestore.Update{{Path: "stdout", Value: result}},
 	)
 
 	return err
