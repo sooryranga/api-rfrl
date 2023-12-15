@@ -7,19 +7,19 @@ import (
 )
 
 type Session struct {
-	ID              int       `db:"id" json:"id"`
-	CreatedAt       time.Time `db:"created_at" json:"createdAt"`
-	UpdatedAt       time.Time `db:"updated_at" json:"updatedAt"`
-	TutorID         string    `db:"tutor_id" json:"tutorId"`
-	Tutor           Client    `json:"tutor"`
-	UpdatedBy       string    `db:"updated_by" json:"updatedBy"`
-	RoomID          string    `db:"room_id" json:"roomId"`
-	Clients         []Client  `json:"clients"`
-	State           string    `db:"state" json:"state"`
-	TargetedEventID null.Int  `db:"event_id" json:"eventId"`
-	CanAttend       null.Bool `db:"can_attend" json:"canAttend"`
-	ConferenceID    string    `db:"conference_id" json:"-"`
-	Event           *Event    `json:"event"`
+	ID              int         `db:"id" json:"id"`
+	CreatedAt       time.Time   `db:"created_at" json:"createdAt"`
+	UpdatedAt       time.Time   `db:"updated_at" json:"updatedAt"`
+	TutorID         string      `db:"tutor_id" json:"tutorId"`
+	Tutor           Client      `json:"tutor"`
+	UpdatedBy       string      `db:"updated_by" json:"updatedBy"`
+	RoomID          string      `db:"room_id" json:"roomId"`
+	Clients         []Client    `json:"clients"`
+	State           string      `db:"state" json:"state"`
+	TargetedEventID null.Int    `db:"event_id" json:"eventId"`
+	CanAttend       null.Bool   `db:"can_attend" json:"canAttend"`
+	ConferenceID    null.String `db:"conference_id" json:"-"`
+	Event           *Event      `json:"event"`
 }
 
 type Event struct {

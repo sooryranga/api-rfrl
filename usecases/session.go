@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
@@ -87,7 +88,12 @@ func (su SessionUseCase) UpdateSession(
 
 	conferenceID := null.NewString("", false)
 	if state == tutorme.SCHEDULED {
-		conferenceID = null.NewString("gen_random_uuid()", true)
+		var newUUID uuid.UUID
+		newUUID, *err = uuid.NewV4()
+		if *err != nil {
+			return nil, *err
+		}
+		conferenceID = null.NewString(newUUID.String(), true)
 	}
 
 	//TODO: Add logic on what should be updated

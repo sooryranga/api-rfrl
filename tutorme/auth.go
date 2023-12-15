@@ -144,6 +144,7 @@ func GetSigningKey() (*rsa.PrivateKey, error) {
 
 // Auth model
 type Auth struct {
+	ID           int         `db:"id" json:"-"`
 	CreatedAt    time.Time   `db:"created_at" json:"-"`
 	UpdatedAt    time.Time   `db:"updated_at" json:"-"`
 	Token        null.String `db:"token" json:"-"`
