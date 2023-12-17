@@ -201,6 +201,9 @@ func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Cl
 const createEmailVerification string = `
 INSERT INTO email_verification(client_id, email, email_type, pass_code)
 VALUES ($1, $2, $3, $4)
+ON CONFLICT ON CONSTRAINT email_verification_client_id_email_type_key
+DO UPDATE
+SET email = $2, pass_code = $4
 `
 
 func (cl *ClientStore) CreateEmailVerification(

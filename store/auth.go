@@ -60,7 +60,7 @@ func (au *AuthStore) UpdateSignUpFlow(db tutorme.DB, clientID string, stage tuto
 
 const updateEmail string = `
 UPDATE auth 
-SET auth.email = $1
+SET email = $1
 WHERE client_id = $2
 AND auth_type = 'email'
 	`
