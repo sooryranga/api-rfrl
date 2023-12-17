@@ -1,6 +1,8 @@
 package store
 
 import (
+	"database/sql"
+
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -171,9 +173,6 @@ func (cl *ClientStore) UpdateClient(db tutorme.DB, ID string, client *tutorme.Cl
 	if client.VerifiedWorkEmail.Valid {
 		query = query.Set("verified_work_email", client.VerifiedWorkEmail)
 	}
-	if client.Email.Valid {
-		query = query.Set("email", client.Email)
-	}
 	if client.VerifiedEmail.Valid {
 		query = query.Set("verified_email", client.VerifiedEmail)
 	}
@@ -217,12 +216,11 @@ func (cl *ClientStore) CreateEmailVerification(
 }
 
 const verifyEmail string = `
-	SELECT id 
+	SELECT id, pass_code
 	FROM email_verification
 	WHERE client_id = $1
 	AND email = $2
 	AND email_type = $3
-	AND pass_code = $4
 	LIMIT 1
 `
 
@@ -239,15 +237,19 @@ func (cl *ClientStore) VerifyEmail(
 	passCode string,
 ) error {
 	var id null.Int
-
-	err := db.QueryRowx(verifyEmail, clientID, email, emailType, passCode).Scan(&id)
+	var expectedPasscode string
+	err := db.QueryRowx(verifyEmail, clientID, email, emailType).Scan(&id, &expectedPasscode)
 
 	if err != nil {
 		return err
 	}
 
-	if id.Valid == false {
+	if !id.Valid {
 		return errors.New("Could not find email to verify")
+	}
+
+	if expectedPasscode != passCode {
+		return errors.New("Passcode is not correct")
 	}
 
 	_, err = db.Queryx(deleteVerifyEmailFromId, id)
@@ -255,16 +257,19 @@ func (cl *ClientStore) VerifyEmail(
 	return err
 }
 
-const getVerificationEmail string = `
+const getVerificationEmailQuery string = `
 SELECT email FROM email_verification
 WHERE client_id = $1 AND email_type = $2
 `
 
 func (cl *ClientStore) GetVerificationEmail(db tutorme.DB, clientID string, emailType string) (string, error) {
 	var email null.String
-	err := db.QueryRowx(getVerificationEmail, clientID, emailType).Scan(&email)
+	err := db.QueryRowx(getVerificationEmailQuery, clientID, emailType).Scan(&email)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", errors.New("Could not find verification email")
+		}
 		return "", err
 	}
 

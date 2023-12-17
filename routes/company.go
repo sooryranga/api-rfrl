@@ -20,7 +20,6 @@ func RegisterCompanyRoutes(e *echo.Echo, validate *validator.Validate, publicKey
 		SigningMethod: tutorme.AlgorithmRS256,
 		Claims:        &tutorme.JWTClaims{},
 	}))
-	companyR.POST("/suggest/", views.SuggestCompanyView)
 	companyR.PUT("/", views.UpdateCompanyView)
 	companyR.PUT("/email/", views.UpdateCompanyEmailView)
 	companyR.GET("/", views.GetCompanies)

@@ -15,34 +15,6 @@ func NewCompanyUseCase(db sqlx.DB, companyStore tutorme.CompanyStore) *CompanyUs
 	return &CompanyUseCase{&db, companyStore}
 }
 
-func (comu *CompanyUseCase) CreateSuggestion(name string, emailDomain string) (*tutorme.Company, error) {
-	var err = new(error)
-	var tx *sqlx.Tx
-
-	tx, *err = comu.db.Beginx()
-
-	defer tutorme.HandleTransactions(tx, err)
-
-	if *err != nil {
-		return nil, *err
-	}
-
-	var company *tutorme.Company
-	company, *err = comu.CompanyStore.CreateOrSelectCompany(tx, name)
-
-	if *err != nil {
-		return nil, *err
-	}
-
-	_, *err = comu.CompanyStore.CreateCompanyEmailDomain(tx, company.Name, emailDomain)
-
-	if *err != nil {
-		return nil, *err
-	}
-
-	return company, nil
-}
-
 func (comu *CompanyUseCase) UpdateCompany(
 	name string,
 	photo null.String,

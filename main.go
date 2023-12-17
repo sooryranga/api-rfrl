@@ -147,7 +147,7 @@ func main() {
 	// Usecases
 	emailerUseCase := usecases.NewEmailerUseCase()
 	authUseCase := usecases.NewAuthUseCase(*db, authStore, clientStore, fireStoreClient)
-	clientUseCase := usecases.NewClientUseCase(*db, clientStore, authStore, emailerUseCase, fireStoreClient)
+	clientUseCase := usecases.NewClientUseCase(*db, clientStore, authStore, emailerUseCase, fireStoreClient, companyStore)
 	documentUseCase := usecases.NewDocumentUseCase(*db, documentStore)
 	sessionUseCase := usecases.NewSessionUseCase(*db, sessionStore, clientStore)
 	tutorUseCase := usecases.NewTutorReviewUseCase(db, tutorReviewStore, sessionStore, clientStore)

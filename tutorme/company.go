@@ -27,7 +27,6 @@ func NewCompany(
 }
 
 type CompanyUseCase interface {
-	CreateSuggestion(name string, emailDomain string) (*Company, error)
 	UpdateCompany(name string, photo null.String, industry null.String, about null.String, active null.Bool) (*Company, error)
 	UpdateCompanyEmail(name string, emailDomain string, active bool) error
 	GetCompanies(active bool) (*[]Company, error)
@@ -36,8 +35,9 @@ type CompanyUseCase interface {
 type CompanyStore interface {
 	SelectCompany(db DB, name string) (*Company, error)
 	CreateOrSelectCompany(db DB, name string) (*Company, error)
-	CreateCompanyEmailDomain(db DB, name string, emailDomain string) (string, error)
+	CreateCompanyEmailDomain(db DB, emailDomain string) error
 	UpdateCompany(db DB, company Company) (*Company, error)
 	UpdateOrCreateCompanyEmail(db DB, name string, emailDomain string, active bool) error
 	GetCompanies(db DB, active bool) (*[]Company, error)
+	GetCompanyNameFromEmailDomain(db DB, domain string) (null.String, error)
 }
