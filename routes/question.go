@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func RegisteerQuestionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, questionUseCase tutorme.QuestionUseCase) {
+func RegisterQuestionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, questionUseCase tutorme.QuestionUseCase) {
 	questionViews := views.QuestionView{QuestionUseCase: questionUseCase}
 
 	questionR := e.Group("/question")

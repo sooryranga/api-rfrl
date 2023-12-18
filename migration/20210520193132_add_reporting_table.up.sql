@@ -1,0 +1,13 @@
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS report_client (
+  id SERIAL PRIMARY KEY,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  reporter UUID REFERENCES client (id) ON DELETE CASCADE,
+  accused UUID REFERENCES client (id) ON DELETE CASCADE,
+  cause TEXT,
+  tally INT NOT NULL DEFAULT 0,
+  UNIQUE (reporter, accused)
+);
+
+COMMIT;
