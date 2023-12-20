@@ -164,6 +164,7 @@ type AuthStore interface {
 	CheckEmailAuthExists(db DB, clientID string, email string) (bool, error)
 	UpdateAuthEmail(db DB, clientID string, email string) error
 	UpdateSignUpFlow(db DB, clientID string, stage SignUpFlow) error
+	BlockClient(db DB, clientID string, blocked bool) error
 }
 
 type AuthUseCase interface {
@@ -177,4 +178,5 @@ type AuthUseCase interface {
 	LoginWithJWT(clientID string) (*Client, *Auth, error)
 	GenerateToken(claims *JWTClaims, signingKey *rsa.PrivateKey) (string, error)
 	UpdateSignUpFlow(clientID string, stage SignUpFlow) error
+	BlockClient(clientID string, blocked bool) error
 }

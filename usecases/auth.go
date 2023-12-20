@@ -247,3 +247,7 @@ func (au *AuthUseCase) GenerateToken(claims *tutorme.JWTClaims, signingKey *rsa.
 func (au *AuthUseCase) UpdateSignUpFlow(clientID string, stage tutorme.SignUpFlow) error {
 	return au.authStore.UpdateSignUpFlow(au.db, clientID, stage)
 }
+
+func (au *AuthUseCase) BlockClient(clientID string, blocked bool) error {
+	return au.authStore.BlockClient(au.db, clientID, blocked)
+}

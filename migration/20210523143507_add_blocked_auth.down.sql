@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE IF EXISTS auth
+  DROP COLUMN blocked;
+
+COMMIT;

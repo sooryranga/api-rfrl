@@ -74,7 +74,7 @@ func (au *AuthStore) UpdateAuthEmail(db tutorme.DB, clientID string, email strin
 const getByToken string = `
 SELECT client.*, sign_up_flow FROM auth 
 JOIN client ON auth.client_id = client.id
-WHERE auth.token =$1 AND auth.auth_type =$2 
+WHERE auth.token =$1 AND auth.auth_type =$2 AND blocked = FALSE
 LIMIT 1
 	`
 
@@ -95,7 +95,7 @@ func (au *AuthStore) GetByToken(db tutorme.DB, token string, authType string) (*
 const getByEmail string = `
 SELECT password_hash, sign_up_flow, client.* FROM auth 
 JOIN client ON auth.client_id = client.id
-WHERE auth.email =$1 AND auth.auth_type =$2 
+WHERE auth.email =$1 AND auth.auth_type =$2 AND blocked = FALSE
 LIMIT 1
 	`
 
@@ -144,4 +144,16 @@ func (au *AuthStore) CreateWithToken(db tutorme.DB, auth *tutorme.Auth, clientID
 	err := row.StructScan(&createdAuth)
 
 	return &createdAuth, err
+}
+
+const blockClientQuery string = `
+UPDATE auth
+SET blocked = $1
+WHERE client_id = $2 
+`
+
+func (au *AuthStore) BlockClient(db tutorme.DB, clientID string, blocked bool) error {
+	_, err := db.Queryx(blockClientQuery, blocked, clientID)
+
+	return err
 }
