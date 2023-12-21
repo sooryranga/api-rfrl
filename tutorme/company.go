@@ -3,6 +3,7 @@ package tutorme
 import "gopkg.in/guregu/null.v4"
 
 type Company struct {
+	ID       int         `db:"id" json:"id"`
 	Name     string      `db:"company_name" json:"name"`
 	Photo    null.String `db:"photo" json:"photo"`
 	Industry null.String `db:"industry" json:"industry"`

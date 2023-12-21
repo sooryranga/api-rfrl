@@ -101,7 +101,7 @@ func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*
 }
 
 const updateOrCreateCompanyEmail string = `
-INSERT INTO company_email (email_domain, company_name, active)
+INSERT INTO company_email (email_domain, company_id, active)
 VALUES ($1, $2, $3)
 ON CONFLICT ON CONSTRAINT email_domain 
 DO UPDATE
@@ -109,13 +109,19 @@ SET company_name = $2, active = $3
 `
 
 func (cs *CompanyStore) UpdateOrCreateCompanyEmail(db tutorme.DB, name string, emailDomain string, active bool) error {
-	_, err := db.Queryx(updateOrCreateCompanyEmail, emailDomain, name, active)
+	company, err := cs.SelectCompany(db, name)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Queryx(updateOrCreateCompanyEmail, emailDomain, company.ID, active)
 	return err
 }
 
 const getCompanies string = `
 SELECT * FROM company WHERE active = $1
-ORDER BY company_name
+ORDER BY id
 `
 
 func (cs *CompanyStore) GetCompanies(db tutorme.DB, active bool) (*[]tutorme.Company, error) {
@@ -140,6 +146,7 @@ func (cs *CompanyStore) GetCompanies(db tutorme.DB, active bool) (*[]tutorme.Com
 
 const getCompanyNameFromEmailDomainQuery string = `
 SELECT company_name FROM company_email
+INNER JOIN company ON company.id = company_email.company_id
 WHERE email_domain = $1
 `
 
