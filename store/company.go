@@ -69,6 +69,27 @@ func (cs *CompanyStore) CreateCompanyEmailDomain(db tutorme.DB, emailDomian stri
 	return err
 }
 
+const createCompanyQuery string = `
+INSERT INTO company (company_name, photo, industry, about, active)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING *
+`
+
+func (cs *CompanyStore) CreateCompany(db tutorme.DB, company tutorme.Company) (*tutorme.Company, error) {
+	row := db.QueryRowx(
+		createCompanyQuery,
+		company.Name,
+		company.Photo,
+		company.Industry,
+		company.About,
+		company.Active,
+	)
+	var createdCompany tutorme.Company
+	err := row.StructScan(&createdCompany)
+
+	return &createdCompany, err
+}
+
 func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*tutorme.Company, error) {
 	query := sq.Update("company")
 
@@ -88,7 +109,14 @@ func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*
 		query = query.Set("active", company.Active)
 	}
 
-	sql, args, err := query.Suffix("RETURNING *").PlaceholderFormat(sq.Dollar).ToSql()
+	if company.Name.Valid {
+		query = query.Set("company_name", company.Name)
+	}
+
+	sql, args, err := query.
+		Where(sq.Eq{"id": company.ID}).
+		Suffix("RETURNING *").
+		PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
 		return nil, err
@@ -144,16 +172,29 @@ func (cs *CompanyStore) GetCompanies(db tutorme.DB, active bool) (*[]tutorme.Com
 	return &companies, nil
 }
 
-const getCompanyNameFromEmailDomainQuery string = `
-SELECT company_name FROM company_email
-INNER JOIN company ON company.id = company_email.company_id
+const getCompanyIDFromEmailDomainQuery string = `
+SELECT id FROM company_email
 WHERE email_domain = $1
 `
 
-func (cs *CompanyStore) GetCompanyNameFromEmailDomain(db tutorme.DB, emailDomain string) (null.String, error) {
-	var name null.String
+func (cs *CompanyStore) GetCompanyIDFromEmailDomain(db tutorme.DB, emailDomain string) (null.Int, error) {
+	var id null.Int
 
-	err := db.QueryRowx(getCompanyNameFromEmailDomainQuery, emailDomain).Scan(&name)
+	err := db.QueryRowx(getCompanyIDFromEmailDomainQuery, emailDomain).Scan(&id)
 
-	return name, err
+	return id, err
+}
+
+const getCompanyQuery string = `
+SELECT * FROM company
+WHERE id = $1
+`
+
+func (cs *CompanyStore) GetCompany(db tutorme.DB, id int) (*tutorme.Company, error) {
+	var company tutorme.Company
+
+	row := db.QueryRowx(getCompanyQuery, id)
+	err := row.StructScan(&company)
+
+	return &company, err
 }
