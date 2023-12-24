@@ -47,6 +47,15 @@ type (
 		EndTime   string `query:"end" validate:"omitempty, datetime"`
 		State     string `query:"state" validate:"omitempty,oneof= scheduled pending"`
 	}
+
+	ClientCompanyReferralPayload struct {
+		CompanyIds           []int `json:"companyIds"`
+		IsLookingForReferral bool  `json:"isLookingForReferral"`
+	}
+
+	GetReferralCompanyResponse struct {
+		CompanyIds []int `json:"companyIds"`
+	}
 )
 
 // ClientPayloadValidation validates client inputs
@@ -351,6 +360,65 @@ func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
 	}
 
 	err = cv.ClientUseCase.DeleteVerificationEmail(claims.ClientID, emailType)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (cv *ClientView) GetWantingReferralCompany(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	clientID := c.Param("clientID")
+
+	if claims.ClientID != clientID && !claims.Admin {
+		return echo.NewHTTPError(http.StatusUnauthorized, "You are unauthorized to edit this client")
+	}
+
+	companies, err := cv.ClientUseCase.GetClientWantingCompanyReferrals(
+		clientID,
+	)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	response := GetReferralCompanyResponse{
+		CompanyIds: companies,
+	}
+	return c.JSON(http.StatusOK, response)
+}
+
+func (cv *ClientView) CreateWantingReferralCompany(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	clientID := c.Param("clientID")
+
+	if claims.ClientID != clientID && !claims.Admin {
+		return echo.NewHTTPError(http.StatusUnauthorized, "You are unauthorized to edit this client")
+	}
+
+	payload := ClientCompanyReferralPayload{}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	err = cv.ClientUseCase.CreateClientWantingCompanyReferrals(
+		clientID,
+		payload.IsLookingForReferral,
+		payload.CompanyIds,
+	)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
