@@ -198,3 +198,43 @@ func (cs *CompanyStore) GetCompany(db tutorme.DB, id int) (*tutorme.Company, err
 
 	return &company, err
 }
+
+func (cs *CompanyStore) GetCompanyEmails(db tutorme.DB, withCompany null.Bool) (*[]tutorme.CompanyEmailDomain, error) {
+	companyEmails := make([]tutorme.CompanyEmailDomain, 0)
+
+	query := sq.Select("*").From("company_email")
+
+	if withCompany.Valid && withCompany.Bool {
+		query = query.Where(sq.NotEq{"company_id": nil})
+	}
+
+	if withCompany.Valid && !withCompany.Bool {
+		query = query.Where(sq.Eq{"company_id": nil})
+	}
+
+	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return &companyEmails, err
+	}
+
+	rows, err := db.Queryx(sql, args...)
+
+	if err != nil {
+		return &companyEmails, err
+	}
+
+	for rows.Next() {
+		var companyEmail tutorme.CompanyEmailDomain
+
+		err = rows.StructScan(&companyEmail)
+
+		if err != nil {
+			return &companyEmails, err
+		}
+
+		companyEmails = append(companyEmails, companyEmail)
+	}
+
+	return &companyEmails, nil
+}

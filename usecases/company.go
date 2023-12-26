@@ -19,6 +19,10 @@ func (comu *CompanyUseCase) GetCompany(id int) (*tutorme.Company, error) {
 	return comu.CompanyStore.GetCompany(comu.db, id)
 }
 
+func (comu *CompanyUseCase) GetCompanyEmails(withCompany null.Bool) (*[]tutorme.CompanyEmailDomain, error) {
+	return comu.CompanyStore.GetCompanyEmails(comu.db, withCompany)
+}
+
 func (comu *CompanyUseCase) CreateCompany(
 	name string,
 	photo null.String,

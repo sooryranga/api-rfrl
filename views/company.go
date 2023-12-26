@@ -127,6 +127,33 @@ func (comv *CompanyView) UpdateCompanyView(c echo.Context) error {
 	return c.JSON(http.StatusOK, company)
 }
 
+func (comv *CompanyView) GetCompanyEmailView(c echo.Context) error {
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !claims.Admin {
+		return echo.NewHTTPError(http.StatusUnauthorized, "You are not authorized for this view")
+	}
+
+	withCompany := null.Bool{}
+	err = withCompany.UnmarshalText([]byte(c.QueryParam("withCompany")))
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	companyEmails, err := comv.CompanyUseCase.GetCompanyEmails(withCompany)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, companyEmails)
+}
+
 func (comv *CompanyView) UpdateCompanyEmailView(c echo.Context) error {
 	payload := UpdateCompanyEmailViewPayload{}
 
