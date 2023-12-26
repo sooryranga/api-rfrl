@@ -28,7 +28,7 @@ type (
 	}
 
 	UpdateCompanyEmailViewPayload struct {
-		Name        string `json:"name" validate:"gte=3"`
+		CompanyName string `json:"companyName"`
 		EmailDomain string `json:"emailDomain" validate:"gte=2"`
 		Active      *bool  `json:"active" validate:"required"`
 	}
@@ -127,7 +127,7 @@ func (comv *CompanyView) UpdateCompanyView(c echo.Context) error {
 	return c.JSON(http.StatusOK, company)
 }
 
-func (comv *CompanyView) GetCompanyEmailView(c echo.Context) error {
+func (comv *CompanyView) GetCompanyEmailsView(c echo.Context) error {
 	claims, err := tutorme.GetClaims(c)
 
 	if err != nil {
@@ -176,7 +176,7 @@ func (comv *CompanyView) UpdateCompanyEmailView(c echo.Context) error {
 	}
 
 	err = comv.CompanyUseCase.UpdateCompanyEmail(
-		payload.Name,
+		null.NewString(payload.CompanyName, payload.CompanyName != ""),
 		payload.EmailDomain,
 		*payload.Active,
 	)
@@ -213,4 +213,26 @@ func (comv *CompanyView) GetCompanies(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, companies)
+}
+
+func (comv *CompanyView) GetCompanyEmailView(c echo.Context) error {
+	companyEmail := c.Param("companyEmail")
+
+	if companyEmail == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "you need to pass in company email")
+	}
+
+	claims, err := tutorme.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if !claims.Admin {
+		return echo.NewHTTPError(http.StatusUnauthorized, "You are not authorized for this view")
+	}
+
+	company, err := comv.CompanyUseCase.GetCompanyEmail(companyEmail)
+
+	return c.JSON(http.StatusOK, company)
 }

@@ -25,7 +25,7 @@ SELECT * FROM company WHERE company_name = $1
 func (cs *CompanyStore) SelectCompany(db tutorme.DB, name string) (*tutorme.Company, error) {
 	var company tutorme.Company
 
-	err := db.QueryRowx(createCompany, name).StructScan(&company)
+	err := db.QueryRowx(selectCompany, name).StructScan(&company)
 
 	if err != nil {
 		return nil, err
@@ -131,19 +131,23 @@ func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*
 const updateOrCreateCompanyEmail string = `
 INSERT INTO company_email (email_domain, company_id, active)
 VALUES ($1, $2, $3)
-ON CONFLICT ON CONSTRAINT email_domain 
+ON CONFLICT (email_domain)
 DO UPDATE
-SET company_name = $2, active = $3
+SET company_id = $2, active = $3
 `
 
-func (cs *CompanyStore) UpdateOrCreateCompanyEmail(db tutorme.DB, name string, emailDomain string, active bool) error {
-	company, err := cs.SelectCompany(db, name)
+func (cs *CompanyStore) UpdateOrCreateCompanyEmail(db tutorme.DB, name null.String, emailDomain string, active bool) error {
+	var companyId null.Int
+	if name.Valid {
+		company, err := cs.SelectCompany(db, name.String)
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		companyId = null.IntFrom(int64(company.ID))
 	}
 
-	_, err = db.Queryx(updateOrCreateCompanyEmail, emailDomain, company.ID, active)
+	_, err := db.Queryx(updateOrCreateCompanyEmail, emailDomain, companyId, active)
 	return err
 }
 
@@ -237,4 +241,19 @@ func (cs *CompanyStore) GetCompanyEmails(db tutorme.DB, withCompany null.Bool) (
 	}
 
 	return &companyEmails, nil
+}
+
+const getCompanyEmailQuery string = `
+SELECT * FROM company_email
+WHERE email_domain = $1
+`
+
+func (cs *CompanyStore) GetCompanyEmail(db tutorme.DB, emailDomain string) (*tutorme.CompanyEmailDomain, error) {
+	row := db.QueryRowx(getCompanyEmailQuery, emailDomain)
+
+	var companyEmail tutorme.CompanyEmailDomain
+
+	err := row.StructScan(&companyEmail)
+
+	return &companyEmail, err
 }

@@ -36,10 +36,11 @@ func NewCompany(
 type CompanyUseCase interface {
 	UpdateCompany(id int, name null.String, photo null.String, industry null.String, about null.String, active null.Bool) (*Company, error)
 	CreateCompany(name string, photo null.String, industry null.String, about null.String, active null.Bool) (*Company, error)
-	UpdateCompanyEmail(name string, emailDomain string, active bool) error
+	UpdateCompanyEmail(name null.String, emailDomain string, active bool) error
 	GetCompanies(active bool) (*[]Company, error)
 	GetCompany(id int) (*Company, error)
 	GetCompanyEmails(withCompany null.Bool) (*[]CompanyEmailDomain, error)
+	GetCompanyEmail(companyEmail string) (*CompanyEmailDomain, error)
 }
 
 type CompanyStore interface {
@@ -48,9 +49,10 @@ type CompanyStore interface {
 	CreateCompanyEmailDomain(db DB, emailDomain string) error
 	CreateCompany(db DB, company Company) (*Company, error)
 	UpdateCompany(db DB, company Company) (*Company, error)
-	UpdateOrCreateCompanyEmail(db DB, name string, emailDomain string, active bool) error
+	UpdateOrCreateCompanyEmail(db DB, name null.String, emailDomain string, active bool) error
 	GetCompanies(db DB, active bool) (*[]Company, error)
 	GetCompanyIDFromEmailDomain(db DB, domain string) (null.Int, error)
 	GetCompany(db DB, id int) (*Company, error)
 	GetCompanyEmails(db DB, withCompany null.Bool) (*[]CompanyEmailDomain, error)
+	GetCompanyEmail(db DB, companyEmail string) (*CompanyEmailDomain, error)
 }
