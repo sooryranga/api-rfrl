@@ -4,6 +4,7 @@ import (
 	"github.com/Arun4rangan/api-tutorme/tutorme"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
+	"gopkg.in/guregu/null.v4"
 )
 
 type QuestionStore struct{}
@@ -285,12 +286,24 @@ func (qs *QuestionStore) GetQuestion(db tutorme.DB, id int) (*tutorme.Question, 
 	return &question, nil
 }
 
-const getQuestionsSQL string = `
-SELECT * FROM question
-`
+func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int) (*[]tutorme.Question, error) {
+	query := sq.Select("*").From("question")
 
-func (qs *QuestionStore) GetQuestions(db tutorme.DB) (*[]tutorme.Question, error) {
-	rows, err := db.Queryx(getQuestionsSQL)
+	if lastQuestion.Valid {
+		query = query.Where(sq.Gt{"id": lastQuestion})
+	}
+
+	sql, args, err := query.
+		OrderBy("id DESC").
+		Limit(50).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
 		return nil, err

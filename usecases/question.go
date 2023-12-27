@@ -3,6 +3,7 @@ package usecases
 import (
 	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"github.com/jmoiron/sqlx"
+	"gopkg.in/guregu/null.v4"
 )
 
 type QuestionUseCase struct {
@@ -94,8 +95,8 @@ func (qu *QuestionUseCase) GetQuestion(id int) (*tutorme.Question, error) {
 	return question, err
 }
 
-func (qu *QuestionUseCase) GetQuestions() (*[]tutorme.Question, error) {
-	questions, err := qu.QuestionStore.GetQuestions(qu.DB)
+func (qu *QuestionUseCase) GetQuestions(lastQuestion null.Int) (*[]tutorme.Question, error) {
+	questions, err := qu.QuestionStore.GetQuestions(qu.DB, lastQuestion)
 
 	if len(*questions) == 0 {
 		return questions, nil
