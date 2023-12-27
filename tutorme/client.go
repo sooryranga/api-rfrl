@@ -76,6 +76,7 @@ type GetClientsOptions struct {
 	IsTutor                  null.Bool
 	CompanyIds               []int
 	WantingReferralCompanyId null.Int
+	LastTutor                null.String
 }
 
 type ClientStore interface {
