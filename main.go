@@ -82,11 +82,17 @@ func main() {
 		panic(fmt.Sprintf("%v", err))
 	}
 
-	client, err := app.Firestore(ctx)
+	firebaseAuth, err := app.Auth(ctx)
+
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
 	}
-	defer client.Close()
+
+	firebaseClient, err := app.Firestore(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+	defer firebaseClient.Close()
 
 	// Validator
 	validate := validator.New()
@@ -143,7 +149,7 @@ func main() {
 	companyStore := store.NewCompanyStore()
 	conferenceStore := store.NewConferenceStore()
 	reportClientStore := store.NewReportClientStore()
-	fireStoreClient := store.NewFireStore(client)
+	fireStoreClient := store.NewFireStore(firebaseClient, firebaseAuth)
 
 	// Usecases
 	emailerUseCase := usecases.NewEmailerUseCase()

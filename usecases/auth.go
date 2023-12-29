@@ -67,6 +67,14 @@ func (au *AuthUseCase) SignupWithToken(newClient *tutorme.Client, auth *tutorme.
 		createdClient.LastName.String,
 	)
 
+	if *err != nil {
+		return nil, nil, *err
+	}
+
+	var firebaseToken string
+	firebaseToken, *err = au.fireStore.CreateLoginToken(createdClient.ID)
+	createdAuth.FirebaseToken = firebaseToken
+
 	return createdClient, createdAuth, *err
 }
 
@@ -167,6 +175,14 @@ func (au *AuthUseCase) SignupEmail(
 		createdClient.LastName.String,
 	)
 
+	if *err != nil {
+		return nil, nil, *err
+	}
+
+	var firebaseToken string
+	firebaseToken, *err = au.fireStore.CreateLoginToken(createdClient.ID)
+	createdAuth.FirebaseToken = firebaseToken
+
 	return createdClient, createdAuth, *err
 }
 
@@ -187,6 +203,9 @@ func (au *AuthUseCase) LoginEmail(email string, password string) (*tutorme.Clien
 		return nil, nil, errors.Wrap(err, "CompareHashAndPassword")
 	}
 
+	firebaseToken, err := au.fireStore.CreateLoginToken(c.ID)
+	auth.FirebaseToken = firebaseToken
+
 	return c, auth, err
 }
 
@@ -200,17 +219,40 @@ func (au *AuthUseCase) LoginWithJWT(clientID string) (*tutorme.Client, *tutorme.
 		return nil, nil, errors.Wrap(err, "LoginWithJWT")
 	}
 
-	return c, nil, err
+	auth, err := au.authStore.GetByClientID(au.db, clientID)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	firebaseToken, err := au.fireStore.CreateLoginToken(c.ID)
+	auth.FirebaseToken = firebaseToken
+
+	return c, auth, err
 }
 
 // LoginGoogle allow user to login with their google oauth token
 func (au *AuthUseCase) LoginGoogle(token string) (*tutorme.Client, *tutorme.Auth, error) {
-	return au.authStore.GetByToken(au.db, token, tutorme.GOOGLE)
+	cl, a, err := au.authStore.GetByToken(au.db, token, tutorme.GOOGLE)
+
+	if err != nil {
+		return cl, a, err
+	}
+
+	a.FirebaseToken, err = au.fireStore.CreateLoginToken(cl.ID)
+	return cl, a, err
 }
 
 // LoginLinkedIn allow user to login with their linkedin
 func (au *AuthUseCase) LoginLinkedIn(token string) (*tutorme.Client, *tutorme.Auth, error) {
-	return au.authStore.GetByToken(au.db, token, tutorme.LINKEDIN)
+	cl, a, err := au.authStore.GetByToken(au.db, token, tutorme.LINKEDIN)
+
+	if err != nil {
+		return cl, a, err
+	}
+
+	a.FirebaseToken, err = au.fireStore.CreateLoginToken(cl.ID)
+	return cl, a, err
 }
 
 func hashAndSalt(pwd []byte) ([]byte, error) {
