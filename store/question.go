@@ -290,7 +290,7 @@ func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int) (*[]
 	query := sq.Select("*").From("question")
 
 	if lastQuestion.Valid {
-		query = query.Where(sq.Gt{"id": lastQuestion})
+		query = query.Where(sq.Lt{"id": lastQuestion})
 	}
 
 	sql, args, err := query.
