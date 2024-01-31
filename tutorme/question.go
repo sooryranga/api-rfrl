@@ -23,6 +23,7 @@ type Question struct {
 	FromID     string    `db:"from_id" json:"-"`
 	From       Client    `json:"from"`
 	Applicants int       `db:"applicants" json:"applicants"`
+	Resolved   bool      `db:"resolved" json:"resolved"`
 }
 
 func NewQuestion(title string, body string, tags []int, fromClient string) Question {
@@ -36,20 +37,20 @@ func NewQuestion(title string, body string, tags []int, fromClient string) Quest
 
 type QuestionUseCase interface {
 	CreateQuestion(clientID string, title string, body string, tags []int) (*Question, error)
-	UpdateQuestion(clientID string, id int, title string, body string, tags []int) (*Question, error)
+	UpdateQuestion(clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*Question, error)
 	DeleteQuestion(clientID string, id int) error
 	GetQuestion(id int) (*Question, error)
-	GetQuestions(lastQuestion null.Int) (*[]Question, error)
-	GetQuestionsForClient(clientID string) (*[]Question, error)
+	GetQuestions(lastQuestion null.Int, resolved null.Bool) (*[]Question, error)
+	GetQuestionsForClient(clientID string, resolved null.Bool) (*[]Question, error)
 	ApplyToQuestion(clientID string, id int) error
 }
 
 type QuestionStore interface {
 	CreateQuestion(db DB, question Question) (*Question, error)
-	UpdateQuestion(db DB, clientID string, id int, title string, body string, tags []int) (*Question, error)
+	UpdateQuestion(db DB, clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*Question, error)
 	DeleteQuestion(db DB, id int) error
 	GetQuestion(db DB, id int) (*Question, error)
-	GetQuestions(db DB, lastQuestion null.Int) (*[]Question, error)
-	GetQuestionsForClient(db DB, clientID string) (*[]Question, error)
+	GetQuestions(db DB, lastQuestion null.Int, resolved null.Bool) (*[]Question, error)
+	GetQuestionsForClient(db DB, clientID string, resolved null.Bool) (*[]Question, error)
 	ApplyToQuestion(db DB, clientID string, id int) error
 }

@@ -2,6 +2,7 @@ package views
 
 import (
 	"crypto/rsa"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
@@ -12,8 +13,8 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -78,7 +79,7 @@ func SignUpPayloadValidation(sl validator.StructLevel) {
 func LoginPayloadValidation(sl validator.StructLevel) {
 
 	payload := sl.Current().Interface().(LoginPayload)
-	log.Errorj(log.JSON{"payload": payload})
+
 	switch payload.Type {
 	case tutorme.GOOGLE:
 		if len(payload.Token) == 0 {
@@ -164,10 +165,9 @@ func (av *AuthView) Signup(c echo.Context) error {
 			if pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 				return av.login(c, payload.loginFields)
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
 		}
 
-		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong")
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	claims := &tutorme.JWTClaims{
@@ -182,7 +182,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 	token, err := av.AuthUseCases.GenerateToken(claims, &av.Key)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong")
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -216,6 +216,10 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 
 	token, err := av.AuthUseCases.GenerateToken(newClaims, &av.Key)
 
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, echo.Map{
 		"token":  token,
 		"client": existingClient,
@@ -240,12 +244,14 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	}
 
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Database error")
+		switch errors.Cause(err) {
+		case sql.ErrNoRows:
+			return echo.NewHTTPError(http.StatusNotFound, "User not found")
+		case bcrypt.ErrMismatchedHashAndPassword:
+			return echo.NewHTTPError(http.StatusNotFound, "Email and password do not match")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 		}
-
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	claims := &tutorme.JWTClaims{
@@ -258,6 +264,10 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	}
 
 	token, err := av.AuthUseCases.GenerateToken(claims, &av.Key)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+	}
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"token":  token,
@@ -294,7 +304,13 @@ func (av *AuthView) UpdateSignUpFlow(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return av.AuthUseCases.UpdateSignUpFlow(claims.ClientID, payload.Stage)
+	err = av.AuthUseCases.UpdateSignUpFlow(claims.ClientID, payload.Stage)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 func (av *AuthView) BlockClient(c echo.Context) error {

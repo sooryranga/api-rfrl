@@ -214,7 +214,7 @@ func (au *AuthUseCase) LoginWithJWT(clientID string) (*tutorme.Client, *tutorme.
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil, errors.New(fmt.Sprintf("Client not found with %s", clientID))
+			return nil, nil, errors.Wrap(err, fmt.Sprintf("Client not found with %s", clientID))
 		}
 		return nil, nil, errors.Wrap(err, "LoginWithJWT")
 	}

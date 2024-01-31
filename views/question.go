@@ -12,10 +12,11 @@ import (
 
 type (
 	QuestionPayload struct {
-		ID    int    `path:"id"`
-		Title string `json:"title" validate:"required,gte=0,lte=150"`
-		Body  string `json:body" validate:"required, gte=0"`
-		Tags  []int  `json:"tags" validate:"numeric"`
+		ID       int       `path:"id"`
+		Title    string    `json:"title" validate:"required,gte=0,lte=150"`
+		Body     string    `json:body" validate:"required, gte=0"`
+		Tags     []int     `json:"tags" validate:"numeric"`
+		Resolved null.Bool `json:"resolved"`
 	}
 )
 
@@ -69,6 +70,7 @@ func (qv QuestionView) UpdateQuestionEndpoint(c echo.Context) error {
 		payload.Title,
 		payload.Body,
 		payload.Tags,
+		payload.Resolved,
 	)
 
 	if err != nil {
@@ -115,6 +117,7 @@ func (qv QuestionView) GetQuestionEndpoint(c echo.Context) error {
 
 func (qv QuestionView) GetQuestionsEndpoint(c echo.Context) error {
 	lastQuestionParam := c.QueryParam("lastQuestion")
+
 	var lastQuestion null.Int
 	if lastQuestionParam != "" {
 		i, err := strconv.Atoi(lastQuestionParam)
@@ -124,7 +127,14 @@ func (qv QuestionView) GetQuestionsEndpoint(c echo.Context) error {
 		lastQuestion = null.IntFrom(int64(i))
 	}
 
-	questions, err := qv.QuestionUseCase.GetQuestions(lastQuestion)
+	resolved := null.Bool{}
+	err := resolved.UnmarshalText([]byte(c.QueryParam("withCompany")))
+
+	if err != nil {
+		return err
+	}
+
+	questions, err := qv.QuestionUseCase.GetQuestions(lastQuestion, resolved)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -139,7 +149,14 @@ func (qv QuestionView) GetQuestionsFromClientEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	questions, err := qv.QuestionUseCase.GetQuestionsForClient(clientID)
+	resolved := null.Bool{}
+	err := resolved.UnmarshalText([]byte(c.QueryParam("withCompany")))
+
+	if err != nil {
+		return err
+	}
+
+	questions, err := qv.QuestionUseCase.GetQuestionsForClient(clientID, resolved)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

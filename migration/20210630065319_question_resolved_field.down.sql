@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE question DROP COLUMN resolved;
+
+COMMIT;
