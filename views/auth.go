@@ -202,7 +202,12 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	existingClient, auth, err := av.AuthUseCases.LoginWithJWT(claims.ClientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		switch errors.Cause(err) {
+		case sql.ErrNoRows:
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		}
 	}
 
 	newClaims := &tutorme.JWTClaims{
@@ -217,7 +222,7 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	token, err := av.AuthUseCases.GenerateToken(newClaims, &av.Key)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -246,7 +251,7 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	if err != nil {
 		switch errors.Cause(err) {
 		case sql.ErrNoRows:
-			return echo.NewHTTPError(http.StatusNotFound, "User not found")
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
 		case bcrypt.ErrMismatchedHashAndPassword:
 			return echo.NewHTTPError(http.StatusNotFound, "Email and password do not match")
 		default:
@@ -340,7 +345,12 @@ func (av *AuthView) BlockClient(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		switch errors.Cause(err) {
+		case sql.ErrNoRows:
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, tutorme.GetStatusInternalServerError(err))
+		}
 	}
 
 	return c.NoContent(http.StatusOK)
