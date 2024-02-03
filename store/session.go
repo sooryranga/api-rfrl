@@ -35,7 +35,7 @@ WHERE session_client.session_id in (?)
 func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows, clientID string) (*[]tutorme.Session, error) {
 	idToIndex := make(map[int]int)
 	sessions := make([]tutorme.Session, 0)
-	var sessionIds []int
+	sessionIds := make([]int, 0)
 	i := 0
 	for rows.Next() {
 		var session tutorme.Session

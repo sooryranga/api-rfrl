@@ -368,14 +368,16 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 			sessionIDs = append(sessionIDs, (*sessions)[i].ID)
 		}
 
-		forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, sessionIDs)
+		if len(sessionIDs) > 0 {
+			forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, sessionIDs)
 
-		if err != nil {
-			return err
-		}
+			if err != nil {
+				return err
+			}
 
-		if !forClient {
-			return errors.New("Room does not belong to client")
+			if !forClient {
+				return errors.New("Room does not belong to client")
+			}
 		}
 
 	} else {
