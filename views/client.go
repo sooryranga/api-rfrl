@@ -10,6 +10,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
@@ -238,7 +239,9 @@ func (cv *ClientView) VerifyEmail(c echo.Context) error {
 		payload.Email,
 		payload.Type,
 	)
-
+	log.Errorj(log.JSON{
+		"err": err,
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
 	}

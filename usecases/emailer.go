@@ -1,9 +1,14 @@
 package usecases
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
-	"strings"
+	"path"
+	"path/filepath"
+	"runtime"
+	"text/template"
 	"time"
 
 	"gopkg.in/gomail.v2"
@@ -19,14 +24,41 @@ func (em *EmailerUseCase) SendEmailVerification(email string) (string, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	s := fmt.Sprintf("%06d", rand.Int63n(1e6))
 
-	emailBody := "Hello <b>You used this email to sign up for Tutorme.</i>! Please use the following code to finish signing up - {VERIFY_CODE}"
+	t := template.New("verify-html.html")
 
-	emailBody = strings.Replace(emailBody, "{VERIFY_CODE}", s, 1)
+	_, b, _, _ := runtime.Caller(0)
+	appDir := filepath.Dir(path.Join(path.Dir(b)))
+	htmlPath := path.Join(appDir, "/assets/verify-email.html")
+
+	htmlText, err := ioutil.ReadFile(htmlPath)
+	if err != nil {
+		return "", err
+	}
+
+	t, err = t.Parse(string(htmlText))
+
+	if err != nil {
+		return s, err
+	}
+
+	var tpl bytes.Buffer
+
+	err = t.Execute(
+		&tpl, struct {
+			VerifyCode string
+		}{
+			VerifyCode: s,
+		})
+
+	if err != nil {
+		return s, err
+	}
+
 	m := gomail.NewMessage()
 	m.SetHeader("From", "arun.ranganathan111@gmail.com")
 	m.SetHeader("To", email)
 	m.SetHeader("Subject", "Hello!")
-	m.SetBody("text/html", emailBody)
+	m.SetBody("text/html", tpl.String())
 
 	d := gomail.NewDialer(
 		"smtp.gmail.com",
@@ -36,7 +68,7 @@ func (em *EmailerUseCase) SendEmailVerification(email string) (string, error) {
 	)
 
 	if err := d.DialAndSend(m); err != nil {
-		panic(err)
+		return s, err
 	}
 
 	return s, nil
