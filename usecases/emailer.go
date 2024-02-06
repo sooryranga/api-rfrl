@@ -45,9 +45,13 @@ func (em *EmailerUseCase) SendEmailVerification(email string) (string, error) {
 
 	err = t.Execute(
 		&tpl, struct {
-			VerifyCode string
+			VerifyCode  string
+			Heading     string
+			Description string
 		}{
-			VerifyCode: s,
+			VerifyCode:  s,
+			Heading:     "Hello!",
+			Description: "Please complete sign-up by using the passcode provided bellow:",
 		})
 
 	if err != nil {
