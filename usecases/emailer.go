@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
 	"gopkg.in/gomail.v2"
 )
 
@@ -20,7 +21,7 @@ func NewEmailerUseCase() *EmailerUseCase {
 	return &EmailerUseCase{}
 }
 
-func (em *EmailerUseCase) SendEmailVerification(email string) (string, error) {
+func (em *EmailerUseCase) SendEmailVerification(email string, emailType string) (string, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	s := fmt.Sprintf("%06d", rand.Int63n(1e6))
 
@@ -43,6 +44,12 @@ func (em *EmailerUseCase) SendEmailVerification(email string) (string, error) {
 
 	var tpl bytes.Buffer
 
+	attributes, ok := tutorme.EmailTypeToEmailAttributes[emailType]
+
+	if !ok {
+		panic("email type is not found")
+	}
+
 	err = t.Execute(
 		&tpl, struct {
 			VerifyCode  string
@@ -50,8 +57,8 @@ func (em *EmailerUseCase) SendEmailVerification(email string) (string, error) {
 			Description string
 		}{
 			VerifyCode:  s,
-			Heading:     "Hello!",
-			Description: "Please complete sign-up by using the passcode provided bellow:",
+			Heading:     attributes.Heading,
+			Description: attributes.Description,
 		})
 
 	if err != nil {
