@@ -3,7 +3,7 @@ package usecases
 import (
 	"fmt"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -11,11 +11,11 @@ import (
 // DocumentUseCase holds all business related functions for document
 type DocumentUseCase struct {
 	db            *sqlx.DB
-	documentStore tutorme.DocumentStore
+	documentStore rfrl.DocumentStore
 }
 
 // NewDocumentUseCase creates new ClientUseCase
-func NewDocumentUseCase(db sqlx.DB, documentStore tutorme.DocumentStore) *DocumentUseCase {
+func NewDocumentUseCase(db sqlx.DB, documentStore rfrl.DocumentStore) *DocumentUseCase {
 	return &DocumentUseCase{&db, documentStore}
 }
 
@@ -25,8 +25,8 @@ func (dc *DocumentUseCase) CreateDocument(
 	src string,
 	name string,
 	description string,
-) (*tutorme.Document, error) {
-	document := tutorme.NewDocument(clientID, src, name, description)
+) (*rfrl.Document, error) {
+	document := rfrl.NewDocument(clientID, src, name, description)
 	return dc.documentStore.CreateDocument(dc.db, document)
 }
 
@@ -37,8 +37,8 @@ func (dc *DocumentUseCase) UpdateDocument(
 	src string,
 	name string,
 	description string,
-) (*tutorme.Document, error) {
-	document := tutorme.NewDocument(clientID, src, name, description)
+) (*rfrl.Document, error) {
+	document := rfrl.NewDocument(clientID, src, name, description)
 	return dc.documentStore.UpdateDocument(dc.db, ID, document)
 }
 
@@ -51,7 +51,7 @@ func (dc *DocumentUseCase) DeleteDocument(
 	var tx *sqlx.Tx
 
 	tx, *err = dc.db.Beginx()
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	if *err != nil {
 		return *err
@@ -76,7 +76,7 @@ func (dc *DocumentUseCase) DeleteDocument(
 func (dc *DocumentUseCase) GetDocument(
 	id int,
 	clientID string,
-) (*tutorme.Document, error) {
+) (*rfrl.Document, error) {
 	return dc.documentStore.GetDocument(dc.db, id, clientID)
 }
 
@@ -86,7 +86,7 @@ func (dc *DocumentUseCase) CreateDocumentOrder(
 	documentIds []int,
 	refID string,
 	refType string,
-) ([]tutorme.Document, error) {
+) ([]rfrl.Document, error) {
 	check, err := dc.checkclientIsInRef(clientID, refType, refID)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (dc *DocumentUseCase) UpdateDocumentOrder(
 	documentIDs []int,
 	refID string,
 	refType string,
-) ([]tutorme.Document, error) {
+) ([]rfrl.Document, error) {
 	check, err := dc.checkclientIsInRef(clientID, refType, refID)
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func (dc *DocumentUseCase) GetDocumentOrder(
 	clientID string,
 	refID string,
 	refType string,
-) ([]tutorme.Document, error) {
+) ([]rfrl.Document, error) {
 	check, err := dc.checkclientIsAbleToViewDocument(clientID, refType, refID)
 	if err != nil {
 		return nil, err
@@ -170,9 +170,9 @@ func (dc *DocumentUseCase) checkDocumentsAreForRef(
 	refID string,
 ) (bool, error) {
 	var clientIDs []string
-	if refType == tutorme.ClientRef {
+	if refType == rfrl.ClientRef {
 		clientIDs = []string{refID}
-	} else if refType == tutorme.SessionRef {
+	} else if refType == rfrl.SessionRef {
 		// clientIDs = session.GetClientsIdForSession(h.db, refID)
 		return false, nil
 	} else {
@@ -187,10 +187,10 @@ func (dc *DocumentUseCase) checkclientIsAbleToViewDocument(
 	refType string,
 	refID string,
 ) (bool, error) {
-	if refType == tutorme.ClientRef {
+	if refType == rfrl.ClientRef {
 		return true, nil
 	}
-	if refType == tutorme.SessionRef {
+	if refType == rfrl.SessionRef {
 		// clientIDs, err := session.GetclientsIdForSession(h.db, refID)
 
 		// for i := 0; i < len(clientIDs); i += 1 {
@@ -209,10 +209,10 @@ func (dc *DocumentUseCase) checkclientIsInRef(
 	refType string,
 	refID string,
 ) (bool, error) {
-	if refType == tutorme.ClientRef {
+	if refType == rfrl.ClientRef {
 		return refID == clientID, nil
 	}
-	if refType == tutorme.SessionRef {
+	if refType == rfrl.SessionRef {
 		// clientIDs, err := session.GetclientsIdForSession(h.db, refID)
 
 		// for i := 0; i < len(clientIDs); i += 1 {

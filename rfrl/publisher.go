@@ -1,4 +1,4 @@
-package tutorme
+package rfrl
 
 const (
 	JavascriptTopic string = "javascript_topic"

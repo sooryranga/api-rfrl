@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 )
 
@@ -11,7 +11,7 @@ func NewTutorReviewStore() *TutorReviewStore {
 	return &TutorReviewStore{}
 }
 
-func (trs *TutorReviewStore) CreateTutorReview(db tutorme.DB, ClientID string, tutorReview *tutorme.TutorReview) (*tutorme.TutorReview, error) {
+func (trs *TutorReviewStore) CreateTutorReview(db rfrl.DB, ClientID string, tutorReview *rfrl.TutorReview) (*rfrl.TutorReview, error) {
 	sql, args, err := sq.Insert("tutor_review").
 		Columns("tutor_id", "from_id", "stars", "review", "headline").
 		Values(
@@ -30,7 +30,7 @@ func (trs *TutorReviewStore) CreateTutorReview(db tutorme.DB, ClientID string, t
 
 	row := db.QueryRowx(sql, args...)
 
-	var createdTutorReview tutorme.TutorReview
+	var createdTutorReview rfrl.TutorReview
 	err = row.StructScan(&createdTutorReview)
 
 	return &createdTutorReview, err
@@ -41,7 +41,7 @@ SELECT count(*) FROM tutor_review
 WHERE client_id = $1 AND id = $2
 	`
 
-func (trs *TutorReviewStore) CheckTutorReviewForClient(db tutorme.DB, clientID string, id int) (bool, error) {
+func (trs *TutorReviewStore) CheckTutorReviewForClient(db rfrl.DB, clientID string, id int) (bool, error) {
 	row := db.QueryRowx(checkTutorReviewForClient, clientID, id)
 
 	var reviewForClient int
@@ -53,7 +53,7 @@ func (trs *TutorReviewStore) CheckTutorReviewForClient(db tutorme.DB, clientID s
 	return reviewForClient == 1, nil
 }
 
-func (trs *TutorReviewStore) UpdateTutorReview(db tutorme.DB, review *tutorme.TutorReview) (*tutorme.TutorReview, error) {
+func (trs *TutorReviewStore) UpdateTutorReview(db rfrl.DB, review *rfrl.TutorReview) (*rfrl.TutorReview, error) {
 	query := sq.Update("tutor_review")
 	if review.Stars.Valid {
 		query = query.Set("stars", review.Stars.Int64)
@@ -79,7 +79,7 @@ func (trs *TutorReviewStore) UpdateTutorReview(db tutorme.DB, review *tutorme.Tu
 
 	row := db.QueryRowx(sql, args...)
 
-	var tutorReview tutorme.TutorReview
+	var tutorReview rfrl.TutorReview
 	err = row.StructScan(&tutorReview)
 
 	return &tutorReview, err
@@ -89,7 +89,7 @@ const deleteTutorReview string = `
 DELETE FROM tutor_review WHERE id = $1
 	`
 
-func (trs *TutorReviewStore) DeleteTutorReview(db tutorme.DB, ID int) error {
+func (trs *TutorReviewStore) DeleteTutorReview(db rfrl.DB, ID int) error {
 	_, err := db.Queryx(deleteTutorReview, ID)
 	return err
 }
@@ -99,9 +99,9 @@ SELECT * FROM tutor_review
 WHERE tutor_review.id = $1
 `
 
-func (trs *TutorReviewStore) GetTutorReview(db tutorme.DB, id int) (*tutorme.TutorReview, error) {
+func (trs *TutorReviewStore) GetTutorReview(db rfrl.DB, id int) (*rfrl.TutorReview, error) {
 	row := db.QueryRowx(getTutorReview, id)
-	var tutorReview tutorme.TutorReview
+	var tutorReview rfrl.TutorReview
 	err := row.StructScan(&tutorReview)
 
 	return &tutorReview, err
@@ -114,7 +114,7 @@ SELECT EXISTS (
 )
 `
 
-func (trs *TutorReviewStore) CheckIfReviewAlreadyExists(db tutorme.DB, menteeID string, tutorID string) (bool, error) {
+func (trs *TutorReviewStore) CheckIfReviewAlreadyExists(db rfrl.DB, menteeID string, tutorID string) (bool, error) {
 	exists := false
 	row := db.QueryRowx(checkIfReviewAlreadyExistsQuery, tutorID, menteeID)
 	err := row.Scan(&exists)
@@ -127,16 +127,16 @@ SELECT * FROM tutor_review
 WHERE tutor_id = $1
 `
 
-func (trs *TutorReviewStore) GetTutorReviews(db tutorme.DB, tutorID string) (*[]tutorme.TutorReview, error) {
+func (trs *TutorReviewStore) GetTutorReviews(db rfrl.DB, tutorID string) (*[]rfrl.TutorReview, error) {
 	rows, err := db.Queryx(getTutorReviewsByTutorID, tutorID)
 	if err != nil {
 		return nil, err
 	}
 
-	tutorReviews := make([]tutorme.TutorReview, 0)
+	tutorReviews := make([]rfrl.TutorReview, 0)
 
 	for rows.Next() {
-		var tutorReview tutorme.TutorReview
+		var tutorReview rfrl.TutorReview
 		err = rows.StructScan(&tutorReview)
 		if err != nil {
 			return nil, err
@@ -151,10 +151,10 @@ SELECT COALESCE(SUM(stars),0) as total_stars, COALESCE(COUNT(*),1) as total_revi
 WHERE tutor_review.tutor_id = $1
 `
 
-func (trs *TutorReviewStore) GetTutorReviewsAggregate(db tutorme.DB, tutorID string) (*tutorme.TutorReviewAggregate, error) {
+func (trs *TutorReviewStore) GetTutorReviewsAggregate(db rfrl.DB, tutorID string) (*rfrl.TutorReviewAggregate, error) {
 	row := db.QueryRowx(getTutorReviewsAggregateByTutorID, tutorID)
 
-	var aggregate tutorme.TutorReviewAggregate
+	var aggregate rfrl.TutorReviewAggregate
 	err := row.StructScan(&aggregate)
 
 	return &aggregate, err
@@ -167,17 +167,17 @@ JOIN client on pending_tutor_review.tutor_id = client.id
 WHERE mentee_id = $1
 `
 
-func (trs *TutorReviewStore) GetPendingReviews(db tutorme.DB, menteeID string) (*[]tutorme.PendingTutorReview, error) {
+func (trs *TutorReviewStore) GetPendingReviews(db rfrl.DB, menteeID string) (*[]rfrl.PendingTutorReview, error) {
 	rows, err := db.Queryx(getPendingReviewsQuery, menteeID)
 
-	pendingReviews := make([]tutorme.PendingTutorReview, 0)
+	pendingReviews := make([]rfrl.PendingTutorReview, 0)
 
 	if err != nil {
 		return &pendingReviews, err
 	}
 
 	for rows.Next() {
-		var pendingReview tutorme.PendingTutorReview
+		var pendingReview rfrl.PendingTutorReview
 
 		err = rows.StructScan(&pendingReview)
 
@@ -196,7 +196,7 @@ INSERT INTO pending_tutor_review (mentee_id, tutor_id)
 VALUES ($1, $2)
 `
 
-func (trs *TutorReviewStore) CreatePendingReview(db tutorme.DB, menteeID string, tutorID string) error {
+func (trs *TutorReviewStore) CreatePendingReview(db rfrl.DB, menteeID string, tutorID string) error {
 	_, err := db.Queryx(createPendingReviewQuery, menteeID, tutorID)
 
 	return err
@@ -207,7 +207,7 @@ DELETE FROM pending_tutor_review
 WHERE mentee_id = $1 AND tutor_id = $2
 `
 
-func (trs *TutorReviewStore) DeletePendingReview(db tutorme.DB, menteeID string, tutorID string) error {
+func (trs *TutorReviewStore) DeletePendingReview(db rfrl.DB, menteeID string, tutorID string) error {
 	_, err := db.Queryx(deletePendingReviewQuery, menteeID, tutorID)
 
 	return err

@@ -1,28 +1,28 @@
 package usecases
 
 import (
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
 type TutorReviewUseCase struct {
-	DB               tutorme.DB
-	TutorReviewStore tutorme.TutorReviewStore
-	SessionStore     tutorme.SessionStore
-	ClientStore      tutorme.ClientStore
+	DB               rfrl.DB
+	TutorReviewStore rfrl.TutorReviewStore
+	SessionStore     rfrl.SessionStore
+	ClientStore      rfrl.ClientStore
 }
 
 func NewTutorReviewUseCase(
-	db tutorme.DB,
-	tutorReviewStore tutorme.TutorReviewStore,
-	sessionStore tutorme.SessionStore,
-	clientStore tutorme.ClientStore,
+	db rfrl.DB,
+	tutorReviewStore rfrl.TutorReviewStore,
+	sessionStore rfrl.SessionStore,
+	clientStore rfrl.ClientStore,
 ) *TutorReviewUseCase {
 	return &TutorReviewUseCase{db, tutorReviewStore, sessionStore, clientStore}
 }
 
-func (tru *TutorReviewUseCase) CreateTutorReview(ClientID string, TutorID string, Stars int, Review string, Headline string) (*tutorme.TutorReview, error) {
+func (tru *TutorReviewUseCase) CreateTutorReview(ClientID string, TutorID string, Stars int, Review string, Headline string) (*rfrl.TutorReview, error) {
 	if ClientID == TutorID {
 		return nil, errors.Errorf("Client cannot create a review for said client")
 	}
@@ -37,7 +37,7 @@ func (tru *TutorReviewUseCase) CreateTutorReview(ClientID string, TutorID string
 		return nil, errors.Errorf("Client did not get tutored by Tutor")
 	}
 
-	tutorReview := tutorme.NewTutorReview(TutorID, Stars, Review, Headline)
+	tutorReview := rfrl.NewTutorReview(TutorID, Stars, Review, Headline)
 
 	createdTutorReview, err := tru.TutorReviewStore.CreateTutorReview(tru.DB, ClientID, &tutorReview)
 
@@ -62,7 +62,7 @@ func (tru *TutorReviewUseCase) CreateTutorReview(ClientID string, TutorID string
 	return createdTutorReview, err
 }
 
-func (tru *TutorReviewUseCase) UpdateTutorReview(ClientID string, ID int, Stars int, Review string, Headline string) (*tutorme.TutorReview, error) {
+func (tru *TutorReviewUseCase) UpdateTutorReview(ClientID string, ID int, Stars int, Review string, Headline string) (*rfrl.TutorReview, error) {
 	forClient, err := tru.TutorReviewStore.CheckTutorReviewForClient(tru.DB, ClientID, ID)
 
 	if err != nil {
@@ -73,7 +73,7 @@ func (tru *TutorReviewUseCase) UpdateTutorReview(ClientID string, ID int, Stars 
 		return nil, errors.Errorf("Tutor Review  (%d) does not belong to this client %s", ID, ClientID)
 	}
 
-	tutorReview := tutorme.TutorReview{}
+	tutorReview := rfrl.TutorReview{}
 	tutorReview.ID = ID
 	tutorReview.Stars = null.NewInt(int64(Stars), true)
 	tutorReview.Review = null.NewString(Review, true)
@@ -96,7 +96,7 @@ func (tru *TutorReviewUseCase) DeleteTutorReview(ClientID string, ID int) error 
 	return tru.TutorReviewStore.DeleteTutorReview(tru.DB, ID)
 }
 
-func (tru *TutorReviewUseCase) GetTutorReview(ID int) (*tutorme.TutorReview, error) {
+func (tru *TutorReviewUseCase) GetTutorReview(ID int) (*rfrl.TutorReview, error) {
 	tutorReview, err := tru.TutorReviewStore.GetTutorReview(tru.DB, ID)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (tru *TutorReviewUseCase) GetTutorReview(ID int) (*tutorme.TutorReview, err
 	return tutorReview, nil
 }
 
-func (tru *TutorReviewUseCase) GetTutorReviews(TutorID string) (*[]tutorme.TutorReview, error) {
+func (tru *TutorReviewUseCase) GetTutorReviews(TutorID string) (*[]rfrl.TutorReview, error) {
 	tutorReviews, err := tru.TutorReviewStore.GetTutorReviews(tru.DB, TutorID)
 	if err != nil {
 		return nil, err
@@ -141,11 +141,11 @@ func (tru *TutorReviewUseCase) GetTutorReviews(TutorID string) (*[]tutorme.Tutor
 	return tutorReviews, nil
 }
 
-func (tru *TutorReviewUseCase) GetTutorReviewsAggregate(ClientID string) (*tutorme.TutorReviewAggregate, error) {
+func (tru *TutorReviewUseCase) GetTutorReviewsAggregate(ClientID string) (*rfrl.TutorReviewAggregate, error) {
 	return tru.TutorReviewStore.GetTutorReviewsAggregate(tru.DB, ClientID)
 }
 
-func (tru *TutorReviewUseCase) GetPendingReviews(ClientID string) (*[]tutorme.PendingTutorReview, error) {
+func (tru *TutorReviewUseCase) GetPendingReviews(ClientID string) (*[]rfrl.PendingTutorReview, error) {
 	return tru.TutorReviewStore.GetPendingReviews(tru.DB, ClientID)
 }
 

@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
@@ -17,7 +17,7 @@ const deleteTagsForQuestion string = `
 DELETE FROM question_tags WHERE question_id = $1
 `
 
-func createTagsForQuestion(db tutorme.DB, questionID int, tagIDs []int) error {
+func createTagsForQuestion(db rfrl.DB, questionID int, tagIDs []int) error {
 	_, err := db.Queryx(deleteTagsForQuestion, questionID)
 
 	if err != nil {
@@ -41,7 +41,7 @@ const getTagsSQL string = `
 SELECT * FROM tags WHERE id IN (?)
 `
 
-func getTags(db tutorme.DB, tagIDs []int) (*[]tutorme.Tags, error) {
+func getTags(db rfrl.DB, tagIDs []int) (*[]rfrl.Tags, error) {
 	query, args, err := sqlx.In(getTagsSQL, tagIDs)
 	if err != nil {
 		return nil, err
@@ -49,10 +49,10 @@ func getTags(db tutorme.DB, tagIDs []int) (*[]tutorme.Tags, error) {
 	query = db.Rebind(query)
 	rows, err := db.Queryx(query, args...)
 
-	tags := make([]tutorme.Tags, 0)
+	tags := make([]rfrl.Tags, 0)
 
 	for rows.Next() {
-		var tag tutorme.Tags
+		var tag rfrl.Tags
 		err = rows.StructScan(&tag)
 		if err != nil {
 			return nil, err
@@ -68,17 +68,17 @@ INNER JOIN tags ON question_tags.tag_id = tags.id
 WHERE question_tags.question_id = $1
 `
 
-func getTagsForQuestion(db tutorme.DB, questionID int) (*[]tutorme.Tags, error) {
+func getTagsForQuestion(db rfrl.DB, questionID int) (*[]rfrl.Tags, error) {
 	rows, err := db.Queryx(getTagsForQuestionSQL, questionID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	tags := make([]tutorme.Tags, 0)
+	tags := make([]rfrl.Tags, 0)
 
 	for rows.Next() {
-		var tag tutorme.Tags
+		var tag rfrl.Tags
 		err = rows.StructScan(&tag)
 		if err != nil {
 			return nil, err
@@ -101,8 +101,8 @@ type getTagsForMultipleQuestionsStruct struct {
 	TagID      int `db:"tag_id"`
 }
 
-func getTagsForMultipleQuestions(db tutorme.DB, questionIDs []int) (*map[int][]tutorme.Tags, error) {
-	questionIDToTags := make(map[int][]tutorme.Tags)
+func getTagsForMultipleQuestions(db rfrl.DB, questionIDs []int) (*map[int][]rfrl.Tags, error) {
+	questionIDToTags := make(map[int][]rfrl.Tags)
 
 	if len(questionIDs) == 0 {
 		return &questionIDToTags, nil
@@ -153,7 +153,7 @@ func getTagsForMultipleQuestions(db tutorme.DB, questionIDs []int) (*map[int][]t
 	}
 
 	for rows.Next() {
-		var tag tutorme.Tags
+		var tag rfrl.Tags
 		err = rows.StructScan(&tag)
 		if err != nil {
 			return nil, err
@@ -166,7 +166,7 @@ func getTagsForMultipleQuestions(db tutorme.DB, questionIDs []int) (*map[int][]t
 	return &questionIDToTags, nil
 }
 
-func (qs *QuestionStore) CreateQuestion(db tutorme.DB, question tutorme.Question) (*tutorme.Question, error) {
+func (qs *QuestionStore) CreateQuestion(db rfrl.DB, question rfrl.Question) (*rfrl.Question, error) {
 	sql, args, err := sq.
 		Insert("question").
 		Columns("title", "body", "from_id").
@@ -182,7 +182,7 @@ func (qs *QuestionStore) CreateQuestion(db tutorme.DB, question tutorme.Question
 	}
 
 	row := db.QueryRowx(sql, args...)
-	var createdQuestion tutorme.Question
+	var createdQuestion rfrl.Question
 	err = row.StructScan(&createdQuestion)
 
 	if len(question.TagIDs) > 0 {
@@ -204,7 +204,7 @@ func (qs *QuestionStore) CreateQuestion(db tutorme.DB, question tutorme.Question
 	return &createdQuestion, err
 }
 
-func (qs *QuestionStore) UpdateQuestion(db tutorme.DB, clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*tutorme.Question, error) {
+func (qs *QuestionStore) UpdateQuestion(db rfrl.DB, clientID string, id int, title string, body string, tags []int, resolved null.Bool) (*rfrl.Question, error) {
 	query := sq.Update("question")
 	if title != "" {
 		query = query.Set("title", title)
@@ -226,7 +226,7 @@ func (qs *QuestionStore) UpdateQuestion(db tutorme.DB, clientID string, id int, 
 
 	row := db.QueryRowx(sql, args...)
 
-	var updatedQuestion tutorme.Question
+	var updatedQuestion rfrl.Question
 	err = row.StructScan(&updatedQuestion)
 
 	if err != nil {
@@ -259,7 +259,7 @@ const deleteQuestionSQL string = `
 DELETE FROM question WHERE id = $1
 `
 
-func (qs *QuestionStore) DeleteQuestion(db tutorme.DB, id int) error {
+func (qs *QuestionStore) DeleteQuestion(db rfrl.DB, id int) error {
 	_, err := db.Queryx(deleteQuestionSQL, id)
 
 	return err
@@ -269,9 +269,9 @@ const getQuestionFromIDSQL string = `
 SELECT * FROM question WHERE id = $1
 `
 
-func (qs *QuestionStore) GetQuestion(db tutorme.DB, id int) (*tutorme.Question, error) {
+func (qs *QuestionStore) GetQuestion(db rfrl.DB, id int) (*rfrl.Question, error) {
 	row := db.QueryRowx(getQuestionFromIDSQL, id)
-	var question tutorme.Question
+	var question rfrl.Question
 
 	err := row.StructScan(&question)
 
@@ -290,7 +290,7 @@ func (qs *QuestionStore) GetQuestion(db tutorme.DB, id int) (*tutorme.Question, 
 	return &question, nil
 }
 
-func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int, resolved null.Bool) (*[]tutorme.Question, error) {
+func (qs *QuestionStore) GetQuestions(db rfrl.DB, lastQuestion null.Int, resolved null.Bool) (*[]rfrl.Question, error) {
 	query := sq.Select("*").From("question")
 
 	if lastQuestion.Valid {
@@ -317,11 +317,11 @@ func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int, reso
 		return nil, err
 	}
 
-	idToQuestion := make(map[int]*tutorme.Question)
+	idToQuestion := make(map[int]*rfrl.Question)
 	var questionIds []int
 
 	for rows.Next() {
-		var question tutorme.Question
+		var question rfrl.Question
 		err = rows.StructScan(&question)
 		if err != nil {
 			return nil, err
@@ -336,7 +336,7 @@ func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int, reso
 		return nil, err
 	}
 
-	questions := make([]tutorme.Question, 0, len(questionIds))
+	questions := make([]rfrl.Question, 0, len(questionIds))
 
 	for id, question := range idToQuestion {
 		if tags, ok := (*questionTag)[id]; ok {
@@ -348,7 +348,7 @@ func (qs *QuestionStore) GetQuestions(db tutorme.DB, lastQuestion null.Int, reso
 	return &questions, err
 }
 
-func (qs *QuestionStore) GetQuestionsForClient(db tutorme.DB, clientID string, resolved null.Bool) (*[]tutorme.Question, error) {
+func (qs *QuestionStore) GetQuestionsForClient(db rfrl.DB, clientID string, resolved null.Bool) (*[]rfrl.Question, error) {
 	query := sq.Select("*").From("question").Where(sq.Eq{"from_id": clientID})
 
 	if resolved.Valid {
@@ -366,11 +366,11 @@ func (qs *QuestionStore) GetQuestionsForClient(db tutorme.DB, clientID string, r
 		return nil, err
 	}
 
-	idToQuestion := make(map[int]*tutorme.Question)
+	idToQuestion := make(map[int]*rfrl.Question)
 	var questionIds []int
 
 	for rows.Next() {
-		var question tutorme.Question
+		var question rfrl.Question
 		err = rows.StructScan(&question)
 		if err != nil {
 			return nil, err
@@ -385,7 +385,7 @@ func (qs *QuestionStore) GetQuestionsForClient(db tutorme.DB, clientID string, r
 		return nil, err
 	}
 
-	questions := make([]tutorme.Question, 0, len(questionIds))
+	questions := make([]rfrl.Question, 0, len(questionIds))
 
 	for id, question := range idToQuestion {
 		if tags, ok := (*questionTag)[id]; ok {
@@ -408,7 +408,7 @@ SET applicants = applicants + 1
 WHERE id = $1
 `
 
-func (qs *QuestionStore) ApplyToQuestion(db tutorme.DB, clientID string, id int) error {
+func (qs *QuestionStore) ApplyToQuestion(db rfrl.DB, clientID string, id int) error {
 	_, err := db.Queryx(insertQuestionApplicants, clientID, id)
 
 	if err != nil {

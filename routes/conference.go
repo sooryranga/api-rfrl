@@ -3,8 +3,8 @@ package routes
 import (
 	"crypto/rsa"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
-	"github.com/Arun4rangan/api-tutorme/views"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/Arun4rangan/api-rfrl/views"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -14,8 +14,8 @@ func RegisterConferenceRoutes(
 	e *echo.Echo,
 	publicKey *rsa.PublicKey,
 	apiKey string,
-	sessionUseCase tutorme.SessionUseCase,
-	conferenceUseCase tutorme.ConferenceUseCase,
+	sessionUseCase rfrl.SessionUseCase,
+	conferenceUseCase rfrl.ConferenceUseCase,
 ) {
 	views := views.ConferenceView{SessionUseCase: sessionUseCase, ConferenceUseCase: conferenceUseCase}
 
@@ -26,8 +26,8 @@ func RegisterConferenceRoutes(
 	conferenceSessionR := e.Group("conference-session/:sessionID")
 	conferenceSessionR.POST("/code/", views.SubmitCode, middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    publicKey,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 	conferenceSessionR.POST("/code/:ID/", views.SetCodeResult, middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
 		return key == apiKey, nil

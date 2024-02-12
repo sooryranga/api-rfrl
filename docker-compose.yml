@@ -15,8 +15,6 @@ services:
       - PUBSUB_PROJECT_ID=tutorproject-292921
       - API_KEY=9ab270da-307a-40a7-be5c-12285f24161e
       - API_HOST=http://backend:8010
-    volumes:
-      - ./consumer/javascript/:/app
 
   backend:
     build:
@@ -41,7 +39,7 @@ services:
       - pubsub
     environment:
       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
-      - POSTGRES_URI=postgres://tutorme:__PASSWORD__@database:5432/tutorme?sslmode=disable
+      - POSTGRES_URI=postgres://rfrl:__PASSWORD__@database:5432/rfrl?sslmode=disable
       - RSA_FILE=/run/secrets/rsa
       - PUBLIC_RSA_FILE=/run/secrets/public-rsa
       - FIREBASE_AUTH_FILE=/run/secrets/fire-base-auth
@@ -82,13 +80,13 @@ services:
     volumes:
       - database_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tutorme"]
+      test: ["CMD-SHELL", "pg_isready -U rfrl"]
       interval: 10s
       timeout: 5s
       retries: 5
     environment:
-      - POSTGRES_USER=tutorme
-      - POSTGRES_DB=tutorme
+      - POSTGRES_USER=rfrl
+      - POSTGRES_DB=rfrl
       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
 
 volumes:
@@ -102,4 +100,4 @@ secrets:
   rsa:
     file: id_rsa
   public-rsa:
-    file: id_rsa.pub.pkcs8
+    file: id_rsa.pub

@@ -1,7 +1,7 @@
 package store
 
 import (
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -17,7 +17,7 @@ func NewSessionStore() *SessionStore {
 }
 
 type getSessionClientsResult struct {
-	tutorme.Client
+	rfrl.Client
 	CanAttend null.Bool `db:"can_attend"`
 	SessionID int       `db:"session_id"`
 }
@@ -32,13 +32,13 @@ JOIN client ON session_client.client_id = client.id
 WHERE session_client.session_id in (?)
 	`
 
-func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows, clientID string) (*[]tutorme.Session, error) {
+func getSessionWithClients(db rfrl.DB, rows *sqlx.Rows, clientID string) (*[]rfrl.Session, error) {
 	idToIndex := make(map[int]int)
-	sessions := make([]tutorme.Session, 0)
+	sessions := make([]rfrl.Session, 0)
 	sessionIds := make([]int, 0)
 	i := 0
 	for rows.Next() {
-		var session tutorme.Session
+		var session rfrl.Session
 		err := rows.StructScan(&session)
 
 		if err != nil {
@@ -92,7 +92,7 @@ func getSessionWithClients(db tutorme.DB, rows *sqlx.Rows, clientID string) (*[]
 	return &sessions, nil
 }
 
-func (ss *SessionStore) GetSessionByClientID(db tutorme.DB, clientID string, state string) (*[]tutorme.Session, error) {
+func (ss *SessionStore) GetSessionByClientID(db rfrl.DB, clientID string, state string) (*[]rfrl.Session, error) {
 	query := sq.
 		Select(`tutor_session.*`).
 		From("tutor_session").
@@ -123,7 +123,7 @@ SELECT * FROM tutor_session
 WHERE room_id = $1 AND state = $2
 	`
 
-func (ss *SessionStore) GetSessionByRoomID(db tutorme.DB, clientID string, roomID string, state string) (*[]tutorme.Session, error) {
+func (ss *SessionStore) GetSessionByRoomID(db rfrl.DB, clientID string, roomID string, state string) (*[]rfrl.Session, error) {
 	query := sq.Select("*").From("tutor_session").Where(sq.Eq{"room_id": roomID})
 
 	if state != "" {
@@ -150,7 +150,7 @@ SELECT COUNT(*) from session_client
 WHERE session_id in (?) and client_id = ?
 	`
 
-func (ss *SessionStore) CheckSessionsIsForClient(db tutorme.DB, clientID string, ids []int) (bool, error) {
+func (ss *SessionStore) CheckSessionsIsForClient(db rfrl.DB, clientID string, ids []int) (bool, error) {
 	var m int
 	query, args, err := sqlx.In(checkSessionsIsForClient, ids, clientID)
 	if err != nil {
@@ -174,7 +174,7 @@ SELECT * FROM tutor_session
 WHERE id = $1
 	`
 
-func (ss *SessionStore) GetSessionByID(db tutorme.DB, clientID string, ID int) (*tutorme.Session, error) {
+func (ss *SessionStore) GetSessionByID(db rfrl.DB, clientID string, ID int) (*rfrl.Session, error) {
 	rows, err := db.Queryx(getSessionByID, ID)
 
 	if err != nil {
@@ -199,7 +199,7 @@ DELETE FROM tutor_session
 WHERE id = $1
 	`
 
-func (ss *SessionStore) DeleteSession(db tutorme.DB, ID int) error {
+func (ss *SessionStore) DeleteSession(db rfrl.DB, ID int) error {
 	_, err := db.Queryx(deleteSession, ID)
 
 	return err
@@ -213,9 +213,9 @@ RETURNING *
 
 // CreateSession creates a new row for a document in the database
 func (ss SessionStore) CreateSession(
-	db tutorme.DB,
-	session *tutorme.Session,
-) (*tutorme.Session, error) {
+	db rfrl.DB,
+	session *rfrl.Session,
+) (*rfrl.Session, error) {
 	row := db.QueryRowx(
 		insertSession,
 		session.TutorID,
@@ -224,7 +224,7 @@ func (ss SessionStore) CreateSession(
 		session.State,
 	)
 
-	var m tutorme.Session
+	var m rfrl.Session
 
 	err := row.StructScan(&m)
 
@@ -232,10 +232,10 @@ func (ss SessionStore) CreateSession(
 }
 
 func (ss SessionStore) CreateSessionClients(
-	db tutorme.DB,
+	db rfrl.DB,
 	sessionID int,
 	clientIDs []string,
-) (*[]tutorme.Client, error) {
+) (*[]rfrl.Client, error) {
 	query := sq.Insert("session_client").Columns("session_id, client_id")
 
 	for i := 0; i < len(clientIDs); i++ {
@@ -256,7 +256,7 @@ func (ss SessionStore) CreateSessionClients(
 }
 
 func (ss SessionStore) CreateClientSelectionOfEvent(
-	db tutorme.DB,
+	db rfrl.DB,
 	sessionID int,
 	clientID string,
 	canAttend bool,
@@ -287,12 +287,12 @@ WHERE tutor_session.id in (?)
 `
 
 type getSessionsEventResult struct {
-	tutorme.Event
+	rfrl.Event
 	SessionID int `db:"session_id"`
 }
 
-func (ss SessionStore) GetSessionsEvent(db tutorme.DB, sessionIDs []int) (map[int]*tutorme.Event, error) {
-	sessionIDToEventMap := make(map[int]*tutorme.Event)
+func (ss SessionStore) GetSessionsEvent(db rfrl.DB, sessionIDs []int) (map[int]*rfrl.Event, error) {
+	sessionIDToEventMap := make(map[int]*rfrl.Event)
 	query, args, err := sqlx.In(getSessionsEvent, sessionIDs)
 
 	if err != nil {
@@ -330,23 +330,23 @@ WHERE tutor_session.id = $1
 FOR UPDATE OF tutor_session
 	`
 
-func (ss SessionStore) GetSessionByIDForUpdate(db tutorme.DB, clientID string, ID int) (*tutorme.Session, error) {
+func (ss SessionStore) GetSessionByIDForUpdate(db rfrl.DB, clientID string, ID int) (*rfrl.Session, error) {
 	row := db.QueryRowx(getSessionByIDForUpdate, ID)
 
-	var m tutorme.Session
+	var m rfrl.Session
 
 	err := row.StructScan(&m)
 	return &m, err
 }
 
 func (ss SessionStore) UpdateSession(
-	db tutorme.DB,
+	db rfrl.DB,
 	id int,
 	by string,
 	state string,
 	eventID null.Int,
 	conferenceID null.String,
-) (*tutorme.Session, error) {
+) (*rfrl.Session, error) {
 	query := sq.Update("tutor_session").Set("updated_by", by)
 
 	if state != "" {
@@ -373,7 +373,7 @@ func (ss SessionStore) UpdateSession(
 
 	row := db.QueryRowx(sql, args...)
 
-	var m tutorme.Session
+	var m rfrl.Session
 
 	err = row.StructScan(&m)
 
@@ -381,9 +381,9 @@ func (ss SessionStore) UpdateSession(
 }
 
 func (ss SessionStore) CreateSessionEvents(
-	db tutorme.DB,
-	events []tutorme.Event,
-) (*[]tutorme.Event, error) {
+	db rfrl.DB,
+	events []rfrl.Event,
+) (*[]rfrl.Event, error) {
 	query := sq.Insert("scheduled_event").
 		Columns("start_time", "end_time", "title")
 
@@ -409,10 +409,10 @@ func (ss SessionStore) CreateSessionEvents(
 		return nil, err
 	}
 
-	insertedEvents := make([]tutorme.Event, 0)
+	insertedEvents := make([]rfrl.Event, 0)
 
 	for rows.Next() {
-		var e tutorme.Event
+		var e rfrl.Event
 
 		err = rows.StructScan(&e)
 		if err != nil {
@@ -431,12 +431,12 @@ WHERE tutor_session.id = ?
 	`
 
 func (ss SessionStore) GetSessionEventFromSessionID(
-	db tutorme.DB,
+	db rfrl.DB,
 	ID int,
-) (*tutorme.Event, error) {
+) (*rfrl.Event, error) {
 	row := db.QueryRowx(getSessionEventFromSessionID, ID)
 
-	var event tutorme.Event
+	var event rfrl.Event
 
 	err := row.StructScan(&event)
 
@@ -448,7 +448,7 @@ DELETE FROM scheduled_event
 WHERE id in (?)
 	`
 
-func (ss SessionStore) DeleteSessionEvents(db tutorme.DB, eventIDs []int) error {
+func (ss SessionStore) DeleteSessionEvents(db rfrl.DB, eventIDs []int) error {
 	query, args, err := sqlx.In(deleteSessionEvents, eventIDs)
 
 	if err != nil {
@@ -467,10 +467,10 @@ JOIN tutor_session ON tutor_session.event_id = scheduled_event.id
 WHERE scheduled_event.id = $1 AND tutor_session.id = $2
 	`
 
-func (ss SessionStore) GetSessionEventByID(db tutorme.DB, sessionID int, ID int) (*tutorme.Event, error) {
+func (ss SessionStore) GetSessionEventByID(db rfrl.DB, sessionID int, ID int) (*rfrl.Event, error) {
 	row := db.QueryRowx(getSessionEventByID, ID, sessionID)
 
-	var event tutorme.Event
+	var event rfrl.Event
 
 	err := row.StructScan(&event)
 
@@ -481,7 +481,7 @@ func (ss SessionStore) GetSessionEventByID(db tutorme.DB, sessionID int, ID int)
 	return &event, err
 }
 
-func filterInclusiveDateRange(query sq.SelectBuilder, events *[]tutorme.Event) sq.SelectBuilder {
+func filterInclusiveDateRange(query sq.SelectBuilder, events *[]rfrl.Event) sq.SelectBuilder {
 	for i := 0; i < len(*events); i++ {
 		event := (*events)[i]
 		query = query.Where(
@@ -512,7 +512,7 @@ SELECT EXISTS(
 )
 `
 
-func (ss SessionStore) CheckAllClientSessionHasResponded(db tutorme.DB, id int) (bool, error) {
+func (ss SessionStore) CheckAllClientSessionHasResponded(db rfrl.DB, id int) (bool, error) {
 	var notAllClientsResponded null.Bool
 	err := db.QueryRowx(checkAllClientSessionHasRespondedQuery, id).Scan(&notAllClientsResponded)
 
@@ -532,8 +532,8 @@ SELECT * FROM tutor_session
 WHERE conference_id = $1
 `
 
-func (ss SessionStore) GetSessionFromConferenceID(db tutorme.DB, conferenceID string) (*tutorme.Session, error) {
-	var session tutorme.Session
+func (ss SessionStore) GetSessionFromConferenceID(db rfrl.DB, conferenceID string) (*rfrl.Session, error) {
+	var session rfrl.Session
 	err := db.QueryRowx(getSessionFromConferenceIDQuery, conferenceID).StructScan(&session)
 
 	return &session, err
@@ -549,7 +549,7 @@ AND tutor_session.tutor_id = ?
 GROUP BY session_id
 	`
 
-func (ss SessionStore) CheckClientsAttendedTutorSession(db tutorme.DB, tutorID string, clientIDs []string) (bool, error) {
+func (ss SessionStore) CheckClientsAttendedTutorSession(db rfrl.DB, tutorID string, clientIDs []string) (bool, error) {
 	sql, args, err := sqlx.In(checkClientsAttendedTutorSessionQuery, clientIDs, tutorID)
 
 	if err != nil {

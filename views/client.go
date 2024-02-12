@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -87,12 +87,12 @@ func ClientPayloadValidation(sl validator.StructLevel) {
 }
 
 type ClientView struct {
-	ClientUseCase tutorme.ClientUseCase
+	ClientUseCase rfrl.ClientUseCase
 }
 
 // CreateClientEndpoint view is an endpoint used to create client
 func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -118,7 +118,7 @@ func (cv *ClientView) CreateClientEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusCreated, client)
@@ -132,7 +132,7 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -142,7 +142,7 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "You cannot update this client")
 	}
 
-	params := tutorme.UpdateClientPayload{
+	params := rfrl.UpdateClientPayload{
 		FirstName:         payload.FirstName,
 		LastName:          payload.LastName,
 		About:             payload.About,
@@ -165,7 +165,7 @@ func (cv *ClientView) UpdateClientEndpoint(c echo.Context) error {
 		case sql.ErrNoRows:
 			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 		}
 	}
 
@@ -183,7 +183,7 @@ func (cv *ClientView) GetClientEndpoint(c echo.Context) error {
 		case sql.ErrNoRows:
 			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 		}
 	}
 
@@ -205,7 +205,7 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Cannot be looking for clients from certain companies")
 	}
 
-	options := tutorme.GetClientsOptions{
+	options := rfrl.GetClientsOptions{
 		IsTutor:                  payload.IsTutor,
 		CompanyIds:               payload.FromCompanyIds,
 		WantingReferralCompanyId: payload.WantingReferralCompanyId,
@@ -215,14 +215,14 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 	clients, err := cv.ClientUseCase.GetClients(options)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, clients)
 }
 
 func (cv *ClientView) VerifyEmail(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -243,14 +243,14 @@ func (cv *ClientView) VerifyEmail(c echo.Context) error {
 		"err": err,
 	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.NoContent(http.StatusOK)
 }
 
 func (cv *ClientView) VerifyEmailPassCode(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -274,14 +274,14 @@ func (cv *ClientView) VerifyEmailPassCode(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.JSON(http.StatusOK, client)
 }
 
 func (cv *ClientView) GetVerificationEmails(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -290,14 +290,14 @@ func (cv *ClientView) GetVerificationEmails(c echo.Context) error {
 	emailType := c.QueryParam("type")
 
 	if emailType == "" {
-		emailType = tutorme.WorkEmail
-	} else if emailType != tutorme.WorkEmail && emailType != tutorme.UserEmail {
+		emailType = rfrl.WorkEmail
+	} else if emailType != rfrl.WorkEmail && emailType != rfrl.UserEmail {
 		return echo.NewHTTPError(
 			http.StatusBadRequest,
 			fmt.Sprintf(
 				"Only %s and %s are supported type for verification",
-				tutorme.WorkEmail,
-				tutorme.UserEmail,
+				rfrl.WorkEmail,
+				rfrl.UserEmail,
 			),
 		)
 	}
@@ -332,7 +332,7 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if !claims.Admin && claims.ClientID != payload.ClientID {
 		return echo.NewHTTPError(http.StatusUnauthorized, "You are unauthorized to view this client")
@@ -363,7 +363,7 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 
 	var state null.String
 	if payload.State == "" {
-		state = null.NewString(tutorme.SCHEDULED, true)
+		state = null.NewString(rfrl.SCHEDULED, true)
 	} else {
 		state = null.NewString(payload.State, true)
 	}
@@ -378,7 +378,7 @@ func (cv *ClientView) GetClientEventsEndpoint(c echo.Context) error {
 }
 
 func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -390,13 +390,13 @@ func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Undefined type in query param")
 	}
 
-	if emailType != tutorme.WorkEmail && emailType != tutorme.UserEmail {
+	if emailType != rfrl.WorkEmail && emailType != rfrl.UserEmail {
 		return echo.NewHTTPError(
 			http.StatusBadRequest,
 			fmt.Sprintf(
 				"Only %s and %s are supported type for verification",
-				tutorme.WorkEmail,
-				tutorme.UserEmail,
+				rfrl.WorkEmail,
+				rfrl.UserEmail,
 			),
 		)
 	}
@@ -404,14 +404,14 @@ func (cv *ClientView) DeleteVerifyEmail(c echo.Context) error {
 	err = cv.ClientUseCase.DeleteVerificationEmail(claims.ClientID, emailType)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.NoContent(http.StatusOK)
 }
 
 func (cv *ClientView) GetWantingReferralCompany(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -438,7 +438,7 @@ func (cv *ClientView) GetWantingReferralCompany(c echo.Context) error {
 }
 
 func (cv *ClientView) CreateWantingReferralCompany(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -463,14 +463,14 @@ func (cv *ClientView) CreateWantingReferralCompany(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	return c.NoContent(http.StatusOK)
 }
 
 func (cv *ClientView) CreateEducation(c echo.Context) error {
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -506,13 +506,13 @@ func (cv *ClientView) CreateEducation(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 
 	client, err := cv.ClientUseCase.GetClient(clientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, tutorme.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
 	}
 	return c.JSON(http.StatusOK, client)
 }

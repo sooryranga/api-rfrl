@@ -21,7 +21,7 @@ COPY . /app
 # Put built binaries and runtime resources in /app dir ready to be copied over or used.
 RUN go install -race -installsuffix cgo -ldflags="-w -s" && \
     mkdir -p /app && \
-    cp -r $GOPATH/bin/api-tutorme /app/
+    cp -r $GOPATH/bin/api-rfrl /app/
 
 #
 # 2. Runtime Container
@@ -39,4 +39,4 @@ COPY --from=build /app /app/
 
 EXPOSE 8010
 
-CMD ["./api-tutorme"]
+CMD ["./api-rfrl"]

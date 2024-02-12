@@ -10,11 +10,11 @@ import (
 	"time"
 
 	firebase "firebase.google.com/go"
-	"github.com/Arun4rangan/api-tutorme/publisher"
-	"github.com/Arun4rangan/api-tutorme/routes"
-	"github.com/Arun4rangan/api-tutorme/store"
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
-	"github.com/Arun4rangan/api-tutorme/usecases"
+	"github.com/Arun4rangan/api-rfrl/publisher"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/Arun4rangan/api-rfrl/routes"
+	"github.com/Arun4rangan/api-rfrl/store"
+	"github.com/Arun4rangan/api-rfrl/usecases"
 	"github.com/go-playground/validator"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -59,15 +59,13 @@ func getAPIKey() string {
 func main() {
 	apiKey := getAPIKey()
 
-	signingKey, err := tutorme.GetSigningKey()
+	signingKey, err := rfrl.GetSigningKey()
 
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
 	}
 
-	publicKey, err := tutorme.GetVerifyingKey()
-
-	fmt.Println(fmt.Sprintf("%v", publicKey))
+	publicKey, err := rfrl.GetVerifyingKey()
 
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
@@ -130,7 +128,7 @@ func main() {
 		panic(fmt.Sprintf("%v", err))
 	}
 
-	err = googlePublisher.CreateTopic(tutorme.JavascriptTopic)
+	err = googlePublisher.CreateTopic(rfrl.JavascriptTopic)
 
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))

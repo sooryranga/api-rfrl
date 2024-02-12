@@ -3,7 +3,7 @@ package store
 import (
 	"errors"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -22,8 +22,8 @@ const selectCompany string = `
 SELECT * FROM company WHERE company_name = $1 
 `
 
-func (cs *CompanyStore) SelectCompany(db tutorme.DB, name string) (*tutorme.Company, error) {
-	var company tutorme.Company
+func (cs *CompanyStore) SelectCompany(db rfrl.DB, name string) (*rfrl.Company, error) {
+	var company rfrl.Company
 
 	err := db.QueryRowx(selectCompany, name).StructScan(&company)
 
@@ -40,8 +40,8 @@ VALUES ($1)
 RETURNING *
 `
 
-func (cs *CompanyStore) CreateOrSelectCompany(db tutorme.DB, name string) (*tutorme.Company, error) {
-	var company tutorme.Company
+func (cs *CompanyStore) CreateOrSelectCompany(db rfrl.DB, name string) (*rfrl.Company, error) {
+	var company rfrl.Company
 
 	err := db.QueryRowx(createCompany, name).StructScan(&company)
 
@@ -63,7 +63,7 @@ INSERT INTO company_email (email_domain)
 VALUES ($1)
 `
 
-func (cs *CompanyStore) CreateCompanyEmailDomain(db tutorme.DB, emailDomian string) error {
+func (cs *CompanyStore) CreateCompanyEmailDomain(db rfrl.DB, emailDomian string) error {
 	_, err := db.Queryx(createCompanyEmailDomain, emailDomian)
 
 	return err
@@ -75,7 +75,7 @@ VALUES ($1, $2, $3, $4, $5)
 RETURNING *
 `
 
-func (cs *CompanyStore) CreateCompany(db tutorme.DB, company tutorme.Company) (*tutorme.Company, error) {
+func (cs *CompanyStore) CreateCompany(db rfrl.DB, company rfrl.Company) (*rfrl.Company, error) {
 	row := db.QueryRowx(
 		createCompanyQuery,
 		company.Name,
@@ -84,13 +84,13 @@ func (cs *CompanyStore) CreateCompany(db tutorme.DB, company tutorme.Company) (*
 		company.About,
 		company.Active,
 	)
-	var createdCompany tutorme.Company
+	var createdCompany rfrl.Company
 	err := row.StructScan(&createdCompany)
 
 	return &createdCompany, err
 }
 
-func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*tutorme.Company, error) {
+func (cs *CompanyStore) UpdateCompany(db rfrl.DB, company rfrl.Company) (*rfrl.Company, error) {
 	query := sq.Update("company")
 
 	if company.Photo.Valid {
@@ -122,7 +122,7 @@ func (cs *CompanyStore) UpdateCompany(db tutorme.DB, company tutorme.Company) (*
 		return nil, err
 	}
 
-	var updatedCompany tutorme.Company
+	var updatedCompany rfrl.Company
 	err = db.QueryRowx(sql, args...).StructScan(&updatedCompany)
 
 	return &updatedCompany, err
@@ -136,7 +136,7 @@ DO UPDATE
 SET company_id = $2, active = $3
 `
 
-func (cs *CompanyStore) UpdateOrCreateCompanyEmail(db tutorme.DB, name null.String, emailDomain string, active bool) error {
+func (cs *CompanyStore) UpdateOrCreateCompanyEmail(db rfrl.DB, name null.String, emailDomain string, active bool) error {
 	var companyId null.Int
 	if name.Valid {
 		company, err := cs.SelectCompany(db, name.String)
@@ -156,8 +156,8 @@ SELECT * FROM company WHERE active = $1
 ORDER BY id
 `
 
-func (cs *CompanyStore) GetCompanies(db tutorme.DB, active bool) (*[]tutorme.Company, error) {
-	companies := make([]tutorme.Company, 0)
+func (cs *CompanyStore) GetCompanies(db rfrl.DB, active bool) (*[]rfrl.Company, error) {
+	companies := make([]rfrl.Company, 0)
 
 	rows, err := db.Queryx(getCompanies, active)
 
@@ -166,7 +166,7 @@ func (cs *CompanyStore) GetCompanies(db tutorme.DB, active bool) (*[]tutorme.Com
 	}
 
 	for rows.Next() {
-		var company tutorme.Company
+		var company rfrl.Company
 		err := rows.StructScan(&company)
 		if err != nil {
 			return &companies, err
@@ -181,7 +181,7 @@ SELECT company_id FROM company_email
 WHERE email_domain = $1
 `
 
-func (cs *CompanyStore) GetCompanyIDFromEmailDomain(db tutorme.DB, emailDomain string) (null.Int, error) {
+func (cs *CompanyStore) GetCompanyIDFromEmailDomain(db rfrl.DB, emailDomain string) (null.Int, error) {
 	var id null.Int
 
 	err := db.QueryRowx(getCompanyIDFromEmailDomainQuery, emailDomain).Scan(&id)
@@ -194,8 +194,8 @@ SELECT * FROM company
 WHERE id = $1
 `
 
-func (cs *CompanyStore) GetCompany(db tutorme.DB, id int) (*tutorme.Company, error) {
-	var company tutorme.Company
+func (cs *CompanyStore) GetCompany(db rfrl.DB, id int) (*rfrl.Company, error) {
+	var company rfrl.Company
 
 	row := db.QueryRowx(getCompanyQuery, id)
 	err := row.StructScan(&company)
@@ -203,8 +203,8 @@ func (cs *CompanyStore) GetCompany(db tutorme.DB, id int) (*tutorme.Company, err
 	return &company, err
 }
 
-func (cs *CompanyStore) GetCompanyEmails(db tutorme.DB, withCompany null.Bool) (*[]tutorme.CompanyEmailDomain, error) {
-	companyEmails := make([]tutorme.CompanyEmailDomain, 0)
+func (cs *CompanyStore) GetCompanyEmails(db rfrl.DB, withCompany null.Bool) (*[]rfrl.CompanyEmailDomain, error) {
+	companyEmails := make([]rfrl.CompanyEmailDomain, 0)
 
 	query := sq.Select("*").From("company_email")
 
@@ -229,7 +229,7 @@ func (cs *CompanyStore) GetCompanyEmails(db tutorme.DB, withCompany null.Bool) (
 	}
 
 	for rows.Next() {
-		var companyEmail tutorme.CompanyEmailDomain
+		var companyEmail rfrl.CompanyEmailDomain
 
 		err = rows.StructScan(&companyEmail)
 
@@ -248,10 +248,10 @@ SELECT * FROM company_email
 WHERE email_domain = $1
 `
 
-func (cs *CompanyStore) GetCompanyEmail(db tutorme.DB, emailDomain string) (*tutorme.CompanyEmailDomain, error) {
+func (cs *CompanyStore) GetCompanyEmail(db rfrl.DB, emailDomain string) (*rfrl.CompanyEmailDomain, error) {
 	row := db.QueryRowx(getCompanyEmailQuery, emailDomain)
 
-	var companyEmail tutorme.CompanyEmailDomain
+	var companyEmail rfrl.CompanyEmailDomain
 
 	err := row.StructScan(&companyEmail)
 

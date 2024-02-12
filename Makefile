@@ -1,7 +1,7 @@
 #@IgnoreInspection BashAddShebang
 export ROOT=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 export DEBUG=true
-export APP=api-tutorme
+export APP=api-rfrl
 export LDFLAGS="-w -s"
 
 all: build test
@@ -32,9 +32,9 @@ test:
 	go test -v -race ./...
 
 container:
-	docker build -t api-tutorme .
+	docker build -t api-rfrl .
 
 run-container:
-	docker run --rm -it -p 8010:8010 -v ${ROOT}/id_rsa:/app/id_rsa api-tutorme 
+	docker run --rm -it -p 8010:8010 -v ${ROOT}/id_rsa:/app/id_rsa api-rfrl 
 
 .PHONY: build run build-static test container

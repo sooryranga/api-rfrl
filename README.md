@@ -1,14 +1,14 @@
-# tutorme-be
+# rfrl-be
 
-TutorMe Backend
+rfrl Backend
 
 To delete volume for docker db - `docker-compose rm -fv db`
 
 sq : `sq.Select("*").From("auth").Where(sq.And{sq.Eq{"auth.token": token}, sq.Eq{"auth.auth_type": authType}})`
 
-psql: `psql "postgres://tutorme:secretpassword1@localhost:5432/tutorme?sslmode=disable"`
+psql: `psql "postgres://rfrl:secretpassword1@localhost:5432/rfrl?sslmode=disable"`
 
-Logging :
+## Logging
 
 ```
  log.Errorj(log.JSON{
@@ -21,4 +21,13 @@ To create migration:
 `migrate create -ext sql  -dir ./migration <file_name>`
 
 To migrate up:
-`migrate -database "postgres://tutorme:secretpassword1@localhost:5432/tutorme?sslmode=disable" -path ./migration up`
+`migrate -database "postgres://rfrl:secretpassword1@localhost:5432/rfrl?sslmode=disable" -path ./migration up`
+
+## Create id_rsa
+
+`openssl genrsa -out ./id_rsa 4096`
+`openssl rsa -in ./cert/id_rsa -pubout -out cert/id_rsa.pub`
+
+## Delete all images
+
+`docker rmi -f $(docker images -a -q)`

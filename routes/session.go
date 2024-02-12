@@ -3,23 +3,23 @@ package routes
 import (
 	"crypto/rsa"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
-	"github.com/Arun4rangan/api-tutorme/views"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
+	"github.com/Arun4rangan/api-rfrl/views"
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 // RegisterSessionRoutes session routes
-func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, sessionUseCase tutorme.SessionUseCase, tutorReviewUseCase tutorme.TutorReviewUseCase) {
+func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.PublicKey, sessionUseCase rfrl.SessionUseCase, tutorReviewUseCase rfrl.TutorReviewUseCase) {
 
 	sessionViews := views.SessionView{SessionUseCase: sessionUseCase, TutorReviewUseCase: tutorReviewUseCase}
 
 	sessionR := e.Group("/session")
 	sessionR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	sessionR.POST("/", sessionViews.CreateSessionEndpoint)
@@ -30,8 +30,8 @@ func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.
 	sessionEventR := e.Group("/session/:sessionID/event")
 	sessionEventR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	sessionEventR.POST("/", sessionViews.CreateSessionEventEndpoint)
@@ -41,8 +41,8 @@ func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.
 	clientActionOnEventR := e.Group("/session/:sessionId/book")
 	clientActionOnEventR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	clientActionOnEventR.POST("/", sessionViews.CreateClientActionOnSessionEvent)
@@ -50,8 +50,8 @@ func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.
 	sessionConferenceR := e.Group("/session/:sessionID/conference")
 	sessionConferenceR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	sessionConferenceR.GET("/", sessionViews.GetSessionConferenceIDEndpoint)
@@ -59,8 +59,8 @@ func RegisterSessionRoutes(e *echo.Echo, validate *validator.Validate, key *rsa.
 	sessionsR := e.Group("/sessions/")
 	sessionsR.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey:    key,
-		SigningMethod: tutorme.AlgorithmRS256,
-		Claims:        &tutorme.JWTClaims{},
+		SigningMethod: rfrl.AlgorithmRS256,
+		Claims:        &rfrl.JWTClaims{},
 	}))
 
 	sessionsR.GET("", sessionViews.GetSessionsEndpoint)

@@ -11,7 +11,7 @@ import (
 	"text/template"
 	"time"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"gopkg.in/gomail.v2"
 )
 
@@ -44,7 +44,7 @@ func (em *EmailerUseCase) SendEmailVerification(email string, emailType string) 
 
 	var tpl bytes.Buffer
 
-	attributes, ok := tutorme.EmailTypeToEmailAttributes[emailType]
+	attributes, ok := rfrl.EmailTypeToEmailAttributes[emailType]
 
 	if !ok {
 		panic("email type is not found")

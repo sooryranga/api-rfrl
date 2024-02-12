@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/gommon/log"
 	"gopkg.in/guregu/null.v4"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 )
 
 const (
@@ -90,7 +90,7 @@ func (c *WebSocketClient) readPump() {
 // executing all writes From this goroutine.
 func (c *WebSocketClient) writePump() {
 
-	ticker := time.NewTicker(tutorme.PingPeriod)
+	ticker := time.NewTicker(rfrl.PingPeriod)
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
@@ -99,7 +99,7 @@ func (c *WebSocketClient) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(tutorme.WriteWait))
+			c.conn.SetWriteDeadline(time.Now().Add(rfrl.WriteWait))
 			if !ok {
 				// The hub closed the channel.
 				err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -123,7 +123,7 @@ func (c *WebSocketClient) writePump() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(tutorme.WriteWait))
+			c.conn.SetWriteDeadline(time.Now().Add(rfrl.WriteWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				log.Errorj(log.JSON{"error": err.Error(), "conferenceID": c.ConferenceID})
 				return
@@ -213,17 +213,17 @@ func (h ConferenceHub) Run() {
 type ConferenceUseCase struct {
 	DB                  *sqlx.DB
 	Hub                 *ConferenceHub
-	ConferenceStore     tutorme.ConferenceStore
-	ConferencePublisher tutorme.ConferencePublisher
-	FireStore           tutorme.FireStoreClient
+	ConferenceStore     rfrl.ConferenceStore
+	ConferencePublisher rfrl.ConferencePublisher
+	FireStore           rfrl.FireStoreClient
 }
 
 func NewConferenceUseCase(
 	db *sqlx.DB,
-	conferenceStore tutorme.ConferenceStore,
+	conferenceStore rfrl.ConferenceStore,
 	hub *ConferenceHub,
-	publisher tutorme.ConferencePublisher,
-	fireStore tutorme.FireStoreClient,
+	publisher rfrl.ConferencePublisher,
+	fireStore rfrl.FireStoreClient,
 ) ConferenceUseCase {
 	return ConferenceUseCase{
 		DB:                  db,
@@ -250,7 +250,7 @@ func (cu ConferenceUseCase) Serve(conn *websocket.Conn, conferenceID string, fro
 }
 
 func (cu ConferenceUseCase) SetCodeResult(sessionID int, ID int, result string) error {
-	code := tutorme.Code{
+	code := rfrl.Code{
 		ID:     ID,
 		Result: null.NewString(result, true),
 	}
@@ -260,7 +260,7 @@ func (cu ConferenceUseCase) SetCodeResult(sessionID int, ID int, result string) 
 
 	tx, *err = cu.DB.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
 	if *err != nil {
 		return *err
@@ -287,21 +287,21 @@ func (cu ConferenceUseCase) SubmitCode(sessionID int, rawCode string, language s
 
 	tx, *err = cu.DB.Beginx()
 
-	defer tutorme.HandleTransactions(tx, err)
+	defer rfrl.HandleTransactions(tx, err)
 
-	var conference *tutorme.Conference
+	var conference *rfrl.Conference
 	conference, *err = cu.ConferenceStore.GetOrCreateConference(cu.DB, sessionID)
 
 	if *err != nil {
 		return 0, *err
 	}
 
-	if conference.CodeState != tutorme.NOT_RUNNING && time.Now().Sub(conference.UpdatedAt).Minutes() < 1 {
+	if conference.CodeState != rfrl.NOT_RUNNING && time.Now().Sub(conference.UpdatedAt).Minutes() < 1 {
 		*err = errors.New("code is currently running right now")
 		return 0, *err
 	}
 
-	var code *tutorme.Code
+	var code *rfrl.Code
 	code, *err = cu.ConferenceStore.CreateNewCode(cu.DB, sessionID, rawCode)
 
 	if *err != nil {

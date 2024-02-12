@@ -3,14 +3,14 @@ package publisher
 import (
 	"encoding/json"
 
-	"github.com/Arun4rangan/api-tutorme/tutorme"
+	"github.com/Arun4rangan/api-rfrl/rfrl"
 )
 
 type ConferencePublisher struct {
-	Publisher tutorme.Publisher
+	Publisher rfrl.Publisher
 }
 
-func NewConferencePublisher(publisher tutorme.Publisher) *ConferencePublisher {
+func NewConferencePublisher(publisher rfrl.Publisher) *ConferencePublisher {
 	return &ConferencePublisher{
 		Publisher: publisher,
 	}
@@ -35,7 +35,7 @@ func (cp *ConferencePublisher) PublishCode(sessionID int, codeID int, rawCode st
 		return err
 	}
 
-	topic := tutorme.CodeLanguageToTopic[language]
+	topic := rfrl.CodeLanguageToTopic[language]
 
 	err = cp.Publisher.Publish(topic, codeInJSON)
 

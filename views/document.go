@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	tutorme "github.com/Arun4rangan/api-tutorme/tutorme"
+	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 )
@@ -27,7 +27,7 @@ type (
 )
 
 type DocumentView struct {
-	DocumentUseCase tutorme.DocumentUseCase
+	DocumentUseCase rfrl.DocumentUseCase
 }
 
 // CreateDocumentEndpoint view is an endpoint used to create document
@@ -38,7 +38,7 @@ func (dv *DocumentView) CreateDocumentEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (dv *DocumentView) UpdateDocumentEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (dv *DocumentView) DeleteDocumentEndpoint(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed is not valid integer"))
 	}
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func (dv *DocumentView) GetDocumentEndpoint(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed is not valid integer"))
 	}
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (dv *DocumentView) CreateDocumentOrderEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return err
@@ -171,7 +171,7 @@ func (dv *DocumentView) UpdateDocumentOrderEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return err
@@ -199,7 +199,7 @@ func (dv *DocumentView) GetDocumentOrderEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	claims, err := tutorme.GetClaims(c)
+	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
 		return err
