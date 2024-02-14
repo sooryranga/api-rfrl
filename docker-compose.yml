@@ -12,7 +12,7 @@ services:
       - backend
     environment:
       - PUBSUB_EMULATOR_HOST=pubsub:8681
-      - PUBSUB_PROJECT_ID=tutorproject-292921
+      - GOOGLE_CLOUD_PROJECT=tutorproject-292921
       - API_KEY=9ab270da-307a-40a7-be5c-12285f24161e
       - API_HOST=http://backend:8010
 
@@ -44,7 +44,8 @@ services:
       - PUBLIC_RSA_FILE=/run/secrets/public-rsa
       - FIREBASE_AUTH_FILE=/run/secrets/fire-base-auth
       - PUBSUB_EMULATOR_HOST=pubsub:8681
-      - PUBSUB_PROJECT_ID=tutorproject-292921
+      - GOOGLE_CLOUD_PROJECT=tutorproject-292921
+      - BACKEND_TYPE=dev
       - API_KEY=9ab270da-307a-40a7-be5c-12285f24161e
     volumes:
       - ./:/app
