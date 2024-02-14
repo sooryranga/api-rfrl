@@ -121,11 +121,11 @@ func main() {
 	validate := validator.New()
 
 	db, err := sqlx.Connect("pgx", getPostgresURI())
-	defer db.Close()
-
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
 	}
+
+	defer db.Close()
 
 	e := echo.New()
 
