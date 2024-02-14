@@ -35,6 +35,6 @@ container:
 	docker build -t api-rfrl .
 
 run-container:
-	docker run --rm -it -p 8010:8010 -v ${ROOT}/id_rsa:/app/id_rsa api-rfrl 
+	docker run --rm -it -p 8080:8080 -v ${ROOT}/id_rsa:/app/id_rsa api-rfrl 
 
 .PHONY: build run build-static test container

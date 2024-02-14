@@ -31,7 +31,7 @@ FROM scratch
 
 COPY --from=builder /dist/main /
 
-EXPOSE 8010
+EXPOSE 8080
 
 # Command to run
 CMD ["/main"]
