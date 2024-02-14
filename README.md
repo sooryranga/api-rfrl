@@ -31,3 +31,7 @@ To migrate up:
 ## Delete all images
 
 `docker rmi -f $(docker images -a -q)`
+
+## Dockerfile
+
+<https://levelup.gitconnected.com/complete-guide-to-create-docker-container-for-your-golang-application-80f3fb59a15e>
