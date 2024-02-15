@@ -35,3 +35,10 @@ To migrate up:
 ## Dockerfile
 
 <https://levelup.gitconnected.com/complete-guide-to-create-docker-container-for-your-golang-application-80f3fb59a15e>
+
+## Production
+
+`psql "sslmode=verify-ca sslrootcert=server-ca.pem sslcert=client-cert.pem sslkey=client-key.pem hostaddr=34.69.205.182 port=5432 user=rfrl dbname=rfrl"`
+`psql "postgres://rfrl:__PASSWORD__@34.69.205.182:5432/rfrl?sslcert=client-cert.pem&sslkey=client-key.pem&sslrootcert=server-ca.pem&sslmode=verify-ca"`
+
+`migrate -database "postgres://rfrl:__PASSWORD__@34.69.205.182:5432/rfrl?sslcert=client-cert.pem&sslkey=client-key.pem&sslrootcert=server-ca.pem&sslmode=verify-ca" -path ./migration up`
