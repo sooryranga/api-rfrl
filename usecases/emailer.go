@@ -66,7 +66,7 @@ func (em *EmailerUseCase) SendEmailVerification(email string, emailType string) 
 	}
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", "arun.ranganathan111@gmail.com")
+	m.SetHeader("From", "admin@rfrl.ca")
 	m.SetHeader("To", email)
 	m.SetHeader("Subject", "Hello!")
 	m.SetBody("text/html", tpl.String())
@@ -74,8 +74,8 @@ func (em *EmailerUseCase) SendEmailVerification(email string, emailType string) 
 	d := gomail.NewDialer(
 		"smtp.gmail.com",
 		587,
-		"arun.ranganathan111@gmail.com",
-		"xvkzkvlwwdawigov",
+		"admin@rfrl.ca",
+		"yjdzrlukmabxpmwm",
 	)
 
 	if err := d.DialAndSend(m); err != nil {
