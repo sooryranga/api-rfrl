@@ -2,11 +2,11 @@ package usecases
 
 import (
 	"database/sql"
-	"errors"
 	"strings"
 
 	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -65,11 +65,11 @@ func (cl *ClientUseCase) CreateClient(
 
 	tx, *err = cl.db.Beginx()
 
-	defer rfrl.HandleTransactions(tx, err)
-
 	if *err != nil {
-		return nil, *err
+		return nil, errors.Wrap(*err, "CreateClient")
 	}
+
+	defer rfrl.HandleTransactions(tx, err)
 
 	var createdClient *rfrl.Client
 	createdClient, *err = cl.clientStore.CreateClient(cl.db, client)
@@ -97,6 +97,10 @@ func (cl *ClientUseCase) UpdateClient(
 	var tx *sqlx.Tx
 
 	tx, *err = cl.db.Beginx()
+
+	if *err != nil {
+		return nil, errors.Wrap(*err, "UpdateClient")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 
@@ -208,6 +212,10 @@ func (cl *ClientUseCase) VerifyEmail(clientID string, email string, emailType st
 
 	tx, *err = cl.db.Beginx()
 
+	if *err != nil {
+		return nil, errors.Wrap(*err, "VerifyEmail")
+	}
+
 	defer rfrl.HandleTransactions(tx, err)
 
 	*err = cl.clientStore.VerifyEmail(tx, clientID, email, emailType, passCode)
@@ -258,6 +266,10 @@ func (cl *ClientUseCase) CreateClientWantingCompanyReferrals(clientID string, ac
 	var tx *sqlx.Tx
 
 	tx, *err = cl.db.Beginx()
+
+	if *err != nil {
+		return errors.Wrap(*err, "CreateClientWantingCompanyReferrals")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 

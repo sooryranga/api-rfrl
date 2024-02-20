@@ -2,13 +2,13 @@ package usecases
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/gommon/log"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 
 	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
@@ -260,11 +260,11 @@ func (cu ConferenceUseCase) SetCodeResult(sessionID int, ID int, result string) 
 
 	tx, *err = cu.DB.Beginx()
 
-	defer rfrl.HandleTransactions(tx, err)
-
 	if *err != nil {
-		return *err
+		return errors.Wrap(*err, "SetCodeResult")
 	}
+
+	defer rfrl.HandleTransactions(tx, err)
 
 	*err = cu.FireStore.UpdateCode(sessionID, ID, result)
 
@@ -286,6 +286,10 @@ func (cu ConferenceUseCase) SubmitCode(sessionID int, rawCode string, language s
 	var tx *sqlx.Tx
 
 	tx, *err = cu.DB.Beginx()
+
+	if *err != nil {
+		return 0, errors.Wrap(*err, "SubmitCode")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 

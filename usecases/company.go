@@ -3,6 +3,7 @@ package usecases
 import (
 	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -47,6 +48,10 @@ func (comu *CompanyUseCase) UpdateCompany(
 	var tx *sqlx.Tx
 
 	tx, *err = comu.db.Beginx()
+
+	if *err != nil {
+		return nil, errors.Wrap(*err, "UpdateCompany")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 

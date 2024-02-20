@@ -3,6 +3,7 @@ package usecases
 import (
 	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -26,6 +27,10 @@ func (qu *QuestionUseCase) CreateQuestion(clientID string, title string, body st
 	var tx *sqlx.Tx
 
 	tx, *err = qu.DB.Beginx()
+
+	if *err != nil {
+		return nil, errors.Wrap(*err, "CreateQuestion")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 
@@ -52,6 +57,10 @@ func (qu *QuestionUseCase) UpdateQuestion(clientID string, id int, title string,
 	var tx *sqlx.Tx
 
 	tx, *err = qu.DB.Beginx()
+
+	if *err != nil {
+		return nil, errors.Wrap(*err, "UpdateQuestion")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 
@@ -158,6 +167,10 @@ func (qu *QuestionUseCase) ApplyToQuestion(clientID string, id int) error {
 	var tx *sqlx.Tx
 
 	tx, *err = qu.DB.Beginx()
+
+	if *err != nil {
+		return errors.Wrap(*err, "ApplyToQuestion")
+	}
 
 	defer rfrl.HandleTransactions(tx, err)
 
