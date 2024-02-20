@@ -2,10 +2,9 @@ package publisher
 
 import (
 	"context"
-	"errors"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/labstack/gommon/log"
+	"github.com/pkg/errors"
 )
 
 type GooglePublisher struct {
@@ -17,7 +16,7 @@ func NewGooglePublisher(projectID string) (*GooglePublisher, error) {
 	ctx := context.Background()
 	client, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "NewGooglePublisher")
 	}
 
 	return &GooglePublisher{
@@ -42,14 +41,14 @@ func (p *GooglePublisher) Publish(topicName string, data []byte) error {
 	if !ok {
 		return errors.New("topic not found")
 	}
-	log.Error(data)
+
 	publishResult := topic.Publish(ctx, &pubsub.Message{
 		Data: data,
 	})
 
 	_, err := publishResult.Get(ctx)
 
-	return err
+	return errors.Wrap(err, "NewGooglePublisher")
 }
 
 func (p *GooglePublisher) Subscribe(topicName string, abort chan bool) (chan []byte, error) {
@@ -67,7 +66,7 @@ func (p *GooglePublisher) Subscribe(topicName string, abort chan bool) (chan []b
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Subscribe")
 	}
 
 	err = sub.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
@@ -75,5 +74,5 @@ func (p *GooglePublisher) Subscribe(topicName string, abort chan bool) (chan []b
 		m.Ack() // Acknowledge that we've consumed the message.
 	})
 
-	return messageChan, err
+	return messageChan, errors.Wrap(err, "Subscribe")
 }
