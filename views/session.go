@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
@@ -63,15 +62,15 @@ func (sv *SessionView) CreateSessionEndpoint(c echo.Context) error {
 	}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateSessionEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
-	log.Errorf(payload.State)
+
 	session, err := sv.SessionUseCase.CreateSession(
 		payload.TutorID,
 		claims.ClientID,
@@ -81,7 +80,7 @@ func (sv *SessionView) CreateSessionEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, session)
@@ -91,19 +90,19 @@ func (sv *SessionView) UpdateSessionEndpoint(c echo.Context) error {
 	payload := SessionPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateSessionEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{payload.ID})
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !forClient {
@@ -113,14 +112,14 @@ func (sv *SessionView) UpdateSessionEndpoint(c echo.Context) error {
 	session, err := sv.SessionUseCase.UpdateSession(payload.ID, claims.ClientID, payload.State)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	if session.TargetedEventID.Valid {
 		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, int(session.TargetedEventID.Int64))
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 
 		session.Event = event
@@ -133,18 +132,18 @@ func (sv *SessionView) DeleteSessionEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not valid").Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "DeleteSessionEndpoint - Atoi"))
 	}
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	err = sv.SessionUseCase.DeleteSession(claims.ClientID, ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -160,13 +159,13 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{ID})
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	if !forClient {
@@ -176,14 +175,14 @@ func (sv *SessionView) GetSessionEndpoint(c echo.Context) error {
 	session, err := sv.SessionUseCase.GetSessionByID(claims.ClientID, ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	if session.TargetedEventID.Valid {
 		event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, int(session.TargetedEventID.Int64))
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 
 		session.Event = event
@@ -196,25 +195,25 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 	payload := SessionEventPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateSessionEventEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	start, err := time.Parse(time.RFC3339, payload.Start)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateSessionEventEndpoint - time.Parse"))
 	}
 
 	end, err := time.Parse(time.RFC3339, payload.End)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "CreateSessionEventEndpoint - time.Parse"))
 	}
 
 	event := rfrl.NewEvent(start, end, payload.Title)
@@ -222,7 +221,7 @@ func (sv *SessionView) CreateSessionEventEndpoint(c echo.Context) error {
 	event, err = sv.SessionUseCase.CreateSessionEvent(claims.ClientID, payload.SessionID, *event)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, *event)
@@ -234,13 +233,13 @@ func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{ID})
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	if !forClient {
@@ -250,7 +249,7 @@ func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 	session, err := sv.SessionUseCase.GetSessionByID(claims.ClientID, ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !session.TargetedEventID.Valid {
@@ -260,7 +259,7 @@ func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 	event, err := sv.SessionUseCase.GetSessionEventByID(session.ID, int(session.TargetedEventID.Int64))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	session.Event = event
@@ -286,16 +285,16 @@ func (sv *SessionView) GetSessionConferenceIDEndpoint(c echo.Context) error {
 
 	if claims.ClientID != session.TutorID {
 		err = sv.TutorReviewUseCase.CreatePendingReview(claims.ClientID, session.TutorID)
-	}
 
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			if !pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-				return echo.NewHTTPError(
-					http.StatusBadRequest,
-					err.Error(),
-				)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				if !pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+					return echo.NewHTTPError(
+						http.StatusBadRequest,
+						err.Error(),
+					).SetInternal(err)
+				}
 			}
 		}
 	}
@@ -310,25 +309,25 @@ func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID passed in is not a valid").Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetSessionEventEndpoint - strconv.Atoi"))
 	}
 
 	sessionID, err := strconv.Atoi(c.Param("sessionID"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Session ID passed in is not a valid").Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetSessionEventEndpoint - strconv.Atoi"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, []int{sessionID})
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	if !forClient {
@@ -338,7 +337,7 @@ func (sv *SessionView) GetSessionEventEndpoint(c echo.Context) error {
 	event, err := sv.SessionUseCase.GetSessionEventByID(sessionID, ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, event)
@@ -351,7 +350,7 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	sessions := &([]rfrl.Session{})
@@ -361,7 +360,7 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 		sessions, err = sv.SessionUseCase.GetSessionByRoomId(claims.ClientID, roomID, state)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 
 		for i := 0; i < len(*sessions); i++ {
@@ -372,11 +371,11 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 			forClient, err := sv.SessionUseCase.CheckSessionsIsForClient(claims.ClientID, sessionIDs)
 
 			if err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 			}
 
 			if !forClient {
-				return errors.New("Room does not belong to client")
+				return echo.NewHTTPError(http.StatusBadRequest, "Room does not belong to client")
 			}
 		}
 
@@ -384,7 +383,7 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 		sessions, err = sv.SessionUseCase.GetSessionByClientID(claims.ClientID, state)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 
 		for i := 0; i < len(*sessions); i++ {
@@ -396,7 +395,7 @@ func (sv *SessionView) GetSessionsEndpoint(c echo.Context) error {
 		sessionIDToEvent, err := sv.SessionUseCase.GetSessionsEvent(sessionIDs)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 
 		for i := 0; i < len(*sessions); i++ {
@@ -420,26 +419,26 @@ func (sv *SessionView) CreateClientActionOnSessionEvent(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	err = sv.SessionUseCase.ClientActionOnSessionEvent(claims.ClientID, payload.SessionID, *payload.CanAttend)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	allClientsResponded, err := sv.SessionUseCase.CheckAllClientSessionHasResponded(payload.SessionID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	if allClientsResponded {
 		_, err = sv.SessionUseCase.UpdateSession(payload.SessionID, claims.ClientID, rfrl.SCHEDULED)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 	}
 
@@ -450,20 +449,20 @@ func (sv *SessionView) GetSessionRelatedEventsEndpoint(c echo.Context) error {
 	payload := GetSessionRelatedEventsEndpointPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetSessionRelatedEventsEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	var start null.Time
 	if payload.StartTime != "" {
 		parsedStart, err := time.Parse(time.RFC3339, payload.StartTime)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "time.Parse"))
 		}
 
 		start = null.NewTime(parsedStart, true)
@@ -473,7 +472,7 @@ func (sv *SessionView) GetSessionRelatedEventsEndpoint(c echo.Context) error {
 	if payload.EndTime != "" {
 		parsedEnd, err := time.Parse(time.RFC3339, payload.EndTime)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "time.Parse"))
 		}
 		end = null.NewTime(parsedEnd, true)
 	}
@@ -488,7 +487,7 @@ func (sv *SessionView) GetSessionRelatedEventsEndpoint(c echo.Context) error {
 	events, err := sv.SessionUseCase.GetSessionRelatedEvents(claims.ClientID, payload.SessionID, start, end, state)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, *events)

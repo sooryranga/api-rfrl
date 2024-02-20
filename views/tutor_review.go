@@ -33,7 +33,7 @@ func (trv *TutorReviewView) CreateTutorReviewEndpoint(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if claims.ClientID == payload.TutorID {
@@ -49,7 +49,7 @@ func (trv *TutorReviewView) CreateTutorReviewEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusCreated, tutorReview)
@@ -59,13 +59,13 @@ func (trv *TutorReviewView) UpdateTutorReviewEndpoint(c echo.Context) error {
 	payload := TutorReviewPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "UpdateTutorReviewEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	tutorReview, err := trv.TutorReviewUseCase.UpdateTutorReview(
@@ -77,7 +77,7 @@ func (trv *TutorReviewView) UpdateTutorReviewEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, tutorReview)
@@ -87,19 +87,19 @@ func (trv *TutorReviewView) DeleteTutorReviewEndpoint(c echo.Context) error {
 	payload := TutorReviewPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "DeleteTutorReviewEndpoint - Bind"))
 	}
 
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	err = trv.TutorReviewUseCase.DeleteTutorReview(claims.ClientID, payload.ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -109,13 +109,13 @@ func (trv *TutorReviewView) GetTutorReviewEndpoint(c echo.Context) error {
 	ID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "ID pass in is not valid").Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "GetTutorReviewEndpoint - strconv.Atoi"))
 	}
 
 	tutorReview, err := trv.TutorReviewUseCase.GetTutorReview(ID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, tutorReview)
@@ -133,7 +133,7 @@ func (trv *TutorReviewView) GetTutorReviewsEndpoint(c echo.Context) error {
 	tutorReviews, err := trv.TutorReviewUseCase.GetTutorReviews(clientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, *tutorReviews)
@@ -149,7 +149,7 @@ func (trv *TutorReviewView) GetTutorReviewsAggregateEndpoint(c echo.Context) err
 	aggregateReview, err := trv.TutorReviewUseCase.GetTutorReviewsAggregate(clientID)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, *aggregateReview)
@@ -159,7 +159,7 @@ func (trv *TutorReviewView) GetPendingReviewsEndpoint(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	pendingReviewForClient, err := trv.TutorReviewUseCase.GetPendingReviews(
@@ -167,7 +167,7 @@ func (trv *TutorReviewView) GetPendingReviewsEndpoint(c echo.Context) error {
 	)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, pendingReviewForClient)
