@@ -111,11 +111,11 @@ func (av *AuthView) Signup(c echo.Context) error {
 	payload := SignUpPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "Signup - Bind"))
 	}
 
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(errors.Wrap(err, "Signup - Validate"))
 	}
 	var newClient *rfrl.Client
 	var auth *rfrl.Auth
@@ -158,16 +158,13 @@ func (av *AuthView) Signup(c echo.Context) error {
 	}
 
 	if err != nil {
-		c.Logger().Error(err)
-
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 				return av.login(c, payload.loginFields)
 			}
 		}
-
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	claims := &rfrl.JWTClaims{
@@ -182,7 +179,7 @@ func (av *AuthView) Signup(c echo.Context) error {
 	token, err := av.AuthUseCases.GenerateToken(claims, &av.Key)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -196,7 +193,7 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	existingClient, auth, err := av.AuthUseCases.LoginWithJWT(claims.ClientID)
@@ -204,9 +201,9 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	if err != nil {
 		switch errors.Cause(err) {
 		case sql.ErrNoRows:
-			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found").SetInternal(err)
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 	}
 
@@ -222,7 +219,7 @@ func (av *AuthView) AuthorizedLogin(c echo.Context) error {
 	token, err := av.AuthUseCases.GenerateToken(newClaims, &av.Key)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -251,11 +248,11 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	if err != nil {
 		switch errors.Cause(err) {
 		case sql.ErrNoRows:
-			return echo.NewHTTPError(http.StatusNotFound, "Client doesn't exist in our records")
+			return echo.NewHTTPError(http.StatusNotFound, "Client doesn't exist in our records").SetInternal(err)
 		case bcrypt.ErrMismatchedHashAndPassword:
-			return echo.NewHTTPError(http.StatusNotFound, "Email and password do not match")
+			return echo.NewHTTPError(http.StatusNotFound, "Email and password do not match").SetInternal(err)
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 		}
 	}
 
@@ -271,7 +268,7 @@ func (av *AuthView) login(c echo.Context, payload loginFields) error {
 	token, err := av.AuthUseCases.GenerateToken(claims, &av.Key)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -286,11 +283,11 @@ func (av *AuthView) Login(c echo.Context) error {
 	payload := LoginPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	return av.login(c, payload.loginFields)
@@ -300,19 +297,19 @@ func (av *AuthView) UpdateSignUpFlow(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	payload := SignUpFlowPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	err = av.AuthUseCases.UpdateSignUpFlow(claims.ClientID, payload.Stage)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, rfrl.GetStatusInternalServerError(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -322,7 +319,7 @@ func (av *AuthView) BlockClient(c echo.Context) error {
 	claims, err := rfrl.GetClaims(c)
 
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if !claims.Admin {
@@ -332,11 +329,11 @@ func (av *AuthView) BlockClient(c echo.Context) error {
 	payload := BlockClientPayload{}
 
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
 	err = av.AuthUseCases.BlockClient(
@@ -347,9 +344,9 @@ func (av *AuthView) BlockClient(c echo.Context) error {
 	if err != nil {
 		switch errors.Cause(err) {
 		case sql.ErrNoRows:
-			return echo.NewHTTPError(http.StatusNotFound, "Client not found")
+			return echo.NewHTTPError(http.StatusNotFound, "Client not found").SetInternal(err)
 		default:
-			return echo.NewHTTPError(http.StatusBadRequest, rfrl.GetStatusInternalServerError(err))
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 	}
 

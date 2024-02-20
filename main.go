@@ -20,6 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/pkg/errors"
 	"google.golang.org/api/option"
 )
 
@@ -31,6 +32,40 @@ type Validator struct {
 // Validate do validation for request value.
 func (v *Validator) Validate(i interface{}) error {
 	return v.validator.Struct(i)
+}
+
+type stackTracer interface {
+	StackTrace() errors.StackTrace
+}
+
+func customHTTPErrorHandler(err error, c echo.Context) {
+	code := http.StatusInternalServerError
+
+	if he, ok := err.(*echo.HTTPError); ok {
+		code = he.Code
+		internalErr := he.Internal
+
+		if stackError, ok := internalErr.(stackTracer); ok {
+			log.Errorj(log.JSON{
+				"stack": fmt.Sprintf("%v", stackError.StackTrace()),
+				"error": fmt.Sprintf("%+v", internalErr.Error()),
+			})
+		} else if internalErr != nil {
+			log.Errorj(log.JSON{
+				"error": fmt.Sprintf("%v", internalErr.Error()),
+			})
+		}
+
+		if code == http.StatusInternalServerError {
+			err = rfrl.GetStatusInternalServerError(err)
+		}
+	}
+
+	if err = c.JSON(code, err); err != nil {
+		log.Errorj(log.JSON{
+			"echo-json-error": err,
+		})
+	}
 }
 
 func getPostgresURI() string {
@@ -61,17 +96,11 @@ func getFirebaseApp() *firebase.App {
 	var app *firebase.App
 	var err error
 
-	if rfrl.IsProduction() {
-		fmt.Println("IsProduction")
-		conf := &firebase.Config{ProjectID: getGoogleProjectID()}
-		app, err = firebase.NewApp(ctx, conf)
-	} else {
-		sa := option.WithCredentialsFile(os.Getenv("FIREBASE_AUTH_FILE"))
-		app, err = firebase.NewApp(ctx, nil, sa)
-	}
+	sa := option.WithCredentialsFile(os.Getenv("FIREBASE_AUTH_FILE"))
+	app, err = firebase.NewApp(ctx, nil, sa)
 
 	if err != nil {
-		panic(fmt.Sprintf("%v", err))
+		panic(fmt.Sprintf("error initializing firebase app: %v", err))
 	}
 
 	return app
@@ -202,6 +231,8 @@ func main() {
 	})
 
 	e.Logger.SetLevel(log.DEBUG)
+
+	e.HTTPErrorHandler = customHTTPErrorHandler
 
 	s := &http.Server{
 		Addr:         string(":8080"),
