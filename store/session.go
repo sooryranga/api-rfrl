@@ -42,7 +42,7 @@ func getSessionWithClients(db rfrl.DB, rows *sqlx.Rows, clientID string) (*[]rfr
 		err := rows.StructScan(&session)
 
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getSessionWithClients")
 		}
 		idToIndex[session.ID] = i
 		sessions = append(sessions, session)
@@ -57,14 +57,14 @@ func getSessionWithClients(db rfrl.DB, rows *sqlx.Rows, clientID string) (*[]rfr
 	query, args, err := sqlx.In(getSessionClients, sessionIds)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getSessionWithClients")
 	}
 
 	query = db.Rebind(query)
 	rows, err = db.Queryx(query, args...)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getSessionWithClients")
 	}
 
 	for rows.Next() {
@@ -72,7 +72,7 @@ func getSessionWithClients(db rfrl.DB, rows *sqlx.Rows, clientID string) (*[]rfr
 
 		err = rows.StructScan(&result)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getSessionWithClients")
 		}
 
 		index := idToIndex[result.SessionID]
@@ -106,13 +106,13 @@ func (ss *SessionStore) GetSessionByClientID(db rfrl.DB, clientID string, state 
 	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSessionByClientID")
 	}
 
 	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSessionByClientID")
 	}
 
 	return getSessionWithClients(db, rows, clientID)
@@ -133,13 +133,13 @@ func (ss *SessionStore) GetSessionByRoomID(db rfrl.DB, clientID string, roomID s
 	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSessionByRoomID")
 	}
 
 	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSessionByRoomID")
 	}
 
 	return getSessionWithClients(db, rows, clientID)
@@ -154,7 +154,7 @@ func (ss *SessionStore) CheckSessionsIsForClient(db rfrl.DB, clientID string, id
 	var m int
 	query, args, err := sqlx.In(checkSessionsIsForClient, ids, clientID)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "CheckSessionsIsForClient")
 	}
 
 	query = db.Rebind(query)
@@ -162,11 +162,7 @@ func (ss *SessionStore) CheckSessionsIsForClient(db rfrl.DB, clientID string, id
 	row := db.QueryRowx(query, args...)
 	err = row.Scan(&m)
 
-	if err != nil {
-		return false, err
-	}
-
-	return len(ids) == m, nil
+	return len(ids) == m, errors.Wrap(err, "CheckSessionsIsForClient")
 }
 
 const getSessionByID string = `
@@ -178,13 +174,13 @@ func (ss *SessionStore) GetSessionByID(db rfrl.DB, clientID string, ID int) (*rf
 	rows, err := db.Queryx(getSessionByID, ID)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSessionByID")
 	}
 
 	sessions, err := getSessionWithClients(db, rows, clientID)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSessionByID")
 	}
 
 	if sessions == nil || len(*sessions) == 0 {
@@ -202,7 +198,7 @@ WHERE id = $1
 func (ss *SessionStore) DeleteSession(db rfrl.DB, ID int) error {
 	_, err := db.Queryx(deleteSession, ID)
 
-	return err
+	return errors.Wrap(err, "DeleteSession")
 }
 
 const insertSession string = `
@@ -244,13 +240,17 @@ func (ss SessionStore) CreateSessionClients(
 	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "CreateSessionClients")
 	}
 
 	_, err = db.Queryx(
 		sql,
 		args...,
 	)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "CreateSessionClients")
+	}
 
 	return getClientFromIDs(db, clientIDs)
 }
@@ -269,7 +269,7 @@ func (ss SessionStore) CreateClientSelectionOfEvent(
 	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "CreateClientSelectionOfEvent")
 	}
 
 	_, err = db.Queryx(
@@ -277,7 +277,7 @@ func (ss SessionStore) CreateClientSelectionOfEvent(
 		args...,
 	)
 
-	return err
+	return errors.Wrap(err, "CreateClientSelectionOfEvent")
 }
 
 const getSessionsEvent string = `
@@ -296,14 +296,14 @@ func (ss SessionStore) GetSessionsEvent(db rfrl.DB, sessionIDs []int) (map[int]*
 	query, args, err := sqlx.In(getSessionsEvent, sessionIDs)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSessionsEvent")
 	}
 	query = db.Rebind(query)
 
 	rows, err := db.Queryx(query, args...)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetSessionsEvent")
 	}
 
 	for rows.Next() {
@@ -312,7 +312,7 @@ func (ss SessionStore) GetSessionsEvent(db rfrl.DB, sessionIDs []int) (map[int]*
 		err := rows.StructScan(&result)
 
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "GetSessionsEvent")
 		}
 		sessionIDToEventMap[result.SessionID] = &result.Event
 	}
@@ -336,7 +336,7 @@ func (ss SessionStore) GetSessionByIDForUpdate(db rfrl.DB, clientID string, ID i
 	var m rfrl.Session
 
 	err := row.StructScan(&m)
-	return &m, err
+	return &m, errors.Wrap(err, "GetSessionByIDForUpdate")
 }
 
 func (ss SessionStore) UpdateSession(
@@ -368,7 +368,7 @@ func (ss SessionStore) UpdateSession(
 		ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateSession")
 	}
 
 	row := db.QueryRowx(sql, args...)
@@ -377,7 +377,7 @@ func (ss SessionStore) UpdateSession(
 
 	err = row.StructScan(&m)
 
-	return &m, err
+	return &m, errors.Wrap(err, "UpdateSession")
 }
 
 func (ss SessionStore) CreateSessionEvents(
@@ -397,7 +397,7 @@ func (ss SessionStore) CreateSessionEvents(
 		ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "CreateSessionEvents")
 	}
 
 	rows, err := db.Queryx(
@@ -406,7 +406,7 @@ func (ss SessionStore) CreateSessionEvents(
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "CreateSessionEvents")
 	}
 
 	insertedEvents := make([]rfrl.Event, 0)
@@ -416,12 +416,12 @@ func (ss SessionStore) CreateSessionEvents(
 
 		err = rows.StructScan(&e)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "CreateSessionEvents")
 		}
 		insertedEvents = append(insertedEvents, e)
 	}
 
-	return &insertedEvents, err
+	return &insertedEvents, nil
 }
 
 const getSessionEventFromSessionID string = `
@@ -440,7 +440,7 @@ func (ss SessionStore) GetSessionEventFromSessionID(
 
 	err := row.StructScan(&event)
 
-	return &event, err
+	return &event, errors.Wrap(err, "GetSessionEventFromSessionID")
 }
 
 const deleteSessionEvents string = `
@@ -452,13 +452,13 @@ func (ss SessionStore) DeleteSessionEvents(db rfrl.DB, eventIDs []int) error {
 	query, args, err := sqlx.In(deleteSessionEvents, eventIDs)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "DeleteSessionEvents")
 	}
 	query = db.Rebind(query)
 
 	_, err = db.Queryx(query, args...)
 
-	return err
+	return errors.Wrap(err, "DeleteSessionEvents")
 }
 
 const getSessionEventByID string = `
@@ -474,11 +474,7 @@ func (ss SessionStore) GetSessionEventByID(db rfrl.DB, sessionID int, ID int) (*
 
 	err := row.StructScan(&event)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &event, err
+	return &event, errors.Wrap(err, "GetSessionEventByID")
 }
 
 func filterInclusiveDateRange(query sq.SelectBuilder, events *[]rfrl.Event) sq.SelectBuilder {
@@ -517,7 +513,7 @@ func (ss SessionStore) CheckAllClientSessionHasResponded(db rfrl.DB, id int) (bo
 	err := db.QueryRowx(checkAllClientSessionHasRespondedQuery, id).Scan(&notAllClientsResponded)
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "CheckAllClientSessionHasResponded")
 	}
 
 	if !notAllClientsResponded.Valid {
@@ -536,7 +532,7 @@ func (ss SessionStore) GetSessionFromConferenceID(db rfrl.DB, conferenceID strin
 	var session rfrl.Session
 	err := db.QueryRowx(getSessionFromConferenceIDQuery, conferenceID).StructScan(&session)
 
-	return &session, err
+	return &session, errors.Wrap(err, "GetSessionFromConferenceID")
 }
 
 const checkClientsAttendedTutorSessionQuery string = `
@@ -553,7 +549,7 @@ func (ss SessionStore) CheckClientsAttendedTutorSession(db rfrl.DB, tutorID stri
 	sql, args, err := sqlx.In(checkClientsAttendedTutorSessionQuery, clientIDs, tutorID)
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "CheckClientsAttendedTutorSession")
 	}
 
 	sql = db.Rebind(sql)
@@ -561,7 +557,7 @@ func (ss SessionStore) CheckClientsAttendedTutorSession(db rfrl.DB, tutorID stri
 	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "CheckClientsAttendedTutorSession")
 	}
 
 	for rows.Next() {
@@ -569,7 +565,7 @@ func (ss SessionStore) CheckClientsAttendedTutorSession(db rfrl.DB, tutorID stri
 		err := rows.Scan(&b)
 
 		if err != nil {
-			return false, err
+			return false, errors.Wrap(err, "CheckClientsAttendedTutorSession")
 		}
 
 		if b == len(clientIDs) {

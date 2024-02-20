@@ -3,6 +3,7 @@ package store
 import (
 	"github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/pkg/errors"
 )
 
 type TutorReviewStore struct{}
@@ -33,7 +34,7 @@ func (trs *TutorReviewStore) CreateTutorReview(db rfrl.DB, ClientID string, tuto
 	var createdTutorReview rfrl.TutorReview
 	err = row.StructScan(&createdTutorReview)
 
-	return &createdTutorReview, err
+	return &createdTutorReview, errors.Wrap(err, "CreateTutorReview")
 }
 
 const checkTutorReviewForClient string = `
@@ -48,7 +49,7 @@ func (trs *TutorReviewStore) CheckTutorReviewForClient(db rfrl.DB, clientID stri
 	err := row.Scan(&reviewForClient)
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "CheckTutorReviewForClient")
 	}
 	return reviewForClient == 1, nil
 }
@@ -74,7 +75,7 @@ func (trs *TutorReviewStore) UpdateTutorReview(db rfrl.DB, review *rfrl.TutorRev
 		ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateTutorReview")
 	}
 
 	row := db.QueryRowx(sql, args...)
@@ -82,7 +83,7 @@ func (trs *TutorReviewStore) UpdateTutorReview(db rfrl.DB, review *rfrl.TutorRev
 	var tutorReview rfrl.TutorReview
 	err = row.StructScan(&tutorReview)
 
-	return &tutorReview, err
+	return &tutorReview, errors.Wrap(err, "UpdateTutorReview")
 }
 
 const deleteTutorReview string = `
@@ -91,7 +92,7 @@ DELETE FROM tutor_review WHERE id = $1
 
 func (trs *TutorReviewStore) DeleteTutorReview(db rfrl.DB, ID int) error {
 	_, err := db.Queryx(deleteTutorReview, ID)
-	return err
+	return errors.Wrap(err, "DeleteTutorReview")
 }
 
 const getTutorReview string = `
@@ -104,7 +105,7 @@ func (trs *TutorReviewStore) GetTutorReview(db rfrl.DB, id int) (*rfrl.TutorRevi
 	var tutorReview rfrl.TutorReview
 	err := row.StructScan(&tutorReview)
 
-	return &tutorReview, err
+	return &tutorReview, errors.Wrap(err, "GetTutorReview")
 }
 
 const checkIfReviewAlreadyExistsQuery string = `
@@ -119,7 +120,7 @@ func (trs *TutorReviewStore) CheckIfReviewAlreadyExists(db rfrl.DB, menteeID str
 	row := db.QueryRowx(checkIfReviewAlreadyExistsQuery, tutorID, menteeID)
 	err := row.Scan(&exists)
 
-	return exists, err
+	return exists, errors.Wrap(err, "CheckIfReviewAlreadyExists")
 }
 
 const getTutorReviewsByTutorID string = `
@@ -130,7 +131,7 @@ WHERE tutor_id = $1
 func (trs *TutorReviewStore) GetTutorReviews(db rfrl.DB, tutorID string) (*[]rfrl.TutorReview, error) {
 	rows, err := db.Queryx(getTutorReviewsByTutorID, tutorID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetTutorReviews")
 	}
 
 	tutorReviews := make([]rfrl.TutorReview, 0)
@@ -139,7 +140,7 @@ func (trs *TutorReviewStore) GetTutorReviews(db rfrl.DB, tutorID string) (*[]rfr
 		var tutorReview rfrl.TutorReview
 		err = rows.StructScan(&tutorReview)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "GetTutorReviews")
 		}
 		tutorReviews = append(tutorReviews, tutorReview)
 	}
@@ -157,7 +158,7 @@ func (trs *TutorReviewStore) GetTutorReviewsAggregate(db rfrl.DB, tutorID string
 	var aggregate rfrl.TutorReviewAggregate
 	err := row.StructScan(&aggregate)
 
-	return &aggregate, err
+	return &aggregate, errors.Wrap(err, "GetTutorReviewsAggregate")
 }
 
 const getPendingReviewsQuery string = `
@@ -168,12 +169,11 @@ WHERE mentee_id = $1
 `
 
 func (trs *TutorReviewStore) GetPendingReviews(db rfrl.DB, menteeID string) (*[]rfrl.PendingTutorReview, error) {
+	pendingReviews := make([]rfrl.PendingTutorReview, 0)
 	rows, err := db.Queryx(getPendingReviewsQuery, menteeID)
 
-	pendingReviews := make([]rfrl.PendingTutorReview, 0)
-
 	if err != nil {
-		return &pendingReviews, err
+		return &pendingReviews, errors.Wrap(err, "GetTutorReviewsAggregate")
 	}
 
 	for rows.Next() {
@@ -182,7 +182,7 @@ func (trs *TutorReviewStore) GetPendingReviews(db rfrl.DB, menteeID string) (*[]
 		err = rows.StructScan(&pendingReview)
 
 		if err != nil {
-			return &pendingReviews, err
+			return &pendingReviews, errors.Wrap(err, "GetTutorReviewsAggregate")
 		}
 
 		pendingReviews = append(pendingReviews, pendingReview)
@@ -199,7 +199,7 @@ VALUES ($1, $2)
 func (trs *TutorReviewStore) CreatePendingReview(db rfrl.DB, menteeID string, tutorID string) error {
 	_, err := db.Queryx(createPendingReviewQuery, menteeID, tutorID)
 
-	return err
+	return errors.Wrap(err, "CreatePendingReview")
 }
 
 const deletePendingReviewQuery string = `
@@ -210,5 +210,5 @@ WHERE mentee_id = $1 AND tutor_id = $2
 func (trs *TutorReviewStore) DeletePendingReview(db rfrl.DB, menteeID string, tutorID string) error {
 	_, err := db.Queryx(deletePendingReviewQuery, menteeID, tutorID)
 
-	return err
+	return errors.Wrap(err, "CreatePendingReview")
 }

@@ -1,12 +1,11 @@
 package store
 
 import (
-	"errors"
-
 	rfrl "github.com/Arun4rangan/api-rfrl/rfrl"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -27,11 +26,7 @@ func (cs *CompanyStore) SelectCompany(db rfrl.DB, name string) (*rfrl.Company, e
 
 	err := db.QueryRowx(selectCompany, name).StructScan(&company)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &company, nil
+	return &company, errors.Wrap(err, "SelectCompany")
 }
 
 const createCompany string = `
@@ -52,10 +47,10 @@ func (cs *CompanyStore) CreateOrSelectCompany(db rfrl.DB, name string) (*rfrl.Co
 				return cs.SelectCompany(db, name)
 			}
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "CreateOrSelectCompany")
 	}
 
-	return &company, err
+	return &company, nil
 }
 
 const createCompanyEmailDomain string = `
@@ -66,7 +61,7 @@ VALUES ($1)
 func (cs *CompanyStore) CreateCompanyEmailDomain(db rfrl.DB, emailDomian string) error {
 	_, err := db.Queryx(createCompanyEmailDomain, emailDomian)
 
-	return err
+	return errors.Wrap(err, "CreateCompanyEmailDomain")
 }
 
 const createCompanyQuery string = `
@@ -87,7 +82,7 @@ func (cs *CompanyStore) CreateCompany(db rfrl.DB, company rfrl.Company) (*rfrl.C
 	var createdCompany rfrl.Company
 	err := row.StructScan(&createdCompany)
 
-	return &createdCompany, err
+	return &createdCompany, errors.Wrap(err, "CreateCompany")
 }
 
 func (cs *CompanyStore) UpdateCompany(db rfrl.DB, company rfrl.Company) (*rfrl.Company, error) {
@@ -119,13 +114,13 @@ func (cs *CompanyStore) UpdateCompany(db rfrl.DB, company rfrl.Company) (*rfrl.C
 		PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateCompany")
 	}
 
 	var updatedCompany rfrl.Company
 	err = db.QueryRowx(sql, args...).StructScan(&updatedCompany)
 
-	return &updatedCompany, err
+	return &updatedCompany, errors.Wrap(err, "UpdateCompany")
 }
 
 const updateOrCreateCompanyEmail string = `
@@ -142,13 +137,13 @@ func (cs *CompanyStore) UpdateOrCreateCompanyEmail(db rfrl.DB, name null.String,
 		company, err := cs.SelectCompany(db, name.String)
 
 		if err != nil {
-			return err
+			return errors.Wrap(err, "UpdateOrCreateCompanyEmail")
 		}
 		companyId = null.IntFrom(int64(company.ID))
 	}
 
 	_, err := db.Queryx(updateOrCreateCompanyEmail, emailDomain, companyId, active)
-	return err
+	return errors.Wrap(err, "UpdateOrCreateCompanyEmail")
 }
 
 const getCompanies string = `
@@ -162,14 +157,14 @@ func (cs *CompanyStore) GetCompanies(db rfrl.DB, active bool) (*[]rfrl.Company, 
 	rows, err := db.Queryx(getCompanies, active)
 
 	if err != nil {
-		return &companies, err
+		return &companies, errors.Wrap(err, "GetCompanies")
 	}
 
 	for rows.Next() {
 		var company rfrl.Company
 		err := rows.StructScan(&company)
 		if err != nil {
-			return &companies, err
+			return &companies, errors.Wrap(err, "GetCompanies")
 		}
 		companies = append(companies, company)
 	}
@@ -186,7 +181,7 @@ func (cs *CompanyStore) GetCompanyIDFromEmailDomain(db rfrl.DB, emailDomain stri
 
 	err := db.QueryRowx(getCompanyIDFromEmailDomainQuery, emailDomain).Scan(&id)
 
-	return id, err
+	return id, errors.Wrap(err, "GetCompanyIDFromEmailDomain")
 }
 
 const getCompanyQuery string = `
@@ -200,7 +195,7 @@ func (cs *CompanyStore) GetCompany(db rfrl.DB, id int) (*rfrl.Company, error) {
 	row := db.QueryRowx(getCompanyQuery, id)
 	err := row.StructScan(&company)
 
-	return &company, err
+	return &company, errors.Wrap(err, "GetCompany")
 }
 
 func (cs *CompanyStore) GetCompanyEmails(db rfrl.DB, withCompany null.Bool) (*[]rfrl.CompanyEmailDomain, error) {
@@ -219,13 +214,13 @@ func (cs *CompanyStore) GetCompanyEmails(db rfrl.DB, withCompany null.Bool) (*[]
 	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return &companyEmails, err
+		return &companyEmails, errors.Wrap(err, "GetCompanyEmails")
 	}
 
 	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
-		return &companyEmails, err
+		return &companyEmails, errors.Wrap(err, "GetCompanyEmails")
 	}
 
 	for rows.Next() {
@@ -234,7 +229,7 @@ func (cs *CompanyStore) GetCompanyEmails(db rfrl.DB, withCompany null.Bool) (*[]
 		err = rows.StructScan(&companyEmail)
 
 		if err != nil {
-			return &companyEmails, err
+			return &companyEmails, errors.Wrap(err, "GetCompanyEmails")
 		}
 
 		companyEmails = append(companyEmails, companyEmail)
@@ -255,5 +250,5 @@ func (cs *CompanyStore) GetCompanyEmail(db rfrl.DB, emailDomain string) (*rfrl.C
 
 	err := row.StructScan(&companyEmail)
 
-	return &companyEmail, err
+	return &companyEmail, errors.Wrap(err, "GetCompanyEmails")
 }

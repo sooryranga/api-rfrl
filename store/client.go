@@ -58,13 +58,13 @@ func (cl *ClientStore) GetClients(db rfrl.DB, options rfrl.GetClientsOptions) (*
 	clients := make([]rfrl.Client, 0)
 
 	if err != nil {
-		return &clients, err
+		return &clients, errors.Wrap(err, "GetClients")
 	}
 
 	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
-		return &clients, err
+		return &clients, errors.Wrap(err, "GetClients")
 	}
 
 	for rows.Next() {
@@ -73,7 +73,7 @@ func (cl *ClientStore) GetClients(db rfrl.DB, options rfrl.GetClientsOptions) (*
 		err := rows.StructScan(&client)
 
 		if err != nil {
-			return &clients, err
+			return &clients, errors.Wrap(err, "GetClients")
 		}
 
 		clients = append(clients, client)
@@ -87,7 +87,7 @@ func (cl *ClientStore) GetClientFromID(db rfrl.DB, id string) (*rfrl.Client, err
 	var m rfrl.Client
 	err := db.QueryRowx(getClientByIDSQL, id).StructScan(&m)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetClientFromID")
 	}
 	return &m, nil
 }
@@ -97,10 +97,14 @@ func getClientFromIDs(db rfrl.DB, ids []string) (*[]rfrl.Client, error) {
 	query, args, err := sqlx.In(getClientByIDsSQL, ids)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getClientFromIDs")
 	}
 	query = db.Rebind(query)
 	rows, err := db.Queryx(query, args...)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "getClientFromIDs")
+	}
 
 	clients := make([]rfrl.Client, 0)
 
@@ -108,13 +112,13 @@ func getClientFromIDs(db rfrl.DB, ids []string) (*[]rfrl.Client, error) {
 		var c rfrl.Client
 		err := rows.StructScan(&c)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getClientFromIDs")
 		}
 
 		clients = append(clients, c)
 	}
 
-	return &clients, err
+	return &clients, nil
 }
 
 func (cl *ClientStore) GetClientFromIDs(db rfrl.DB, ids []string) (*[]rfrl.Client, error) {
@@ -215,7 +219,7 @@ func (cl *ClientStore) UpdateClient(db rfrl.DB, ID string, client *rfrl.Client) 
 		ToSql()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "UpdateClient")
 	}
 
 	row := db.QueryRowx(
@@ -226,7 +230,7 @@ func (cl *ClientStore) UpdateClient(db rfrl.DB, ID string, client *rfrl.Client) 
 	var m rfrl.Client
 
 	err = row.StructScan(&m)
-	return &m, err
+	return &m, errors.Wrap(err, "UpdateClient")
 }
 
 const createEmailVerification string = `
@@ -246,7 +250,7 @@ func (cl *ClientStore) CreateEmailVerification(
 ) error {
 	_, err := db.Queryx(createEmailVerification, clientID, email, emailType, passCode)
 
-	return err
+	return errors.Wrap(err, "CreateEmailVerification")
 }
 
 const verifyEmail string = `
@@ -275,7 +279,7 @@ func (cl *ClientStore) VerifyEmail(
 	err := db.QueryRowx(verifyEmail, clientID, email, emailType).Scan(&id, &expectedPasscode)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "VerifyEmail")
 	}
 
 	if !id.Valid {
@@ -288,7 +292,7 @@ func (cl *ClientStore) VerifyEmail(
 
 	_, err = db.Queryx(deleteVerifyEmailFromId, id)
 
-	return err
+	return errors.Wrap(err, "verifyEmail")
 }
 
 const getVerificationEmailQuery string = `
@@ -304,7 +308,7 @@ func (cl *ClientStore) GetVerificationEmail(db rfrl.DB, clientID string, emailTy
 		if err == sql.ErrNoRows {
 			return "", errors.New("Could not find verification email")
 		}
-		return "", err
+		return "", errors.Wrap(err, "GetVerificationEmail")
 	}
 
 	if email.Valid == false {
@@ -322,7 +326,7 @@ WHERE client_id = $1 AND email_type = $2
 func (cl *ClientStore) DeleteVerificationEmail(db rfrl.DB, clientID string, emailType string) error {
 	_, err := db.Queryx(deleteVerificationEmail, clientID, emailType)
 
-	return err
+	return errors.Wrap(err, "DeleteVerificationEmail")
 }
 
 func (cl ClientStore) GetRelatedEventsByClientIDs(
@@ -350,13 +354,13 @@ func (cl ClientStore) GetRelatedEventsByClientIDs(
 	sql, args, err := sessionQuery.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return &events, err
+		return &events, errors.Wrap(err, "GetRelatedEventsByClientIDs")
 	}
 
 	rows, err := db.Queryx(sql, args...)
 
 	if err != nil {
-		return &events, err
+		return &events, errors.Wrap(err, "GetRelatedEventsByClientIDs")
 	}
 
 	for rows.Next() {
@@ -365,7 +369,7 @@ func (cl ClientStore) GetRelatedEventsByClientIDs(
 		err = rows.StructScan(&event)
 
 		if err != nil {
-			return &events, err
+			return &events, errors.Wrap(err, "GetRelatedEventsByClientIDs")
 		}
 		events = append(events, event)
 	}
@@ -383,13 +387,13 @@ func (cl ClientStore) GetRelatedEventsByClientIDs(
 	sql, args, err = clientQuery.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return &events, err
+		return &events, errors.Wrap(err, "GetRelatedEventsByClientIDs")
 	}
 
 	rows, err = db.Queryx(sql, args...)
 
 	if err != nil {
-		return &events, err
+		return &events, errors.Wrap(err, "GetRelatedEventsByClientIDs")
 	}
 
 	for rows.Next() {
@@ -398,7 +402,7 @@ func (cl ClientStore) GetRelatedEventsByClientIDs(
 		err = rows.StructScan(&event)
 
 		if err != nil {
-			return &events, err
+			return &events, errors.Wrap(err, "GetRelatedEventsByClientIDs")
 		}
 		events = append(events, event)
 	}
@@ -431,7 +435,7 @@ func checkOverlapingSessionEvents(db rfrl.DB, clientIDs []string, events *[]rfrl
 	sql, args, err := query.Suffix(")").PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return true, err
+		return true, errors.Wrap(err, "checkOverlapingSessionEvents")
 	}
 
 	m := false
@@ -439,7 +443,7 @@ func checkOverlapingSessionEvents(db rfrl.DB, clientIDs []string, events *[]rfrl
 	row := db.QueryRowx(sql, args...)
 	err = row.Scan(&m)
 
-	return m, err
+	return m, errors.Wrap(err, "checkOverlapingSessionEvents")
 }
 
 func checkOverlapingClientEvents(db rfrl.DB, clientIDs []string, events *[]rfrl.Event) (bool, error) {
@@ -451,7 +455,7 @@ func checkOverlapingClientEvents(db rfrl.DB, clientIDs []string, events *[]rfrl.
 	sql, args, err := query.Suffix(")").PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return true, err
+		return true, errors.Wrap(err, "checkOverlapingClientEvents")
 	}
 
 	m := false
@@ -459,19 +463,19 @@ func checkOverlapingClientEvents(db rfrl.DB, clientIDs []string, events *[]rfrl.
 	row := db.QueryRowx(sql, args...)
 	err = row.Scan(&m)
 
-	return m, err
+	return m, errors.Wrap(err, "checkOverlapingClientsEvents")
 }
 
 func (cl ClientStore) CheckOverlapingEventsByClientIDs(db rfrl.DB, clientIds []string, events *[]rfrl.Event) (bool, error) {
 	clientOverlap, err := checkOverlapingClientEvents(db, clientIds, events)
 
 	if err != nil {
-		return true, err
+		return true, errors.Wrap(err, "CheckOverlappingEventsByClientIDs")
 	}
 	sessionOverlap, err := checkOverlapingSessionEvents(db, clientIds, events)
 
 	if err != nil {
-		return true, err
+		return true, errors.Wrap(err, "CheckOverlappingEventsByClientIDs")
 	}
 
 	log.Errorj(log.JSON{
@@ -507,7 +511,7 @@ func (cl ClientStore) CreateOrUpdateClientEducation(db rfrl.DB, clientID string,
 		ToSql()
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "CheckOverlappingEventsByClientIDs")
 	}
 
 	_, err = db.Queryx(
@@ -515,7 +519,7 @@ func (cl ClientStore) CreateOrUpdateClientEducation(db rfrl.DB, clientID string,
 		args...,
 	)
 
-	return err
+	return errors.Wrap(err, "CheckOverlappingEventsByClientIDs")
 }
 
 const deleteClientWantingCompanyReferralsSQuery string = `
@@ -526,7 +530,7 @@ func (cl ClientStore) CreateClientWantingCompanyReferrals(db rfrl.DB, clientID s
 	_, err := db.Queryx(deleteClientWantingCompanyReferralsSQuery, clientID)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "CreateClientWantingCompanyReferrals")
 	}
 
 	if len(companyIDs) == 0 {
@@ -543,12 +547,12 @@ func (cl ClientStore) CreateClientWantingCompanyReferrals(db rfrl.DB, clientID s
 	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "CreateClientWantingCompanyReferrals")
 	}
 
 	_, err = db.Queryx(sql, args...)
 
-	return err
+	return errors.Wrap(err, "CreateClientWantingCompanyReferrals")
 }
 
 const getClientWantingCompanyReferralsQuery string = `
@@ -561,14 +565,14 @@ func (cl ClientStore) GetClientWantingCompanyReferrals(db rfrl.DB, clientID stri
 	rows, err := db.Queryx(getClientWantingCompanyReferralsQuery, clientID)
 
 	if err != nil {
-		return companyIDs, err
+		return companyIDs, errors.Wrap(err, "GetClientWantingCompanyReferrals")
 	}
 
 	for rows.Next() {
 		var companyID int
 		err = rows.Scan(&companyID)
 		if err != nil {
-			return companyIDs, err
+			return companyIDs, errors.Wrap(err, "GetClientWantingCompanyReferrals")
 		}
 		companyIDs = append(companyIDs, companyID)
 	}
