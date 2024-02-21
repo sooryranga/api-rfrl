@@ -33,6 +33,9 @@ FROM scratch
 COPY --from=builder /dist/main /
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
+COPY ./assets/ /assets/
+ENV ASSETS_FOLDER=/assets/
+
 EXPOSE 8080
 
 # Command to run
