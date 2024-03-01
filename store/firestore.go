@@ -14,16 +14,20 @@ import (
 type FireStoreClient struct {
 	ConferenceCodeRef *firestore.CollectionRef
 	UserRef           *firestore.CollectionRef
+	RoomsRef          *firestore.CollectionRef
 	Client            *firestore.Client
 	Auth              *auth.Client
+	SupportUserId     string
 }
 
 func NewFireStore(client *firestore.Client, auth *auth.Client) *FireStoreClient {
 	return &FireStoreClient{
 		UserRef:           client.Collection("users"),
 		ConferenceCodeRef: client.Collection("conferenceCode"),
+		RoomsRef:          client.Collection("chatRooms"),
 		Client:            client,
 		Auth:              auth,
+		SupportUserId:     "af496484-7c7c-45a8-a409-96d61351f43a",
 	}
 }
 
@@ -31,6 +35,17 @@ type User struct {
 	ID       string `firststore:"_id"`
 	UserName string `firestore:"username"`
 	Avatar   string `firestore:"avatar"` // in millions
+}
+
+type Room struct {
+	Timestamp time.Time `firestore:"timestamp"`
+	Users     []string  `firestore:"users"`
+}
+
+type Message struct {
+	Content   string    `firestore:"content"`
+	SenderID  string    `firestore:"senderId"`
+	Timestamp time.Time `firestore:"timestamp"`
 }
 
 type Code struct {
@@ -59,7 +74,36 @@ func (fs *FireStoreClient) CreateClient(id string, photo string, firstName strin
 		UserName: userName,
 		Avatar:   photo,
 	})
+
+	if err != nil {
+		return errors.Wrap(err, "CreateClient")
+	}
+
+	err = fs.CreateRoomWithSupport(id)
+
 	return errors.Wrap(err, "CreateClient")
+}
+
+func (fs *FireStoreClient) CreateRoomWithSupport(id string) error {
+	ctx := context.Background()
+	roomUsers := []string{id, fs.SupportUserId}
+
+	supportRoomRef, _, err := fs.RoomsRef.Add(ctx, Room{
+		Users:     roomUsers,
+		Timestamp: time.Now(),
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "CreateRoomWithSupport")
+	}
+
+	_, _, err = supportRoomRef.Collection("messages").Add(ctx, Message{
+		Content:   "Hello, I am rfrl support. Feel free to ping me anytime anything regarding rfrl :)",
+		SenderID:  fs.SupportUserId,
+		Timestamp: time.Now(),
+	})
+
+	return errors.Wrap(err, "CreateRoomWithSupport")
 }
 
 func (fs *FireStoreClient) CreateCode(sessionID int, codeID int) error {
