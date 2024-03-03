@@ -1,9 +1,11 @@
 package rfrl
 
-const (
-	JavascriptTopic string = "javascript_topic"
-	PythonTopic     string = "python_topic"
-	GoLangTopic     string = "go_lang_topic"
+import "os"
+
+var (
+	JavascriptTopic string = os.Getenv("JAVASCRIPT_TOPIC")
+	PythonTopic     string = os.Getenv("PYTHON_TOPIC")
+	GoLangTopic     string = os.Getenv("GO_LANG_TOPIC")
 )
 
 type Publisher interface {

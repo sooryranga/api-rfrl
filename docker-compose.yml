@@ -3,18 +3,25 @@ services:
   javascriptconsumer:
     build:
       context: .
-      dockerfile: consumer/javascript/Dockerfile
+      dockerfile: consumer/javascript/Dockerfile.dev
     depends_on:
       pubsub:
         condition: service_healthy
+    expose:
+      - 8081
     links:
       - pubsub
       - backend
     environment:
+      - BACKEND_TYPE=dev
       - PUBSUB_EMULATOR_HOST=pubsub:8681
       - GOOGLE_CLOUD_PROJECT=tutorproject-292921
       - API_KEY=9ab270da-307a-40a7-be5c-12285f24161e
       - API_HOST=http://backend:8080
+      - JAVASCRIPT_TOPIC=javascript_topic
+    volumes:
+      - ./consumer/javascript/app.js:/app/app.js
+      - ./consumer/javascript/index.js:/app/index.js
 
   backend:
     build:
@@ -49,6 +56,7 @@ services:
       - PUBSUB_EMULATOR_HOST=pubsub:8681
       - GOOGLE_CLOUD_PROJECT=tutorproject-292921
       - BACKEND_TYPE=dev
+      - JAVASCRIPT_TOPIC=javascript_topic
       - API_KEY=9ab270da-307a-40a7-be5c-12285f24161e
     volumes:
       - ./:/app

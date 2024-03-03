@@ -10,6 +10,7 @@ WORKDIR /app
 # Copying this first prevents re-running npm install on every code change.
 COPY consumer/javascript/package*.json ./
 COPY consumer/javascript/index.js ./
+COPY consumer/javascript/app.js ./
 
 # Install production dependencies.
 # If you add a package-lock.json, speed your build by switching to 'npm ci'.

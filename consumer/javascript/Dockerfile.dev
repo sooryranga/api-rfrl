@@ -8,6 +8,7 @@ WORKDIR /app
 # where available (npm@5+)
 COPY consumer/javascript/package*.json ./
 COPY consumer/javascript/index.js ./
+COPY consumer/javascript/app.js ./
 
 RUN npm ci --only=production
 # If you are building your code for production
