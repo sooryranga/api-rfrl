@@ -31,6 +31,7 @@ const createTopicSubscription = async ()=>{
   try {
     await topic.createSubscription(subscriptionName, options);
   } catch (err) {
+    console.error(err)
     return
   }
 }
