@@ -89,6 +89,7 @@ type GetClientsOptions struct {
 	CompanyIds               []int
 	WantingReferralCompanyId null.Int
 	LastTutor                null.String
+	ExcludeClients           []string
 }
 
 type UpdateClientPayload struct {

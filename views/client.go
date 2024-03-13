@@ -67,6 +67,7 @@ type (
 		IsTutor                  null.Bool   `query:"isTutor"`
 		WantingReferralCompanyId null.Int    `query:"wantingReferralCompanyId"`
 		LastTutor                null.String `query:"lastClient"`
+		IncludeSelf              null.Bool   `query:"includeSelf"`
 	}
 )
 
@@ -204,11 +205,25 @@ func (cv *ClientView) GetClientsEndpoint(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Cannot be looking for clients from certain companies")
 	}
 
+	claims, err := rfrl.GetClaims(c)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+
+	// Exclude Support
+	excludeClients := []string{"af496484-7c7c-45a8-a409-96d61351f43a"}
+
+	if !payload.IncludeSelf.Valid || !payload.IncludeSelf.Bool {
+		excludeClients = append(excludeClients, claims.ClientID)
+	}
+
 	options := rfrl.GetClientsOptions{
 		IsTutor:                  payload.IsTutor,
 		CompanyIds:               payload.FromCompanyIds,
 		WantingReferralCompanyId: payload.WantingReferralCompanyId,
 		LastTutor:                payload.LastTutor,
+		ExcludeClients:           excludeClients,
 	}
 
 	clients, err := cv.ClientUseCase.GetClients(options)

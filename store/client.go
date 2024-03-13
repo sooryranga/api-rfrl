@@ -50,6 +50,10 @@ func (cl *ClientStore) GetClients(db rfrl.DB, options rfrl.GetClientsOptions) (*
 			Where(sq.Eq{"client_wanting_company_referral.company_id": options.WantingReferralCompanyId.Int64})
 	}
 
+	if len(options.ExcludeClients) > 0 {
+		query = query.Where(sq.NotEq{"id": options.ExcludeClients})
+	}
+
 	sql, args, err := query.
 		OrderBy("id ASC").
 		Limit(20).
