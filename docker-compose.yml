@@ -108,8 +108,6 @@ volumes:
 secrets:
   db-password:
     file: db/password.txt
-  fire-base-auth:
-    file: firebase/tutorproject-292921-firebase-adminsdk-ki5at-7e9eb74043.json
   rsa:
     file: id_rsa
   public-rsa:
